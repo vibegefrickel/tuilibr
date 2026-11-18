@@ -357,3 +357,50 @@ fn on_a_narrow_bar_the_left_group_scrolls_to_the_current_part() {
     assert!(row(&buffer, 0).starts_with(" NORMAL  a  bb "));
     assert_eq!(places, vec![Rect::new(8, 0, 3, 1), Rect::new(11, 0, 4, 1)]);
 }
+
+/// A bar as an app without tabs fills it: one left part, one middle text in its own style, two
+/// right groups before the time, and one icon.
+fn bar_without_tabs() -> BarView {
+    BarView {
+        mode: ModeView {
+            name: "NORMAL".to_owned(),
+            short_name: "N".to_owned(),
+            color: Color::Blue,
+        },
+        left: vec![Span::raw(" NEXT: 13:00 Review ")],
+        middle: vec![BarText {
+            parts: vec!["saved".to_owned()],
+            style: Style::default().fg(Color::Red),
+        }],
+        right: vec!["7-DAY".to_owned(), "Wed 19 Nov".to_owned()],
+        time: "14:02".to_owned(),
+        icons: vec![Span::raw(" SYNCING ")],
+    }
+}
+
+#[test]
+fn a_bar_with_one_left_part_keeps_the_style_of_the_middle_and_the_time() {
+    let mut places = Vec::new();
+    let buffer = drawn(80, 1, |frame| {
+        places = draw_bar(frame, bar_without_tabs(), frame.area(), 0);
+    });
+    let text = row(&buffer, 0);
+    assert!(text.starts_with(" NORMAL  NEXT: 13:00 Review "), "{text}");
+    assert!(
+        text.ends_with(" 7-DAY  Wed 19 Nov  14:02  SYNCING "),
+        "{text}"
+    );
+    assert_eq!(places, vec![Rect::new(8, 0, 20, 1)]);
+    let saved = u16::try_from(text.find("saved").unwrap()).unwrap();
+    assert_eq!(
+        buffer[(saved, 0)].fg,
+        Color::Red,
+        "the style of the middle text"
+    );
+    // On a narrow bar, the left part and the first right groups go. The time and the icon stay.
+    let buffer = drawn(30, 1, |frame| {
+        places = draw_bar(frame, bar_without_tabs(), frame.area(), 0);
+    });
+    assert_eq!(row(&buffer, 0), " N    saved    14:02  SYNCING ");
+    assert_eq!(places, vec![Rect::default()]);
+}

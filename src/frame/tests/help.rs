@@ -108,7 +108,7 @@ fn the_size_rule_gives_one_column_on_a_narrow_screen_and_two_on_a_wide_one() {
 fn a_box_without_a_hint_shows_none() {
     let text = |hint| {
         let buffer = drawn(40, 8, |frame| {
-            super::super::help_box(frame, frame.area(), "window", (30, 6), hint);
+            super::super::dialog_box(frame, frame.area(), "window", (30, 6), hint);
         });
         (0..buffer.area.height)
             .map(|y| row(&buffer, y))
@@ -122,7 +122,7 @@ fn a_box_without_a_hint_shows_none() {
 #[test]
 fn the_box_has_rounded_corners() {
     let buffer = drawn(40, 8, |frame| {
-        super::super::help_box(frame, frame.area(), "window", (30, 6), None);
+        super::super::dialog_box(frame, frame.area(), "window", (30, 6), None);
     });
     // 30 x 6 in the middle of 40 x 8: columns 5 to 34, rows 1 to 6.
     let corners = [(5, 1), (34, 1), (5, 6), (34, 6)].map(|at| buffer[at].symbol().to_owned());

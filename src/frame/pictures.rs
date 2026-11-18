@@ -6,7 +6,9 @@ use ratatui::layout::Rect;
 /// The pixel size of one terminal cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CellSize {
+    /// The pixels across one cell.
     pub width: u16,
+    /// The pixels down one cell.
     pub height: u16,
 }
 

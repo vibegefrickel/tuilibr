@@ -30,11 +30,12 @@ pub struct HelpView<'a> {
     pub text_width: u16,
 }
 
-/// The box of a page, centered in `area`, with rounded corners like the panes of the maximal
-/// layout, its title after one line cell like a pane box, one cell of padding on every side,
-/// and an optional hint at the bottom right. It keeps a margin of 4 columns and 2 rows. It
-/// returns the area inside the box.
-pub fn help_box(
+/// The one dialog box of every app: a help page, a confirm question, a form or a downloads window
+/// sits in it, so each app shows the same box. It is centered in `area`, with rounded corners like
+/// the panes of the maximal layout, its title after one line cell like a pane box, one cell of
+/// padding on every side, and an optional hint at the bottom right. It keeps a margin of 4 columns
+/// and 2 rows. The caller draws the body in the returned area inside the box.
+pub fn dialog_box(
     frame: &mut Frame<'_>,
     area: Rect,
     title: &str,
@@ -66,12 +67,15 @@ pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
     let column = view.key_width + view.text_width;
     let size = help_size(area, view);
     if size.0 == column + 4 {
-        let inner = help_box(frame, area, view.title, size, Some(HINT));
+        let inner = dialog_box(frame, area, view.title, size, Some(HINT));
         let sections = view.columns.concat();
-        frame.render_widget(Paragraph::new(lines(&sections, view.key_width)), inner);
+        frame.render_widget(
+            Paragraph::new(section_lines(&sections, view.key_width)),
+            inner,
+        );
         return;
     }
-    let inner = help_box(frame, area, view.title, size, Some(HINT));
+    let inner = dialog_box(frame, area, view.title, size, Some(HINT));
     let [left, _, right] = Layout::horizontal([
         Constraint::Length(column),
         Constraint::Length(COLUMN_GAP),
@@ -79,17 +83,20 @@ pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
     ])
     .areas(inner);
     for (sections, area) in view.columns.iter().zip([left, right]) {
-        frame.render_widget(Paragraph::new(lines(sections, view.key_width)), area);
+        frame.render_widget(
+            Paragraph::new(section_lines(sections, view.key_width)),
+            area,
+        );
     }
 }
 
 /// The hint at the bottom of the help box.
 const HINT: &str = "any key closes";
 
-/// The size that `draw_help` asks `help_box` for: the columns, the gap, the padding and the
+/// The size that `draw_help` asks `dialog_box` for: the columns, the gap, the padding and the
 /// border, and every row plus the padding and the border, so a new key cannot push the last
 /// rows out unnoticed.
-/// One column when two columns do not fit the width and one column fits the height. `help_box`
+/// One column when two columns do not fit the width and one column fits the height. `dialog_box`
 /// then keeps its margin of 4 columns and 2 rows.
 pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
     let column = view.key_width + view.text_width;
@@ -108,8 +115,10 @@ pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
     (width, height)
 }
 
-/// One column: a heading per section, a key per row, a blank row between sections.
-fn lines(sections: &[Section], key_width: u16) -> Vec<Line<'static>> {
+/// One column: a heading per section, a key per row, a blank row between sections. An app with
+/// its own help body renders these lines through `dialog_box`, so the keys look the same in each
+/// app.
+pub fn section_lines(sections: &[Section], key_width: u16) -> Vec<Line<'static>> {
     let heading = Style::default()
         .fg(Color::Yellow)
         .add_modifier(Modifier::BOLD);

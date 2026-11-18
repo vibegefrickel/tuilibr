@@ -5,9 +5,10 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phase 0 is done in the working trees of tuilibr and schnattr, uncommitted. The
-youtr session gave its go and runs phase 1 in its working tree. Phase 3 waits for the end of phase 7
-of the picture module in phewr (`phewr/docs/picture-refactor.md`).
+Status (2026-11-19): phases 0 and 1 are committed (tuilibr `901aa79`, schnattr `9758a73`, youtr
+`7a7499c`). The tuilibr session (`tuilibr-82`) owns the crate
+code since 2026-11-19. Phase 3
+waits for the gate of phase 2 in phewr (`phewr/docs/picture-refactor.md`).
 
 ## Decisions of the maintainer (2026-11-19)
 
@@ -39,7 +40,7 @@ The frame interface: `split`, `split_boxed`, `list_width`, `NARROW_BELOW`, `divi
 `join_rule`, `pane_box`, `dim_pane`, the styles `dim`, `pill`, `secondary`, `selection`,
 `unfocused_selection`, `EntryView` with `draw_entry` and `square_columns`, `draw_header`,
 `draw_dimmed_header` with `HeaderAreas`, `BarView` with `draw_bar`, `HelpView` with
-`draw_help`, `help_box` and `column_rows`, the text helpers `display_width`, `spans_width`,
+`draw_help`, `dialog_box` and `column_rows`, the text helpers `display_width`, `spans_width`,
 `spread`, `truncate_width`, the `Pictures` trait with `CellSize` and `Shade`, and
 `until_next_minute`.
 
@@ -70,19 +71,24 @@ the docs, not from a line-by-line comparison:
   `AnswerKeys`), phewr `LateAnswerFilter`. The picture module holds `query::LateAnswers` already.
 - The wide-cell workaround for VS16 emoji: schnattr `tui::backend::WideCells`.
 - The panic hook that restores the terminal: schnattr `tui::install_panic_hook`, phewr has one.
-- The help overlay: the frame has `help_box`, and phewr draws its help blocks itself.
+- The help overlay: the frame has `dialog_box`, and phewr draws its help blocks itself.
 - `age` and the list scroll: the open questions of `docs/frame-refactor.md` in schnattr. schnattr
-  uses `time`, youtr `chrono`, phewr `jiff`.
+  uses `time`, youtr `jiff`, phewr `jiff`. youtr (2026-11-19): a shared `age` is useful only on
+  plain numbers (seconds or whole days), and youtr has no need today. The list scroll of youtr is
+  one pure function `visible_from(scroll, line, visible) -> usize`. youtr takes the same function
+  on plain integers from the crate, no scroll type with state. The status text in the middle of
+  the bar works for youtr as it is.
 
 ## Phases
 
 | Phase | Content | Gate | State |
 |---|---|---|---|
-| 0 | The crate with the frame. schnattr uses it. The frame recipes of schnattr go. | none | done, uncommitted |
-| 1 | youtr takes the frame from the crate. | the go of the youtr session | open |
+| 0 | The crate with the frame. schnattr uses it. The frame recipes of schnattr go. | none | done, tuilibr `901aa79`, schnattr `9758a73` |
+| 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | open, in phewr |
-| 3 | The picture module moves from phewr into the crate. The three apps use it. | phase 2 | open |
-| 4 | The other shared parts move, one at a time. agendr takes the bar and `help_box`. | phase 3, or earlier for agendr | open |
+| 3 | The picture module moves from phewr into the crate. The three apps use it. | the herdr part and the loss limit test of phase 2 pass | open |
+| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | open, started 2026-11-19 |
+| 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
 ### Phase 0: the crate with the frame (done)
@@ -110,12 +116,25 @@ The youtr session does these steps after its go. The maintainer commits.
 6. Run `just check`. The frame tests now run in tuilibr only.
 
 The youtr session compared the crate with its copy on 2026-11-19: equal content, three rustfmt
-wraps and the `HeaderAreas` export apart. youtr writes its steps of phases 1 and 3 into its
-`docs/PLAN.md` as milestone M17.
+wraps and the `HeaderAreas` export apart. It ran the six steps the same day. `just check` passes
+with 526 tests. youtr holds its steps of phases 1 and 3 in its `docs/PLAN.md` as milestone M17.
+
+One finding for every app: `cargo deny` with `wildcards = "deny"` fails on a path dependency
+without a version. The fix is `allow-wildcard-paths = true` under `[bans]` in `deny.toml`, which
+cargo deny accepts for a crate with `publish = false`. schnattr passes because it warns only.
+
+### Phase 2: the end of the picture test matrix in phewr
+
+The maintainer is at step 14 of 14 in plain Ghostty (2026-11-19). Open: the herdr part, the
+Shift+wheel test, the loss limit with a small `image-storage-limit`, and the phase 7 scenarios in
+Ghostty and herdr. The phewr session estimates two to five more sessions. Only the herdr part and
+the loss limit touch the module (the Kitty layer: `screen.rs`, `query.rs`, `answers.rs`). The
+other findings touch app code. So phase 3 can start when these two pass, before the rest of
+phase 7. The maintainer decides.
 
 ### Phase 3: the picture module moves
 
-The phewr session and the schnattr session do these steps together after phase 2.
+The phewr session and the schnattr session do these steps together after the gate of phase 2.
 
 1. Move phewr `src/pictures/` to tuilibr `src/pictures/` and `tests/fixtures/` of the module
    tests to tuilibr `tests/fixtures/`. Replace `pub(crate)` by `pub`. Fix the fixture paths.
@@ -124,7 +143,7 @@ The phewr session and the schnattr session do these steps together after phase 2
    `libheif-rs`, `base64`, `rayon`, `lru`, `tempfile`, `rustix`) into the crate. The versions are
    the versions of phewr.
 3. Delete the `kitty-*` features. A library has no `dead_code` for a public item, so the gates
-   lose their purpose. If a gate also saves build time or a dependency, keep that one gate.
+   lose their purpose. They save no dependency and no build time (phewr session, 2026-11-19).
 4. Each app sets its features: schnattr `turbo`, `heic`, `jxl`, `sips`. youtr none. phewr all,
    plus its own `video`.
 5. Each app deletes `src/pictures/`, `tests/fixtures/` of the module, the `#[expect(dead_code)]`
@@ -132,6 +151,53 @@ The phewr session and the schnattr session do these steps together after phase 2
    `pictures-sync` and `pictures-check`.
 6. `phewr/docs/picture-refactor.md` and schnattr `docs/picture-refactor.md` become pointers to
    this file. The rules of the Kitty layer move into `docs/pictures.md` of tuilibr.
+
+What the move must handle outside `src/pictures/` (from the phewr session, 2026-11-19):
+
+- `pictures::names` reads `env!("CARGO_PKG_NAME")` for `APP_NAME` and builds the `<APP>_TEST_*`
+  variable names of the real-file tests from it. In the crate, that name is `tuilibr`. The app
+  name becomes a parameter that the app sets at start, and the module tests use a fixed name.
+- `THUMBNAIL_CACHE_VERSION` in `jobs/disk_cache/mod.rs` also uses the package name. In the crate
+  it reads `tuilibr-thumbnail-v22` for every app, so each app starts one time with a cold
+  thumbnail cache. The cache folder is app code.
+- `test_support/mod.rs` finds the fixtures through `env!("CARGO_MANIFEST_DIR")`. The fixture
+  folders of the module (`animations`, `color`, `png`, `jxl`, `hdr`, `video`, each with a
+  `make.sh`) are the justfile variable `pictures_fixtures` of phewr. They move with the module.
+- `src/bench/` stays in phewr and calls items that are `pub(crate)` today (`decode::EmbeddedThumbnail`,
+  `decode::color`, `decode::embedded_jpeg`, `decode::hdr::Peak`, `decode::heif_boxes`, `decode::jxl`,
+  `decode::libheif`, `decode::real_test_file` and more). The phewr export list comes from
+  `grep -rhn "pictures::" src/app src/bench src/kitty_output src/prefetch src/main.rs` in phewr.
+- The module holds `#[expect(lint, reason)]` attributes for the phewr lint set. The lint union of
+  tuilibr holds every lint of phewr and the same thresholds, so no `expect` goes stale. Make sure
+  of this again at the move with `cargo clippy` in tuilibr.
+- The build requirements of `heic` (Homebrew libheif) and `turbo` (libjpeg-turbo through pkgconf)
+  move into the README of tuilibr. The lean set of phewr (`just test-lean`) shrinks to `video,sips`
+  when the `kitty-*` features go. The `kitty-*` features gate dead code only, no dependency and no
+  build time, so phase 3 deletes them.
+- `deny.toml` of phewr forbids git sources. The path dependency is the form for phewr.
+
+The app name in the crate (the proposal of the tuilibr session, 2026-11-19). The module reads
+`APP_NAME` in five places: the thread names of the cache-read pool (`jobs/pool.rs`), the temp files
+of sips (`decode/sips.rs`) and of the Kitty transfer (`kitty/protocol/mod.rs`), the thumbnail cache
+key (`THUMBNAIL_CACHE_VERSION`) and the `<APP>_TEST_*` variables of the real-file tests. The pool,
+`sips::decode` and `write_temp_file` are free functions with no type parameter, so a const in a
+trait does not reach them without a generic parameter through each call chain. A build-time
+variable does not work: cargo compiles the crate with its own `CARGO_PKG_NAME`, and an app cannot
+set the environment of the build of a dependency. The proposal is one runtime setting:
+
+- `tuilibr::pictures::set_app_name(name: &'static str)` stores the name in a `OnceLock`. The app
+  calls it as the first line of `main` with `env!("CARGO_PKG_NAME")`. A second call changes
+  nothing.
+- `tuilibr::pictures::app_name()` reads the name. Before the set it reads `"tuilibr"`, so the
+  module tests use `TUILIBR_TEST_*` and need no setup.
+- The cache key hashes `format!("{}-thumbnail-v22", app_name())`. For phewr that is the string of
+  today, so the thumbnail cache of each app stays warm. If an app does not set the name, its key
+  changes one time and its cache is cold one time.
+- The real-file tests of the module move with it. The maintainer sets the `TUILIBR_TEST_*`
+  variables next to the `PHEWR_TEST_*` variables, or the tests skip with a note.
+
+The alternative with no interface: the fixed name `tuilibr` in each place. It costs one cold
+thumbnail cache per app, and the temp files and the threads no longer name the app.
 
 The items that youtr calls from outside the module, so the crate must export them as `pub`
 (from the youtr session, 2026-11-19): `kitty::{KittyBackend, Pixels, Transfer}`,
@@ -142,6 +208,60 @@ Screen}`, `kitty::query::{LateAnswers, query_cell_size_and_probe, window_cell_pi
 with more `image` features. The schnattr list follows when phase 3 starts. Name the tuilibr
 commit that each app builds against.
 
+### Phase 4a: one bar and one dialog box in every app
+
+The maintainer (2026-11-19): every app gets the status look of schnattr, as the status line of
+nvim. From left to right: the mode block, the tabs or another left group, the middle text centered
+in the free room, the right groups with the time last, and the icons at the right edge. The
+dialogs are the boxes of schnattr: rounded corners, the title after one line cell, one cell of
+padding on every side, an optional hint at the bottom right, centered on the screen. The help is
+one such box with two columns of key sections. Both parts live in the crate, and each app consumes
+them.
+
+```text
+│ list                      │ chat                                              │
+│                           │      ╭─ schnattr keys ──────────────────────╮     │
+│                           │      │                                      │     │
+│                           │      │  Move                 Write          │     │
+│                           │      │  j k   down / up      enter  send    │     │
+│                           │      │                                      │     │
+│                           │      ╰──────────────────────  any key closes ╯     │
+├───────────────────────────┴───────────────────────────────────────────────────┤
+│ NORMAL  Signal  Telegram  Slack     saved the draft    Steffen · 3   Wed 5 Nov 17:42  󰂚 󰌘 │
+```
+
+The crate parts:
+
+- The bar: `frame::draw_bar` with `BarView { mode: ModeView, left, middle: Vec<BarText>, right,
+  time, icons }`. It exists. An app that has no tabs passes an empty `left`.
+- The dialog box: `frame::help_box(frame, area, title, (width, height), hint) -> Rect` today. It
+  becomes `frame::dialog_box` with the same arguments, because a confirm box, a form, a downloads
+  window and a help page all use it. The tuilibr session renames it, and each app changes its
+  call sites in the same step. The app renders its own body into the returned inner `Rect`.
+- The help: `frame::draw_help` with `HelpView` for two columns of key sections inside the dialog
+  box. A scroll comes when a second app needs one.
+
+The steps per app. Each app session runs its steps and reports. The maintainer commits tuilibr
+first, then the app.
+
+- schnattr: the call site of `help_box` in `ui/help.rs` takes the new name. Nothing else.
+- youtr: one call site, the downloads window (`draw/downloads.rs`), takes `dialog_box`. The bar
+  stays.
+- phewr: the status row becomes `BarView` (the mode block, the folder path as the left group, the
+  file info in the middle, the counts and the zoom at the right, the icons). The help popups and
+  every other popup become `dialog_box`, the key help with `HelpView`.
+  phewr starts when tuilibr is committed with `dialog_box` and the maintainer gives the go in the
+  phewr session. The change is one module, `src/ui/status.rs`, plus `src/ui/help.rs`.
+- agendr: the footer becomes `BarView` (the mode block, NEXT at the left, the notice or the error
+  in the middle, zoom and date at the right, the clock as `time`, the backend state as icons). The
+  confirm box, the forms and the help become `dialog_box` with an own body, the key help with
+  `HelpView`. `popup_block`, `centered` and `centered_fixed` of agendr go.
+
+One rule for the look: the mode names are upper case words (`NORMAL`, `INSERT`, `SEARCH`,
+`COMMAND`), one letter below `NARROW_BELOW`. The colors of the blocks are per app. A dialog box
+keeps a margin of 4 columns and 2 rows to the screen edge and cuts its body when the screen is
+smaller.
+
 ### Phase 4: the other shared parts
 
 One part per step, pure motion first, then the feature. Each step names the app that gives the
@@ -149,12 +269,37 @@ code and the apps that take it. The candidates are the duplicates above. The fir
 terminal setup with the Kitty probe and the late answers, because all three apps hold a version
 and each version had its own bugs in 2026-11.
 
+The omnibox of schnattr (`ui/composer.rs`: a question, a typed line, a status text or a draft
+under the bar) is a candidate when a second app wants the command line of vim.
+
 `TextField` is the one new part. agendr builds `src/text_field.rs` in its own tree first: a
 character cursor on a `String`, insert, word moves, Ctrl-W, Ctrl-U, Ctrl-K and a `visible(width)`
 window, with no crossterm type inside. Each app maps its `KeyEvent` to the edits in a small
 function next to the type. After the first commit of tuilibr, the file moves to
 `tuilibr/src/text_field.rs` as pure code motion. schnattr then switches `tui/compose.rs` to it.
 The multi-line form for the draft of schnattr and the notes of agendr comes after that.
+
+The decisions of the tuilibr session for agendr (2026-11-19):
+
+- The bar needs no change. With an empty or one-part `left`, `current` is 0, and the returned
+  areas are empty or one area. A long middle text drops the first right groups, then the left
+  group gives way, and the time and the icons stay.
+- The help of agendr is one column of about 12 sections with a scroll. `draw_help` has no scroll
+  and no one-column form on a wide screen, so agendr renders `dialog_box` with its own `Paragraph`
+  and `.scroll()`. The crate exports `section_lines(sections, key_width)`, the lines of
+  `draw_help`, so the headings and the keys look the same in each app. `column_rows` gives the
+  total for the clamp. A `scroll` field in `HelpView` comes when a second app scrolls `draw_help`.
+- `TextField` holds no crossterm type. Each app maps its `KeyEvent` to the edits. A shared map
+  needs crossterm in the crate, which the import rule above does not allow today. It is an open
+  question for the maintainer, see below.
+- A draw helper `draw_text_field(frame, area, &TextField, style)` with the cursor through
+  `frame.set_cursor_position` is wanted. It comes as the second step, with the switch of
+  schnattr `tui/compose.rs`, so two apps draw the field the same way. The first step is the pure
+  code motion.
+- The confirm box, the forms and the help of agendr sit inside `dialog_box`, with the body of the
+  app inside (the maintainer, 2026-11-19). The form rows and the confirm logic stay app code. youtr
+  has a confirm question (`y` confirms, every other key cancels) and a plain filter string, phewr
+  has neither. A shared confirm body is a candidate for a later step of this phase, not for now.
 
 ### Phase 5: the build for other people
 
@@ -193,12 +338,13 @@ for the herdr worktrees below, because an absolute path resolves in every worktr
 
 ## Steps for the maintainer
 
-1. `git init` in `~/Projects/dev/tuilibr` and the first commit. The apps commit after it.
-2. Commit the switch in schnattr, then the switch in youtr.
-3. Create the repository on codeberg when phase 5 comes.
+1. Create the repository on codeberg when phase 5 comes.
 
 ## Open questions for the maintainer
 
 - The dependency form of phase 5: a git dependency with a `rev`, or a path dependency only.
-- The `kitty-*` features: delete them in phase 3, or keep the ones that save a dependency.
-- The time crate for a shared `age`: `time`, `chrono` or `jiff`.
+- A shared `age`: on plain numbers only, because the crate takes no time crate. Nobody needs it
+  today.
+- crossterm in the crate: a shared key map for `TextField` needs the `KeyEvent` type. All four
+  apps use crossterm 0.29, so a plain dependency costs no build time. A feature does not fit the
+  feature rule. The question comes when two apps want the same map.

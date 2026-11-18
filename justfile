@@ -44,8 +44,9 @@ outdated:
 check: fmt-check lint test doc deny
 
 # The apps that use this crate through a path dependency. `just apps-check` builds each one.
-apps := "../schnattr ../youtr ../phewr"
+apps := "../schnattr ../youtr ../phewr ../agendr"
 
-# Run `just check` in each app that uses the crate and exists next to it.
+# Run `just check` in each app that uses the crate and exists next to it. A failing app fails
+# the recipe.
 apps-check:
-    for app in {{apps}}; do [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml" && (cd "$app" && echo "== $app" && just check) || true; done
+    for app in {{apps}}; do if [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml"; then echo "== $app"; (cd "$app" && just check); fi; done
