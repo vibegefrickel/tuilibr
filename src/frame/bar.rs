@@ -1,0 +1,212 @@
+//! The status bar, as the status line of vim. From left to right: the mode block, the left
+//! group, the middle in the center of the free room, the right groups with the time last, and
+//! the icons at the right edge. Parts are set apart by two spaces, never by a divider.
+
+use ratatui::{
+    Frame,
+    layout::Rect,
+    style::{Color, Modifier, Style},
+    text::{Line, Span},
+    widgets::Paragraph,
+};
+use unicode_width::UnicodeWidthStr as _;
+
+use super::{
+    split::NARROW_BELOW,
+    style::bar,
+    text::{display_width, truncate_width},
+};
+
+/// Separates the parts of the middle and the groups at the right edge: room, no divider.
+pub const SEPARATOR: &str = "  ";
+
+/// The mode block at the left edge.
+pub struct ModeView {
+    /// The text on a wide screen.
+    pub name: String,
+    /// The text on a screen narrower than `NARROW_BELOW`, often one letter.
+    pub short_name: String,
+    /// The color of the block.
+    pub color: Color,
+}
+
+/// One text of the middle: its parts, of which the last go first, in one style.
+pub struct BarText {
+    /// The parts, set apart by the separator.
+    pub parts: Vec<String>,
+    /// The style of the text.
+    pub style: Style,
+}
+
+/// What the bar shows, filled by the caller.
+pub struct BarView {
+    /// The mode block.
+    pub mode: ModeView,
+    /// The left group after the mode block. A part that does not fit is left out.
+    pub left: Vec<Span<'static>>,
+    /// The middle: each text gets the room that the texts before it leave.
+    pub middle: Vec<BarText>,
+    /// The groups at the right, before the time. The first groups go first.
+    pub right: Vec<String>,
+    /// The time, the last group at the right. It stays whole while the bar has room.
+    pub time: String,
+    /// The icons at the right edge, always there.
+    pub icons: Vec<Span<'static>>,
+}
+
+/// The bar, left to right: the mode block, the left group, the middle centered in the free
+/// room, the right groups and the icons at the end. The right groups give up their first groups
+/// when the middle does not fit whole, and keep the time whole as long as the bar has room: the
+/// left group gives way to the icons and the time. When the left group does not fit, it starts
+/// late enough that its part `current` (the selected tab) shows, so `H` and `L` scroll through
+/// it. Returns where each part of the left group landed, one area per part in its order, for
+/// the mouse. The parts that do not fit have an empty area.
+pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize) -> Vec<Rect> {
+    let block = mode_block(&view.mode, area.width);
+    let cells = |spans: &[Span<'_>]| {
+        u16::try_from(spans.iter().map(Span::width).sum::<usize>()).unwrap_or(u16::MAX)
+    };
+    let block_cells = cells(std::slice::from_ref(&block));
+    let time = padded(&view.time).width();
+    let mut groups = view.right;
+    groups.push(view.time);
+    // The left group gets what the mode block, the icons and the time leave, so the icons and
+    // the time stay whole.
+    let left_room = area
+        .width
+        .saturating_sub(block_cells)
+        .saturating_sub(cells(&view.icons))
+        .saturating_sub(u16::try_from(time).unwrap_or(u16::MAX));
+    let left_from = area.x.saturating_add(block_cells);
+    let (left, places) = fit_left(
+        view.left,
+        Rect::new(left_from, area.y, left_room, 1),
+        current,
+    );
+    let mut spans = vec![block];
+    spans.extend(left);
+    let used: usize = spans.iter().chain(&view.icons).map(Span::width).sum();
+    let width = usize::from(area.width).saturating_sub(used);
+    let middle_full: usize = view
+        .middle
+        .iter()
+        .map(|text| padded(&text.parts.join(SEPARATOR)).width())
+        .sum();
+    let right = fit_right(
+        groups,
+        width.saturating_sub(middle_full).max(time).min(width),
+    );
+    let mut room = width.saturating_sub(right.width());
+    let mut middle = Vec::with_capacity(view.middle.len());
+    for text in view.middle {
+        let fitted = fit_parts(&text.parts, room);
+        room = room.saturating_sub(fitted.width());
+        middle.push(Span::styled(fitted, text.style));
+    }
+    // The middle sits in the center of what the sides leave.
+    let free = width
+        .saturating_sub(right.width())
+        .saturating_sub(middle.iter().map(Span::width).sum::<usize>());
+    spans.push(Span::raw(" ".repeat(free / 2)));
+    spans.extend(middle);
+    spans.push(Span::raw(" ".repeat(free - free / 2)));
+    spans.push(Span::styled(right, Style::default().fg(Color::White)));
+    spans.extend(view.icons);
+    frame.render_widget(Paragraph::new(Line::from(spans)).style(bar()), area);
+    places
+}
+
+/// The parts of the left group that fit `area`, and where each one landed. The window starts at
+/// `window_start`, and the first part that does not fit ends it. A part outside the window has an
+/// empty area, so the areas keep the order of the parts.
+fn fit_left(
+    parts: Vec<Span<'static>>,
+    area: Rect,
+    current: usize,
+) -> (Vec<Span<'static>>, Vec<Rect>) {
+    let widths: Vec<u16> = parts
+        .iter()
+        .map(|part| u16::try_from(display_width(&part.content)).unwrap_or(u16::MAX))
+        .collect();
+    let first = window_start(&widths, area.width, current);
+    let mut kept = Vec::new();
+    let mut places = vec![Rect::default(); parts.len()];
+    let mut x = area.x;
+    for ((part, width), place) in parts.into_iter().zip(widths).zip(&mut places).skip(first) {
+        if x.saturating_add(width) > area.right() {
+            break;
+        }
+        kept.push(part);
+        *place = Rect::new(x, area.y, width, 1);
+        x += width;
+    }
+    (kept, places)
+}
+
+/// The first part of the window: the leftmost one from which the parts up to `current` fit
+/// `room`. When even `current` alone does not fit, the window starts at it.
+fn window_start(widths: &[u16], room: u16, current: usize) -> usize {
+    let current = current.min(widths.len().saturating_sub(1));
+    let through_current = |first: usize| -> u32 {
+        widths
+            .iter()
+            .take(current + 1)
+            .skip(first)
+            .map(|width| u32::from(*width))
+            .sum()
+    };
+    (0..current)
+        .find(|&first| through_current(first) <= u32::from(room))
+        .unwrap_or(current)
+}
+
+/// A group of the bar: one space on each side.
+fn padded(text: &str) -> String {
+    if text.is_empty() {
+        String::new()
+    } else {
+        format!(" {text} ")
+    }
+}
+
+/// The mode block: the background color of the terminal on the mode color (bold reverse
+/// video), one space of padding, the short name on a narrow screen.
+fn mode_block(mode: &ModeView, width: u16) -> Span<'static> {
+    let text = if width < NARROW_BELOW {
+        &mode.short_name
+    } else {
+        &mode.name
+    };
+    // The ground of the bar must not show through the reversed block.
+    Span::styled(
+        format!(" {text} "),
+        Style::default()
+            .fg(mode.color)
+            .bg(Color::Reset)
+            .add_modifier(Modifier::REVERSED | Modifier::BOLD),
+    )
+}
+
+/// The parts as they fit `room`: the last parts go first, then the rest is cut.
+pub(super) fn fit_parts(parts: &[String], room: usize) -> String {
+    let inner = room.saturating_sub(2);
+    let mut kept = parts.len();
+    while kept > 1 && parts[..kept].join(SEPARATOR).width() > inner {
+        kept -= 1;
+    }
+    let text = parts[..kept].join(SEPARATOR);
+    if text.is_empty() {
+        return text;
+    }
+    padded(&truncate_width(&text, inner))
+}
+
+/// The groups at the right edge as they fit `room`: the first groups go first, and the last
+/// one (the time) stays, cut if it must.
+pub(super) fn fit_right(mut groups: Vec<String>, room: usize) -> String {
+    while groups.len() > 1 && padded(&groups.join(SEPARATOR)).width() > room {
+        groups.remove(0);
+    }
+    let text = groups.join(SEPARATOR);
+    padded(&truncate_width(&text, room.saturating_sub(2)))
+}

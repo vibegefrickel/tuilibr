@@ -1,0 +1,37 @@
+# cargo-deny: dependency policy. `just deny` runs all four checks.
+
+[graph]
+targets = ["aarch64-apple-darwin"]
+all-features = true
+
+[advisories]
+yanked = "warn"
+unmaintained = "workspace"
+ignore = []
+
+[licenses]
+# tuilibr is MIT, so its dependencies must be permissive.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "0BSD",
+    "Zlib",
+    "BSL-1.0",
+    "Unlicense",
+    "Unicode-3.0",
+    "ISC",
+]
+confidence-threshold = 0.8
+private = { ignore = true }
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"

@@ -1,0 +1,8 @@
+# rustfmt is the only formatter. The options are few and all stable. The 2024 style
+# edition sorts imports by version order and formats `let ... else` and closures the modern way.
+style_edition = "2024"
+use_field_init_shorthand = true
+use_try_shorthand = true
+newline_style = "Unix"
+# The nightly-only options (`imports_granularity = "Crate"`, `group_imports =
+# "StdExternalCrate"`, `wrap_comments`) stay out: stable rustfmt warns on each of them on every run.
