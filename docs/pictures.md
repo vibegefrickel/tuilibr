@@ -50,8 +50,11 @@ The module sits behind the feature `pictures`, which is on by default. An app wi
 (agendr) sets `default-features = false` and builds none of the module dependencies, so its
 `cargo deny` sees no `BSD` license and no duplicate version from the module (agendr session,
 2026-11-19). The decoder features are off by default: `turbo` adds libjpeg-turbo, `heic` adds
-libheif, `jxl` adds jxl-oxide, and `sips` adds the macOS `sips` route with its temp file. Each of
-them turns `pictures` on. `test-support` builds
+libheif, `jxl` adds jxl-oxide, and `sips` adds the macOS `sips` route with its temp file. `sips`
+follows no external reference of an SVG (a file, a relative path, HTTP, an external entity, a CSS
+import, `feImage`, `xi:include`); it draws a red box for an external image (schnattr, checked on
+macOS 26 against a local HTTP server). So a received SVG is safe to decode. Each of them turns
+`pictures` on. `test-support` builds
 `pictures::test_support` for the tests of an app. The former `kitty-*` features of phewr are gone:
 a library has no dead code for a public item, and they saved no dependency and no build time.
 
@@ -172,6 +175,8 @@ The rules of the loops:
 7. **The software run.** When the GPU run of a file fails, the file decodes in software for the
    rest of the session. A stream above 10 bits starts in software.
 8. **No loops.** When the app turns its loops off, the still keeps its play stamp.
+9. **On screen only.** An app decodes the first frame and the loop of a video or an animation only
+   when its box is on screen, never ahead for a loaded window (the maintainer, 2026-11-19).
 
 The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The tests that
 start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*`

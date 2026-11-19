@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-19
-- Commit: fbd2880
+- Commit: 648f0f2
 - Done: phase 4 steps 1 to 4 in the crate: `terminal` (session, panic hooks, start query, late
   answers), the multi-line `TextField` with the key map and the editor, `draw_text_field`,
   `dialog_rect`, `pane_inner`, the question row, `frame::Layout` (maximal default), the omnibox.
@@ -17,8 +17,8 @@
 - Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
   `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`.
 - Open (user): the codeberg repository and `rev` versus `branch` for phase 5.
-- Health: `just check` green (588, 124 and 489 tests, audit clean); all four apps passed against
-  `fd9b703` and later report green in their sessions; no live herdr worker in tuilibr.
+- Health: `just check` green (588, 124 and 489 tests, audit clean); `just lints-diff` shows no
+  drift in the four apps; no live herdr worker in tuilibr.
 - Rules of today: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
@@ -138,7 +138,7 @@ the docs, not from a line-by-line comparison:
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
 | 4c | One highlight in every app: the white of the palette. | none | done: tuilibr `ff0396f`, agendr `94e9522`, phewr, youtr and schnattr pass `just apps-check` from `69bb2ae` |
 | 4 | The other shared parts move, one at a time: the terminal setup, the multi-line TextField with the composer, the question row, the layout and the omnibox, the time module. | phase 3 | crate done (steps 1 to 5, tuilibr up to `6624786`); the apps switch in their sessions |
-| 4d | The animated previews: the loops move from phewr into `pictures::motion`; schnattr shows them. | phase 4 | crate and phewr done (tuilibr `fd9b703`, `f79438c`; phewr `82428d8`); schnattr timeline running; TGS waits for real stickers |
+| 4d | The animated previews: the loops move from phewr into `pictures::motion`; schnattr shows them. | phase 4 | done: tuilibr `fd9b703`, `f79438c`; phewr `82428d8`; schnattr `12fc732`, `f7f66d1`, `c67eb7d`; TGS waits for real stickers (`## Later`) |
 | 5 | The build for other people: a git dependency with a `rev`. | the maintainer (2026-11-19): when tuilibr is done and halfway stable, after phase 4 | open |
 
 ### Phase 0: the crate with the frame (done)
@@ -1007,6 +1007,12 @@ ffmpeg on PATH, a cell keeps its still and its play stamp, and the loop job ends
   workers.
 
 #### The schnattr side of phase 4d (schnattr-2b, 2026-11-19, from a read-only survey)
+
+State (2026-11-19): done in schnattr. The adapters keep the moving media (`12fc732`), the timeline
+shows stills and loops (`f7f66d1`), the Live Photo motion loops and received SVG files are safe
+for `sips` (`c67eb7d`). A received video decodes only when its card is on screen (the
+maintainer). Open: TGS stickers wait for the `tlottie` spike; no real Live Photo and no real video
+loop has run in a terminal yet.
 
 What arrives today. `Attachment.mime` is the mime of the network, unchanged. `is_image()` is
 `image/*` without svg, `is_video()` is `video/*` (`schnattr/src/model/message.rs:109-115`).
