@@ -356,11 +356,17 @@ stays as a `const fn` that returns `Color::White`.
   contrast of 2.4, the Gray second row on the unfocused selection 1.85.
 - `selected_pill()`: on the selected focused row the pill turns around, accent text on black.
   `draw_entry` uses it. An app that draws its own pill with `frame::pill()` uses
-  `selected_pill()` on the selected focused row.
+  `selected_pill()` on the selected focused row. Changed on 2026-11-19 on the request of the
+  maintainer: the pill is black on the normal green (slot 2) on every row, `selected_pill()`
+  returns `pill()`. A count is a mark, not the active state. The API stays.
 - The focused pane box takes the accent. The pane without the focus keeps `Color::DarkGray`
   (slot 8). The help headings stay `Color::Yellow`, they are no highlight.
 - herdr draws its active tab in the same white block, its rows in the grey tints `#39332e` and
   `#474039`.
+
+The unread pill is a mark, not a highlight (the maintainer, 2026-11-19, later the same day): black
+on the normal green of the palette (slot 2) on every row. `selected_pill()` returns `pill()`, so the
+API stays, and schnattr keeps its call.
 
 The rule for every app: a highlight of the active state goes through `frame::selection()`,
 `frame::unfocused_selection()`, `frame::pill()`, `frame::selected_pill()` or `frame::accent()`,

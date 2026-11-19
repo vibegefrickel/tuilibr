@@ -40,21 +40,20 @@ pub fn secondary(selected: bool, _focused: bool) -> Style {
     if selected { Style::default() } else { dim() }
 }
 
-/// The count as a pill on the right edge of a plain row: the dark of the palette on the accent.
+/// The unread count as a pill on the right edge of a row: the dark of the palette on the normal
+/// green (slot 2), the dimmer of the two greens. A count is a mark, not the active state, so it
+/// takes no accent and reads on every row ground.
 pub fn pill() -> Style {
     Style::default()
         .fg(Color::Black)
-        .bg(accent())
+        .bg(Color::Green)
         .add_modifier(Modifier::BOLD)
 }
 
-/// The count as a pill on the selected row of a focused pane: the pill turns around, the accent
-/// on the dark, because the row ground is the accent.
+/// The count as a pill on the selected row of a focused pane. The green differs from the accent
+/// ground of the row, so the pill keeps its look there.
 pub fn selected_pill() -> Style {
-    Style::default()
-        .fg(accent())
-        .bg(Color::Black)
-        .add_modifier(Modifier::BOLD)
+    pill()
 }
 
 /// The ground of the bar, as the status line of vim: the black of the palette, which a theme
