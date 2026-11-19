@@ -11,8 +11,10 @@ mod clock;
 mod entry;
 mod header;
 pub mod help;
+mod layout;
 pub mod lines;
 mod pictures;
+mod question;
 pub mod split;
 mod style;
 mod text;
@@ -28,8 +30,10 @@ pub use header::{HEADER_ROWS, HeaderAreas, draw_dimmed_header, draw_header};
 pub use help::{
     COLUMN_GAP, HelpView, Section, column_rows, dialog_box, dialog_rect, draw_help, section_lines,
 };
+pub use layout::{Layout, UnknownLayout};
 pub use lines::{dim_pane, divider, join_rule, pane_box, pane_inner};
 pub use pictures::{CellSize, Pictures, Shade};
+pub use question::{Choice, QuestionView, draw_question, question_answer};
 pub use split::{split, split_boxed};
 pub use style::{accent, dim, pill, secondary, selected_pill, selection, unfocused_selection};
 pub use text::{display_width, spans_width, spread, truncate_start, truncate_width};

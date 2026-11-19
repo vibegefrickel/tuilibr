@@ -137,3 +137,18 @@ fn pane_inner_is_the_inner_area_of_pane_box() {
         assert_eq!(super::super::pane_inner(area), drawn_inner, "{area:?}");
     }
 }
+
+#[test]
+fn the_layout_is_maximal_by_default_toggles_and_reads_its_name() {
+    use super::super::{Layout, UnknownLayout};
+    assert_eq!(Layout::default(), Layout::Maximal);
+    assert_eq!(Layout::Maximal.toggled(), Layout::Minimal);
+    assert_eq!(Layout::Minimal.toggled(), Layout::Maximal);
+    assert_eq!("maximal".parse::<Layout>(), Ok(Layout::Maximal));
+    assert_eq!(" Minimal ".parse::<Layout>(), Ok(Layout::Minimal));
+    assert_eq!(
+        "boxed".parse::<Layout>(),
+        Err(UnknownLayout("boxed".to_owned()))
+    );
+    assert_eq!(Layout::Minimal.to_string(), "minimal");
+}

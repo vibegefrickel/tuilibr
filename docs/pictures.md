@@ -227,6 +227,38 @@ closed both on 2026-11-17 without a code change:
   with an ICC profile. moxcms 0.9.1 truncated its output curves, so the crate needs 0.9.2 or
   later.
 
+### The test run of the maintainer (the open module tests, as a checklist)
+
+The tests need a real terminal. Run each app from a shell in the terminal named, note the result
+next to the item, and send the notes to the tuilibr session. "Green" means: no picture stays
+away, no key is lost, and the start takes no longer than in plain Ghostty.
+
+1. **The start in herdr.** Open schnattr and phewr in a herdr pane and in plain Ghostty, four
+   times each. Measure the time from the command to the first frame with the clock of the bar.
+   The two times must agree within the blink of a cursor: the DA1 answer ends the start read,
+   and the grace after it is 100 ms at most. A slow start in herdr means that the read waits for
+   the probe timeout (300 ms) or longer: note the app and the time.
+2. **The grid icons in herdr.** In phewr, a folder with files that have no thumbnail. herdr
+   answers OSC 10, so the icons must come as the SVG icons in the text colour. Octant icons mean
+   that the OSC 10 answer did not come in time.
+3. **The late OSC 10 answer.** In phewr in herdr, press Alt+`]`, then `j` two times. The cursor
+   must move down two rows. When it does not move, herdr still owes the OSC 10 answer of the
+   start and the filter eats the keys. Press Alt+`\` to end the owed answer, then the keys work
+   again; note it.
+4. **The loss limit.** In Ghostty, set `image-storage-limit` below 128 MB in the Ghostty config
+   (for example 64 MB), open phewr on `~/Pictures/iphone-20250401`, scroll ten pages. The
+   transfers must stop after three lost pictures in ten seconds, and come back ten seconds
+   later. Remove the setting after the test.
+5. **The scenarios of phase 7**, for phewr and schnattr, in Ghostty and in Ghostty inside herdr:
+   the first start, ten scrolls up and down, a resize of the window, a focus change to another
+   app and back, the help overlay open and closed, a folder or a chat with more than 500
+   pictures (`~/Pictures/iphone-20250401`, 678 pictures), the quit. No picture may stay away after
+   any of them.
+6. **The RGBA fast path for herdr**, measure before any code: `python3
+   ~/Projects/dev/kitty-frames-ack.py grid 24`, `grid 32`, `frames 24`, `frames 32`, in plain
+   Ghostty and in a herdr pane. When `grid 32` is not faster than `grid 24` in herdr, the idea is
+   dead and the item closes.
+
 ### Decisions of the maintainer about the module
 
 - The self check (`q=1`) is on by default, because herdr passes the `ENOENT` answers through

@@ -405,7 +405,9 @@ The order of the maintainer (2026-11-19):
    `text_field::editor::edit_text` with the terminal lent as for the picker. The two render tests
    and every snapshot stayed unchanged, so the wrap of the crate agrees with the ratatui wrap.
    1 387 tests, schnattr `a20b961`. agendr follows with its entry box.
-3. The shared confirm body for the dialog boxes.
+3. The shared question in the status row (the maintainer, 2026-11-19: one form everywhere, as
+   schnattr has it). State: in review, the schnattr session asked for four changes (`y` only, a
+   focus guard, `No` and `Cancel` apart with no answer on a release, the answers never cut).
 
 One part per step, pure motion first, then the feature. Each step names the app that gives the
 code and the apps that take it. The candidates are the duplicates above. The first step is the
@@ -603,8 +605,141 @@ The code is in the crate since 2026-11-19: `src/text_field.rs` (the grown type, 
 schnattr composer (`compose.rs`, `draw_draft`, `draw_typed`) and the agendr notes box with the
 `external_editor` module gone.
 
-The omnibox of schnattr (`ui/composer.rs`: a question, a typed line, a status text or a draft
-under the bar) is a candidate when a second app wants the command line of vim.
+#### Step 3: the confirm question, compared and proposed (tuilibr session, 2026-11-19)
+
+| App | Where | The question | The answer |
+|---|---|---|---|
+| schnattr | the status row of the omnibox | `Question { ask, shown }`, `prompt()` gives `"<what>? y/n"` | the very next key or click answers; `y` confirms, every other key is no |
+| youtr | the status row, mode `CONFIRM` in red | `Overlay::Confirm(videos)` | `y` confirms, every other key cancels |
+| agendr | three dialog boxes (`draw_discard_confirm`, `draw_delete`, `draw_recurring_scope`) | the question as the body, the answers as the hint of the box | `Y`/Enter confirm, `N`/Esc cancel, Esc continues editing in the three-way box |
+
+The maintainer (2026-11-19): one form, the status row everywhere, as schnattr has it. agendr moves
+its three boxes into its footer row.
+
+The proposal, amended with the review of agendr (keyed answers, a stray key answers nothing):
+
+```rust
+// tuilibr::frame
+pub struct QuestionView<'a> { pub text: &'a str, pub answers: &'a [(char, &'a str)], pub cancel: &'a str }
+// "unsaved changes" with [('y', "save"), ('n', "discard")]; the row shows "unsaved changes · y save · n discard · esc keep"
+pub fn draw_question(frame: &mut Frame<'_>, area: Rect, view: &QuestionView<'_>);
+// one row: the text, then each answer as the key in bold and the label in the dim style, then "esc" with the cancel label, cut to the row
+pub enum Choice { Picked(usize), Cancel }
+pub fn question_answer(key: &KeyEvent, view: &QuestionView<'_>) -> Option<Choice>;
+// the index of the pressed answer key (case does not matter), Cancel on Esc, None for every other key or a release: the question stays
+```
+
+The rule: the question stays until an answer key or Esc comes. An app that wants "every other key
+is no", as schnattr and youtr do today, maps `None` to its no in one line. A destructive no (the
+discard of agendr) stays behind an explicit `n`. Enter answers nothing, because it is the key of
+habit. The confirm is the case with the answers `y` and `n`, the recurring-scope chooser of agendr
+the case with `1` and `2`, so one type covers both. The texts stay app code; the row is the status
+row of the app (the omnibox of schnattr, the bar area of youtr, the footer of agendr). The cancel
+label is the third field of the view: `QuestionView { text, answers, cancel: &str }`, empty when
+Esc has no label.
+
+Step 3 is in the crate (2026-11-19): `frame::QuestionView { text, answers, cancel }`,
+`frame::draw_question` (the parts set apart by two spaces as in the bar, the keys bold, the labels
+dim, the text gives way and the answers stay whole, the area as given) and
+`frame::question_answer(&KeyEvent, &QuestionView) -> Option<Choice>` with `Choice::Picked(index)`
+and `Choice::Cancel`; an answer key matches as it is, without Ctrl or Alt, a release gives
+`None`. The reviews of schnattr, youtr and agendr are in. The apps switch: schnattr drops `? y/n`
+from its texts and maps `None` to its no, youtr the same with `('y', "mark")` and `cancel: "keep"`,
+agendr moves its three boxes into the footer row, the scope chooser with `('1', ..)` and
+`('2', ..)`.
+
+#### Step 4: the layout of schnattr is the master (the maintainer, 2026-11-19)
+
+The bar, the omnibox and the two-pane layout of schnattr are the one layout of every app:
+
+- The omnibox (`schnattr/src/tui/ui/composer.rs`): the rows under the bar that show one thing at a
+  time, a question, a typed line with the prompt and the cursor, a status text in gray or red, or
+  the multi-line draft. It moves into the crate as `frame::omnibox`, built on `draw_question`,
+  `draw_text_field` and the status text; schnattr-2b writes the interface, as code motion of its
+  omnibox. agendr takes it for its footer row, youtr for its message row and its filter input,
+  phewr gets one (the status row and the questions of phewr move into it).
+- The two-pane layout (`split`, `split_boxed`, `pane_box`, `divider`, `dim_pane`): schnattr and
+  youtr have it, agendr has it in the Calendar Manager, phewr takes it for the additional info of
+  a picture with its tab, the info as the left pane.
+
+The inventory of phewr for step 4 (phewr-89, 2026-11-19), so the interface fits a viewer:
+
+- Omnibox: phewr asks no question. It shows one thing at a time in its status row: the search
+  line while typing (`/query` with the cursor and `n/m matches`; Enter applies, Esc clears), a
+  status note in gray (cleared by the next key), an error in red (a failed decode or player open,
+  an unreadable folder). A note can be long and needs the cut that keeps its start or its end.
+  The slideshow keeps its badge and shows no omnibox. The mode block stays in the bar.
+- Two panes: the info panel of phewr is a right column today (`ui::split_info`, a third of the
+  width at most, none below 20 columns, toggled by Tab and the right click) with the EXIF facts
+  of the file under the cursor. With `split_boxed`, `pane_box` and `dim_pane` it becomes the left
+  pane and the grid or the picture the main pane; the Kitty placements follow the main pane rect,
+  and the click areas move with it. Rule to keep: a popup or a pane change deletes the Kitty
+  pictures first, because Kitty draws above the text.
+
+#### Step 4: the omnibox interface (schnattr-2b, 2026-11-19, for the review of tuilibr-82)
+
+The omnibox is code motion of `schnattr/src/tui/ui/composer.rs`: the drawing moves into
+`tuilibr::frame::omnibox`, and the choice of what to show stays in the app. Since step 3 and the
+`TextField` switch, the schnattr omnibox draws only through the crate already (`draw_question`,
+`draw_text_field`), so the move is small.
+
+```rust
+// tuilibr::frame::omnibox
+/// The one thing that the omnibox shows. The app picks it, in its own order (schnattr: a
+/// question, a typed line, the status text while the draft is not typed in, else the draft).
+pub enum OmniboxView<'a> {
+    /// A question with its answers, one row (`draw_question`).
+    Question(QuestionView<'a>),
+    /// One typed line: the command line, a finder, a search. The end of the text stays in view.
+    Typed {
+        prompt: Span<'static>,      // `❯ ` in schnattr, `/` in phewr
+        field: &'a TextField,
+        right: Option<Span<'a>>,    // `3/17 matches` in phewr, drawn dim at the right edge
+        cursor: bool,               // false while the line shows results and takes no text
+    },
+    /// A status text in one row.
+    Status { text: &'a str, tone: Tone, keep_end: bool },
+    /// The multi-line draft: the rows wrap, the prompt shows on the first row while that row is
+    /// in view and keeps its columns as the indent of the other rows.
+    Draft { prompt: Span<'static>, field: &'a TextField, cursor: bool },
+}
+
+/// The tone of a status text: the gray of a note (`frame::note()`, `Color::Gray`), or the red of
+/// an alert (`frame::alert()`, `Color::Red`). No app writes the colour itself.
+pub enum Tone { Note, Alert }
+pub fn note() -> Style;   // in tuilibr::frame::style, next to dim()
+pub fn alert() -> Style;
+
+/// The rows that `view` needs at `width`: 1, except a draft, which needs its wrapped rows. The
+/// app clamps the result to its room (schnattr: `max_input`).
+pub fn omnibox_rows(view: &OmniboxView<'_>, width: u16) -> u16;
+
+/// Draws `view` into `area` with one column of right padding, and sets the terminal cursor when
+/// the view takes text. Returns the cursor cell.
+pub fn draw_omnibox(frame: &mut Frame<'_>, area: Rect, view: &OmniboxView<'_>) -> Option<Position>;
+```
+
+The rules that move with it:
+
+- Review of tuilibr-82, agreed by schnattr-2b: `Tone` maps through `note()` and `alert()`; the
+  prompt of `Typed` is dimmed while `cursor` is false, as the prompt of `Draft` (one intended
+  visible change: the schnattr search snapshots, accepted with the switch); the right padding of
+  one column is documented on `draw_omnibox`; `omnibox_rows` gives at least 1.
+- `Status` cuts to the row: from the end with `truncate_width`, or from the start with
+  `truncate_start` when `keep_end` is true (a long path or a long error whose end matters).
+- `Typed` with `right`: the right text takes its cells first, the field gets the rest, and the
+  field window keeps the cursor in view (`Rows::One`). Without `right`, the row is the field only.
+- `Draft` is `draw_text_field` with `Rows::Wrapped` and the prompt dimmed while `cursor` is false.
+  `omnibox_rows` uses the same `wrap` at the same width as the draw, so the measure and the draw
+  never disagree.
+- The one column of right padding is part of the omnibox, not of the app.
+
+What stays in each app: which view to show and when, the status texts and their expiry, the
+question types and their answers, the key handling, the height clamp, and where the omnibox sits
+(schnattr: the last rows under the bar). The move is pure motion for schnattr: every snapshot
+stays. The tests that move: the `tail_width` case (now a `visible` test) and the cursor cases of
+the two render tests stay in schnattr as the acceptance, plus new unit tests in the crate for
+`omnibox_rows`, the `right` text and the two cut directions.
 
 `TextField` is the one new part. agendr builds `src/text_field.rs` in its own tree first: a
 character cursor on a `String`, insert, word moves, Ctrl-W, Ctrl-U, Ctrl-K and a `visible(width)`
@@ -673,6 +808,29 @@ and the tools; the decisions and the state:
   unsets the local `core.hooksPath` of schnattr and agendr.
 
 ### Phase 5: the build for other people
+
+The recipe, ready for the day the repository exists on codeberg (tuilibr session, 2026-11-19):
+
+1. The maintainer creates `ssh://git@codeberg.org/webgefrickel/tuilibr.git` and pushes `main`.
+2. Each app replaces its path dependency with the git form and the commit it builds against:
+   `tuilibr = { git = "ssh://git@codeberg.org/webgefrickel/tuilibr.git", rev = "<sha>", features = [..] }`,
+   the dev-dependency the same with `features = ["test-support"]`. `deny.toml` of the app allows
+   the source: `[sources] allow-git = ["ssh://git@codeberg.org/webgefrickel/tuilibr.git"]`
+   (phewr forbids git sources today, so phewr changes that line).
+3. The maintainer keeps the local work on the path through one `[patch]` entry in
+   `~/.cargo/config.toml`, outside every repository:
+   `[patch."ssh://git@codeberg.org/webgefrickel/tuilibr.git"]`
+   `tuilibr = { path = "/Users/webgefrickel/Projects/dev/tuilibr" }`.
+   With the patch, cargo builds the working tree of tuilibr as before, and the herdr worktree
+   symlinks become unnecessary, because the path is absolute.
+4. A reader who clones one app gets the commit named by `rev`. Each tuilibr commit that an app
+   needs gets its `rev` bump in the app, a one-line commit.
+5. The `apps-check` recipe of tuilibr stays as it is: it runs `just check` in the sibling
+   checkouts, which build the patched path.
+
+Open before the switch: the codeberg repository, and the decision whether the apps pin a `rev`
+(exact, as proposed) or a `branch = "main"` (floating, each app build fetches the newest commit).
+
 
 The maintainer (2026-11-19): phase 5 comes when tuilibr is done and halfway stable, that is after
 phase 4. Until then the apps build against the main tree of tuilibr, and that tree compiles at
