@@ -824,6 +824,140 @@ and the tools; the decisions and the state:
   merge.sh. The apps drop their `.githooks/pre-commit` and the `hooks` recipe, the maintainer
   unsets the local `core.hooksPath` of schnattr and agendr.
 
+### Phase 4d: the animated previews move into the picture module (inventory of the phewr session, 2026-11-19)
+
+The maintainer wants schnattr to show animated previews in its chat timeline, like the grid loops
+of phewr: videos, GIFs, Live Photos and the other animations. The `l` and `o` keys of schnattr
+still open the file in phewr. schnattr also shows every image format that it can receive. The loop
+machinery is phewr app code today, so it moves into `tuilibr::pictures` as a new module, the way
+the decoders moved in phase 3. This section is the inventory of phewr at `9a982b4`. The tuilibr
+session decides the interface, builds it in a worktree, and a phewr worker switches.
+
+#### What the loops are made of today (phewr, with the line counts and the tests)
+
+| Part | Where in phewr | Lines | Kind |
+|---|---|---|---|
+| The loop frames: 12 keyframes of a video, the frames and delays of an animation, the caps, the even pick, `merge_repeats` | `src/grid_loop.rs` (`decode_loop`, `session_loop`, `seek_points`, `pick_evenly`, `animation_fps`, `merge_repeats`) | 654 | module |
+| The video probe: ffprobe JSON, `VideoInfo`, `Rate`, `Samples`, `Chroma`, the probe cache by path, mtime and length | `src/player/probe/` (`probe`, `probe_cached`, `probe_peek`, `seed_probe`, `parse/`) | 786 | module |
+| The ffmpeg runs: the command lines (`args`, `loop_args`, `first_frame_args`, `LoopSampling`, `cube_for`, `pixel_format`), the subprocess with the frame pipe (`SystemDecoder`, `FrameStream`, `PooledFrame`), `Pipeline` with the GPU and software fallback (`with_fallback`), the `Decoder` trait | `src/player/decoder/` | 1129 | module |
+| The HDR tone map cubes for HLG and PQ (`CUBE_VERSION`, the 3D cube files in the cache folder, the math that the HDR stills of the module copy) | `src/player/tone_map/` | 536 | module |
+| The animation header check of GIF, WebP, APNG and AVIS (`is_animated`, `has_animation_extension`, `embedded_primaries`) | `src/player/animation.rs` | 336 | module |
+| The frame box: the size of a frame for a box of cells (`frame_box`, `frame_limit`, `cell_box`) | `src/player/layout.rs` | 125 | module |
+| The first frame of a video as the still of its cell (`decode_first_frame`, `convert_first_frame`, `first_frame_cube`, `FIRST_FRAME_TIMEOUT`, `is_video`, `Tools`, `find_session_tools`, `session_decoder`, `CubeDirs`) | `src/video/mod.rs` | 184 | module |
+| The loop file of the disk cache: `PHEWRLP1`, the frame count, the still size, per frame the time in microseconds and the QOI bytes, `LOOP_CACHE_VERSION` `phewr-loop-v1` | `src/app/disk_cache/loop_file.rs` (`try_load_loop`, `try_save_loop`, `encode_loop_file`) | about 120 | module |
+| The clock of a loop with ticks: 12 ticks per second, the frame of a cell at a time (`CellLoop`, `TICKS_PER_SECOND`) | `src/app/grid_loops/cell.rs` | 189 | module |
+| The Kitty output of a loop: a frame placed with `Loops::Ticks`, the Kitty animation with `Loops::Animation` (`transmit_frame_to`, `animate_to`, the usage hint `N=1`) | `src/kitty_output/loops/mod.rs` (`place_loop_frame`, `play_grid_loops_to`, `send_grid_loops_to`); `Loops`, `transmit_frame_to`, `animate_to` are in `tuilibr::pictures::kitty` since phase 3 | 196 | module (the per-frame write), app (the grid order) |
+| The loop state of the grid: which cells loop, the jobs, the loop image ids from `LOOP_ID_BASE` (`1 << 31`) with the wrap that skips live ids, `LoopFrames`, `GridLoops` | `src/app/grid_loops/mod.rs`, `jobs.rs` | 511 | split: `LoopFrames` and the id allocator are module, the cell list and the jobs per visible cell stay app |
+| The terminal player: real time, the frame queue, `catch_up`, the prestart, the mpv window | `src/player/mod.rs` (`Player`, `Frame`), `src/video_handoff/` | about 3400 | app |
+| The Live Photo pairing of a folder scan, the content identifiers | `src/scanner/live/` | 634 | app (the module gets the motion path, it pairs nothing) |
+| The fakes of the tests: `FakeDecoder` (a decoder without a process), `FakeRunner` (an mpv without a window), `fake_decoder` | `src/test_support/video.rs` | 405 | `FakeDecoder` is module behind `test-support`, `FakeRunner` stays app |
+
+The module part is about 4200 lines without tests. The tests of these files are about as much
+again (`grid_loop.rs`, `kitty_output/loops/tests.rs`, `app/grid_loops/tests.rs`, `video/tests.rs`,
+the tests of `player/probe`, `player/decoder` and `player/tone_map`).
+
+#### What the module needs from an app
+
+- The ffmpeg and ffprobe programs. phewr looks them up one time in `main` (`find_session_tools`,
+  `yazi::find_on_path`), and the tests never do. The module takes the two paths from the app, or
+  an app-level `Tools` value, and holds no PATH lookup of its own, so a test passes a fake.
+- A cache folder for the loop files and for the tone map cubes. The module has no default folder,
+  like `disk_cache::thumbnail_dir_below` today. The loop cache version takes the app name like the
+  thumbnail key (`<app>-loop-v1`), so the cache of phewr stays warm.
+- The box of a cell in pixels (`thumb_target_px` of the module) and the colour target
+  (`decode::color::target`). The loop frames take the first-frame chain at half the size of the
+  grid picture, and the terminal scales them to the cells of the still.
+- The transfer and the loop mode of the start probe (`KittyBackend`, `Loops`), and the image ids:
+  the app owns the id space, the module allocates loop ids inside a range that the app gives it.
+- A cancel flag per job (`AtomicBool`, polled every 20 ms) and a thread pool. phewr runs the loop
+  jobs on its own threads and counts a running job as background work (`App::has_pending_work`).
+  The module returns frames, it starts no thread.
+- For a Live Photo, the path of the motion. The pairing stays in the app (phewr pairs a folder,
+  schnattr gets the two files of one message).
+
+#### The feature question
+
+The loops run the ffmpeg and ffprobe programs at run time and link no FFmpeg library. By the
+rule "a feature gates a native library or a measured build cost, nothing else", they need no
+feature. The one dependency that phewr gates today is `serde_json` for the ffprobe JSON (phewr
+feature `video = ["dep:serde_json", "dep:moxcms"]`); `moxcms` is in the crate already. The
+tuilibr session decides whether `serde_json` alone is a build cost worth a feature. Without
+ffmpeg on PATH, a cell keeps its still and its play stamp, and the loop job ends with no frames.
+
+#### Tests and fixtures that move
+
+- `tests/fixtures/anim.avif`, `anim.gif`, `anim.png`, `anim.webp` and their part of the root
+  `make.sh` (the animations), and `tests/fixtures/video/` (`hdr10-container.mp4`, `hdr10-sei.mp4`,
+  `hlg12-prores.mov`, `pq12-hevc.mp4`, its `make.sh`). Both stayed in phewr in phase 3. The phewr
+  tests of the player use the video fixtures too, so phewr reads them through
+  `module_fixture` after the move, like the stills of phase 3.
+- The real-file tests read `PHEWR_TEST_SDR_VIDEO`, `PHEWR_TEST_HDR_VIDEO` and
+  `PHEWR_TEST_LIVE_DIR`. The module tests read `TUILIBR_TEST_*`; the Live folder tests of the
+  pairing stay in phewr.
+- A real ffmpeg playback test uses a virtual clock that jumps to each due frame, and its wall-time
+  twin is `#[ignore]`. No test starts a real ffmpeg, ffprobe or mpv outside the ignored real-file
+  tests: the module tests use `FakeDecoder`.
+- The benches `src/bench/loops.rs` and `src/bench/video.rs` stay in phewr and call the module
+  through the pub API (`docs/benchmarks.md` of phewr: 30 looping cells cost about 3 % of one core,
+  every Live cell loops after 1435 ms with Kitty animations and 1595 ms with ticks).
+
+#### The rules of the loops that move with the code
+
+- herdr gets the ticks without the animation probe: herdr 0.9.5 answers the probe itself but plays
+  no Kitty animation (maintainer, 2026-11-03). `is_herdr` and `chosen_loops` are in the crate
+  since phase 3. An app override (`PHEWR_KITTY_LOOPS`, `[gallery] loops`) wins.
+- With `Loops::Animation`, every frame goes out with the usage hint `N=1`. With `Loops::Ticks`, no
+  `N` key goes out, because the protocol does not say that a terminal keeps an unplaced image.
+- The frames go out as RGBA as they are, `Pixels::opaque_rgb` copies an opaque frame.
+- A lost frame of a visible loop gives the still and a new transfer of the loop (the self check),
+  and the trim of the terminal storage keeps every frame of a visible loop.
+- A video loop: 12 frames over the whole clip, 333 ms each, one keyframe run (`-skip_frame nokey`,
+  0.11 s to 0.26 s for 4K), a constant-rate run for a clip of at most 20 s with fewer than 12
+  keyframes, 12 seek points for a clip above 60 s. An animation: at most 48 frames and 12 fps, at
+  least one frame per minute, `merge_repeats` joins equal frames. A file whose GPU run failed
+  decodes in software for the rest of the session. A stream above 10 bits starts in software.
+- `[gallery] animate = false` turns the loops off, and the still keeps its play stamp.
+
+#### Order
+
+1. The tuilibr session decides the interface (the inputs above, `LoopFrames` as the output, the
+   `Decoder` trait as the seam of the tests) and builds the module in a worktree of tuilibr, with
+   the fixtures and the `FakeDecoder` behind `test-support`.
+2. The maintainer commits tuilibr.
+3. A phewr worker switches phewr: `grid_loop.rs`, `player/{probe,decoder,tone_map,animation,layout}`,
+   `video/`, `app/disk_cache/loop_file.rs`, `app/grid_loops/cell.rs` and the per-frame part of
+   `kitty_output/loops` go, the imports become `tuilibr::pictures::...`, the player and the grid
+   keep their app code. phewr keeps the `video` feature for the player and the mpv window.
+4. schnattr takes the module for its timeline.
+
+#### The interface (the decisions of the tuilibr session, 2026-11-19)
+
+- One module `tuilibr::pictures::motion` for everything that moves: `probe` (ffprobe, `VideoInfo`,
+  the probe cache), `decoder` (the `Decoder` trait as the seam of the tests, `SystemDecoder`,
+  `FrameStream`, `PooledFrame`, `Pipeline` with the GPU and software fallback), `tone_map` (the
+  HLG and PQ cubes), `animation` (the header check), `frame_box`, `first_frame`, `loop_frames`
+  (the 12 keyframes, the animation frames, the caps, `merge_repeats`, `LoopFrames`), `loop_file`
+  (the loop file of the disk cache), `clock` (`CellLoop`, `TICKS_PER_SECOND`) and `loop_ids` (the
+  allocator inside a range that the app gives). The per-frame Kitty write joins
+  `pictures::kitty` next to `transmit_frame_to` and `animate_to`.
+- `motion::Tools { ffmpeg: PathBuf, ffprobe: PathBuf }` comes from the app. The module holds no
+  PATH lookup; each app finds the programs one time at start and passes them. No ffmpeg, no
+  loop: the cell keeps its still.
+- The loop cache version takes the app name: `<app>-loop-v1` through `names::app_name()`, so the
+  cache of phewr stays warm. The cube folder and the loop folder come from the app, below its
+  cache root.
+- `serde_json` joins the `pictures` feature, no feature of its own: one small pure Rust crate,
+  and every app with pictures builds it anyway. phewr keeps its `video` feature for the player and
+  the mpv window, which stay app code.
+- The module starts no thread: a job returns frames, the app runs it on its pool, with its cancel
+  flag (`&AtomicBool`).
+- `FakeDecoder` sits behind `test-support`. The fixtures `anim.*` and `video/` move to
+  `tuilibr/tests/fixtures/`, phewr reads them as module fixtures. The real-file variables become
+  `TUILIBR_TEST_SDR_VIDEO` and `TUILIBR_TEST_HDR_VIDEO`; the Live folder test stays in phewr.
+- The move is code motion from phewr `9a982b4` (or the newest phewr main), in a worktree of
+  tuilibr, landed in one compiling step; the phewr switch and the schnattr timeline follow as
+  workers.
+
 ### Phase 5: the build for other people
 
 The recipe, ready for the day the repository exists on codeberg (tuilibr session, 2026-11-19):
