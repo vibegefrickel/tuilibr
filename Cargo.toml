@@ -146,6 +146,9 @@ assert_is_empty = "allow"
 # The frame and the terminal import these and std. crossterm: the session sets the modes of the
 # terminal, and the Kitty layer reads the answers of the terminal as the key events of crossterm.
 crossterm = "0.29"
+# The texts of `time`: the age, the date and the time of the bar. The apps use jiff 1 with its
+# default features.
+jiff = "1"
 ratatui = "0.30"
 unicode-segmentation = "1"
 unicode-width = "0.2"

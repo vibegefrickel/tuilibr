@@ -958,6 +958,53 @@ ffmpeg on PATH, a cell keeps its still and its play stamp, and the loop job ends
   tuilibr, landed in one compiling step; the phewr switch and the schnattr timeline follow as
   workers.
 
+#### The schnattr side of phase 4d (schnattr-2b, 2026-11-19, from a read-only survey)
+
+What arrives today. `Attachment.mime` is the mime of the network, unchanged. `is_image()` is
+`image/*` without svg, `is_video()` is `video/*` (`schnattr/src/model/message.rs:109-115`).
+`MsgKind` has no animation kind. `Attachment.thumbnail` exists, only Slack fills it, and the TUI
+never reads it.
+
+| Network | Video | GIF | Animated sticker | Live Photo | Today in the timeline |
+|---|---|---|---|---|---|
+| Signal | `video/*`, whole file | sent as `video/mp4`, the GIF flag is not read | `MsgKind::Sticker` with no attachment: the sticker data pointer is never converted | none | video and GIF: a card; sticker: nothing but the header line |
+| WhatsApp | `video/*`, whole file | `video/mp4`, `gif_playback` not read | `image/webp`, `is_animated` not read | none | video and GIF: a card; sticker: a still picture |
+| Telegram | `Media::Document`, live only, up to 20 MB, never on import | `video/mp4` document | static `image/webp` gets an attachment; TGS (`application/x-tgsticker`) and WebM (`video/webm`) get none, the body says `{emoji} (sticker)` | none | video and GIF: a card; static sticker: a picture; animated sticker: text only |
+| Slack | upload `video/*`; on import the first thumbnail as `image/jpeg` into `thumbnail` | `image/gif` upload; Giphy blocks are no attachment | none | none | video: a card (the fetched thumbnail is unused); GIF: its first frame |
+| iMessage | `video/quicktime`, waits for a download | `image/gif` | stickers as `image/*` | the HEIC still only, the `.MOV` companion is not read | video: a card; GIF: its first frame; Live Photo: the still |
+
+What does not decode today, with `turbo heic jxl sips`: animated WebP, GIF and APNG decode their
+first frame (the raster decoder has no frame API). TGS fails (no decoder, and no attachment
+reaches it). WebM fails (no video decoder, not `is_image`). A HEIC or AVIF sequence decodes its
+primary item through libheif, fails without one, and under `.heics` or `.avifs` the route is
+raster, then sips, not verified. SVG decodes through sips but never reaches it (`is_image`
+excludes svg). PDF decodes its first page through sips but never reaches it (not `image/*`).
+
+The steps for schnattr, after the module lands and phewr switched:
+
+1. The adapters keep what the networks send. Signal converts the sticker data pointer into an
+   attachment. WhatsApp keeps `gif_playback` and `is_animated`, Signal its GIF flag, as an
+   `Attachment` field (`animated: bool`, one store migration step). Telegram keeps TGS and WebM
+   stickers as attachments and fetches documents on import up to the photo limit when they are
+   GIFs or stickers. Slack shows its fetched video thumbnail. iMessage pairs the `.MOV` of a Live
+   Photo with its still (the pairing stays in schnattr, as the module wants).
+2. The TUI shows a still for each: the first frame of a video or a GIF through
+   `motion::first_frame`, the still of a Live Photo, SVG and PDF through sips (`is_image` takes
+   svg, a PDF page counts as a picture). TGS needs a Lottie renderer; no crate is in the plan, so a
+   TGS sticker shows its first frame only when one appears, else its emoji as now.
+3. The loops play where a picture sits in the timeline: the single message picture and each tile
+   of the grid of several pictures. Not in the header, not in the list, not on the `+N more` tile.
+   The rules of phase 4d hold: only loops on screen play, a cap of playing loops, the still as the
+   stand-in until the frames are ready, the loop leaves with its cell. schnattr runs `Loops::Ticks`
+   (herdr gets ticks), the 100 ms tick of the event loop drives them, and `pictures_wait` keeps
+   the tick drawing.
+4. What schnattr needs from the module: `motion::Tools` (schnattr has `voice.ffmpeg` already and
+   finds ffprobe next to it), a loop cache folder below `~/Library/Caches/schnattr/`, the frames of
+   a file (`loop_frames`), the ids inside a range that `ImageCache` gives, and the per-frame Kitty
+   write through its `Screen`. The jobs run on the decode pool of `ImageCache`, with a cancel flag
+   per job.
+5. `l`, `o`, Enter and Right still open the gallery (phewr). Nothing changes there.
+
 ### Phase 5: the build for other people
 
 The recipe, ready for the day the repository exists on codeberg (tuilibr session, 2026-11-19):
@@ -1099,6 +1146,9 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
   one step runs in a herdr worktree of tuilibr and lands in the main tree in one compiling step.
   On 2026-11-19 a restructure in the main tree broke the check and the commits of every app for
   a while.
+- A worker brief carries its repository as a prefix: `/tmp/<repo>-brief-<topic>.md`. On
+  2026-11-19 a phewr brief and a schnattr brief collided at `/tmp/brief-omnibox.md`, and the first
+  phewr worker read the schnattr task.
 - A herdr worktree lives in `~/.herdr/worktrees/<repo>/<branch>/`, so `../tuilibr` does not
   resolve there. Each repository that runs workers has one symlink
   `~/.herdr/worktrees/<repo>/tuilibr` to `~/Projects/dev/tuilibr`. schnattr has it since

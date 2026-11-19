@@ -7,12 +7,14 @@
 //! alternate screen, the modes, the panic hook), the start queries and the filter of the late
 //! answers. The crate knows no app type: an app fills plain view structs and places its pictures
 //! through the `frame::Pictures` trait. `cells` holds the saturating conversions between a
-//! text measure in `usize` and a cell count in `u16`.
+//! text measure in `usize` and a cell count in `u16`. `time` holds the texts of time on jiff: the
+//! relative age, the date and the time of the bar, the media length and the minute clock.
 
 pub mod cells;
 pub mod frame;
 pub mod terminal;
 pub mod text_field;
+pub mod time;
 
 #[cfg(feature = "pictures")]
 pub mod pictures;

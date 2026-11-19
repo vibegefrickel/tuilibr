@@ -29,11 +29,11 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 - **The lint table is the union of the tables of the apps.** Code that passes `just check` here
   passes in each app. Lints are in `Cargo.toml` and `clippy.toml`, not in attributes. A local
   exception is `#[expect(lint, reason = "...")]`, never a bare `#[allow]`.
-- **The frame imports `ratatui`, `unicode-width`, `unicode-segmentation` and `std`.** The picture
-  module sits behind the default feature `pictures` with `crossterm` (the Kitty answers come as
-  key events), `image`, `fast_image_resize`, `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru`
-  and `rustix`, and its decoders behind the features `turbo`, `heic`, `jxl` and `sips`. An app
-  that uses the frame only sets `default-features = false`. A feature gates a native library or a
+- **The frame imports `ratatui`, `crossterm`, `unicode-width`, `unicode-segmentation` and `std`;
+  the time module adds `jiff`.** The picture module sits behind the default feature `pictures`
+  with `image`, `fast_image_resize`, `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru` and
+  `rustix`, and its decoders behind the features `turbo`, `heic`, `jxl` and `sips`. An app that
+  uses the frame only sets `default-features = false`. A feature gates a native library or a
   measured build cost, nothing else. `test-support` is the one exception: it builds the test
   helpers for the tests of an app.
 - **The crate builds with no feature and with every feature, with zero warnings.** An app builds
@@ -58,6 +58,7 @@ src/frame/        the screen frame: split, lines, style, entry, header, bar, hel
                   pictures (the Pictures trait), tests/
 src/text_field/   the text input with a character cursor, the readline key map, the wrap, the editor
 src/terminal/     the session of the terminal, the panic hook, the start queries, the late answers
+src/time/         the relative age, the bar date and time, the media length, the minute clock
 src/pictures/     the picture module: decode, resize, shape, jobs, kitty, names, test_support
 tests/fixtures/   the fixtures of the picture module tests, each folder with its make.sh
 docs/pictures.md  the rules of the picture module and of the Kitty layer
