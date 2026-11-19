@@ -84,7 +84,7 @@ fn the_boxes_touch_beside_from_60_columns_and_stack_below_them() {
 }
 
 #[test]
-fn a_pane_box_is_rounded_with_its_title_and_green_only_with_the_focus() {
+fn a_pane_box_is_rounded_with_its_title_and_the_accent_only_with_the_focus() {
     let mut inner = Rect::default();
     let buffer = drawn(14, 3, |frame| {
         inner = pane_box(frame.buffer_mut(), Rect::new(0, 0, 7, 3), "A", true);
@@ -95,7 +95,7 @@ fn a_pane_box_is_rounded_with_its_title_and_green_only_with_the_focus() {
     assert_eq!(row(&buffer, 1), "│     ││     │");
     assert_eq!(row(&buffer, 2), "╰─────╯╰─────╯");
     for (x, y) in [(0, 0), (3, 0), (6, 1), (0, 2)] {
-        assert_eq!(buffer[(x, y)].fg, Color::Green, "({x}, {y})");
+        assert_eq!(buffer[(x, y)].fg, Color::White, "({x}, {y})");
         assert_eq!(buffer[(x + 7, y)].fg, Color::DarkGray, "({x}, {y})");
     }
 }
@@ -119,6 +119,21 @@ fn a_joined_rule_meets_the_sides_of_its_box_and_only_inside_it() {
     }
     let active = drawn(7, 4, |frame| join_rule(frame.buffer_mut(), area, 1, true));
     assert_eq!(row(&active, 1), "├─────┤");
-    assert_eq!(active[(0, 1)].fg, Color::Green);
-    assert_eq!(active[(3, 1)].fg, Color::Green);
+    assert_eq!(active[(0, 1)].fg, Color::White);
+    assert_eq!(active[(3, 1)].fg, Color::White);
+}
+
+#[test]
+fn pane_inner_is_the_inner_area_of_pane_box() {
+    for area in [
+        Rect::new(0, 0, 40, 10),
+        Rect::new(3, 2, 20, 5),
+        Rect::new(0, 0, 1, 1),
+    ] {
+        let mut drawn_inner = Rect::default();
+        drawn(area.right().max(1), area.bottom().max(1), |frame| {
+            drawn_inner = pane_box(frame.buffer_mut(), area, "list", true);
+        });
+        assert_eq!(super::super::pane_inner(area), drawn_inner, "{area:?}");
+    }
 }

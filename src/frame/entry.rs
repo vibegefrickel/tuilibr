@@ -11,7 +11,7 @@ use ratatui::{
 
 use super::{
     pictures::{CellSize, Pictures, Shade, place_centered},
-    style::{pill, secondary, selection, unfocused_selection},
+    style::{pill, secondary, selected_pill, selection, unfocused_selection},
     text::spread,
 };
 
@@ -106,7 +106,12 @@ fn title(entry: &EntryView, width: usize) -> Line<'static> {
     };
     let mut count = Vec::new();
     if entry.count > 0 {
-        count.push(Span::styled(format!(" {} ", entry.count), pill()));
+        let pill = if entry.selected && entry.focused {
+            selected_pill()
+        } else {
+            pill()
+        };
+        count.push(Span::styled(format!(" {} ", entry.count), pill));
     }
     // The selected name stays bold, so the open entry keeps its weight after its read.
     if entry.count > 0 || entry.selected {

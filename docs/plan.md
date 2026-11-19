@@ -5,8 +5,8 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `39ba87d`, schnattr `4879d62`, youtr
-`4ef19f3`, phewr `62a1fb9`). Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `3461a0a`, schnattr `b3c175c`, youtr
+`c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
 waits for the gate of phase 2 in phewr (`phewr/docs/picture-refactor.md`).
@@ -88,7 +88,8 @@ the docs, not from a line-by-line comparison:
 | 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
-| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`. agendr bar `f3c512d` (1 255 tests), its dialog step runs as a worker. |
+| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
+| 4c | One highlight in every app: the white of the palette. | none | in the tuilibr tree, the apps follow after the commit |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
@@ -332,9 +333,41 @@ and builds the frame only, with no decoder. `just check` of tuilibr runs three s
 
 `Section<'a>` (phewr: help rows at run time) and a `BarText` field `keep_end` (agendr: a typed
 query keeps its end when the bar cuts it). Both touch struct literals and type aliases in the apps.
-The tuilibr session changes the crate after a day of notice and tells each app session. Each app
+The tuilibr session changes the crate after a day of notice and tells each app session. The
+notice went out on 2026-11-19, the change comes on 2026-11-20. `Section<'a>` makes a `const`
+`&[Section<'static>]`, and every `BarText` literal adds `keep_end`. Each app
 session changes its own call sites within the same hour (schnattr: `ui/help.rs` and the bar fill in
 `ui/status.rs`) and runs `just check`. The maintainer commits tuilibr first, then the apps.
+
+### Phase 4c: one highlight in every app
+
+From the colour review of the maintainer (2026-11-19, final on the same day). The highlight of
+everything active is the bright white of the palette, `Color::White` (slot 15, `#e6d5c2` in
+cendre), with the black of the palette (slot 0) as the text on it. There is no knob: `set_accent`,
+`parse_hex_color` and the `TUI_ACCENT` contract came and went on 2026-11-19. `frame::accent()`
+stays as a `const fn` that returns `Color::White`.
+
+- `selection()` is Black on the accent. `secondary(selected = true, _)` returns the plain style:
+  one text tone on the block, the name bold, the rest regular. The dimmed second row had a
+  contrast of 2.4, the Gray second row on the unfocused selection 1.85.
+- `selected_pill()`: on the selected focused row the pill turns around, accent text on black.
+  `draw_entry` uses it. An app that draws its own pill with `frame::pill()` uses
+  `selected_pill()` on the selected focused row.
+- The focused pane box takes the accent. The pane without the focus keeps `Color::DarkGray`
+  (slot 8). The help headings stay `Color::Yellow`, they are no highlight.
+- herdr draws its active tab in the same white block, its rows in the grey tints `#39332e` and
+  `#474039`.
+
+The rule for every app: a highlight of the active state goes through `frame::selection()`,
+`frame::unfocused_selection()`, `frame::pill()`, `frame::selected_pill()` or `frame::accent()`,
+never through an own colour literal, so the apps and herdr look the same. Content colours (a
+network, a mode block, a reaction, a delivery mark) stay with the app.
+
+State (2026-11-19): schnattr has the turned pill in `ui/sidebar.rs`, three tests assert
+`frame::accent()`, and no own literal highlights the active state (checked: the message header
+uses `selection()`). Its snapshots wait for the tuilibr commit. youtr did the same in its tree
+(288 tests). phewr and agendr follow and check their status row, popups, footer and dialogs for a
+literal.
 
 ### Phase 4: the other shared parts
 
@@ -351,6 +384,8 @@ character cursor on a `String`, insert, word moves, Ctrl-W, Ctrl-U, Ctrl-K and a
 window, with no crossterm type inside. Each app maps its `KeyEvent` to the edits in a small
 function next to the type. After the first commit of tuilibr, the file moves to
 `tuilibr/src/text_field.rs` as pure code motion. schnattr then switches `tui/compose.rs` to it.
+The file arrived on 2026-11-19 from agendr `d23b532` and `cd8889e`, reviewed by the tuilibr session:
+no app type, no crossterm type, 23 tests, three doc sentences without the app words.
 The multi-line form for the draft of schnattr and the notes of agendr comes after that.
 
 The decisions of the tuilibr session for agendr (2026-11-19):

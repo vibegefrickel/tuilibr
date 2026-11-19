@@ -8,7 +8,10 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Widget},
 };
 
-use super::{split::Split, style::dim};
+use super::{
+    split::Split,
+    style::{accent, dim},
+};
 
 /// The one line between the list and the main pane: vertical beside it, horizontal above it,
 /// down to the status bar, with no joints. With the list hidden, there is none.
@@ -21,7 +24,7 @@ pub fn divider(buffer: &mut Buffer, split: Split) {
 }
 
 /// The rounded box of a pane, with `title` in the top border after one line cell, as in lazygit.
-/// The box of the pane with the focus is green, so the eye finds it. The caller names the panes,
+/// The box of the pane with the focus takes the accent, so the eye finds it. The caller names the panes,
 /// because the frame knows no app. It returns the area inside the box.
 pub fn pane_box(buffer: &mut Buffer, area: Rect, title: &str, active: bool) -> Rect {
     let color = box_color(active);
@@ -34,6 +37,12 @@ pub fn pane_box(buffer: &mut Buffer, area: Rect, title: &str, active: bool) -> R
     let inner = block.inner(area);
     block.render(area, buffer);
     inner
+}
+
+/// The area inside the box that `pane_box` draws for `area`, without a draw. An app that computes
+/// its rows and its mouse targets before the draw gets the same rect.
+pub fn pane_inner(area: Rect) -> Rect {
+    Block::default().borders(Borders::ALL).inner(area)
 }
 
 /// The rule across row `y` of the pane box `area` meets the side borders in T pieces (`├────┤`),
@@ -58,13 +67,10 @@ pub fn join_rule(buffer: &mut Buffer, area: Rect, y: u16, active: bool) {
     }
 }
 
-/// Green for the box of the pane with the focus, as in lazygit, else the dark gray of the lines.
+/// The accent for the box of the pane with the focus, the same accent as the selected row and the
+/// active tab of the multiplexer, else the dark gray of the lines.
 fn box_color(active: bool) -> Color {
-    if active {
-        Color::Green
-    } else {
-        Color::DarkGray
-    }
+    if active { accent() } else { Color::DarkGray }
 }
 
 /// The line under a header, across its `row`. It stops at the divider.

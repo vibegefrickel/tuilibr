@@ -39,11 +39,24 @@ fn an_entry_has_the_picture_the_name_with_the_pill_and_the_second_row() {
         pictures.placed,
         vec![("picture", Shade::Bright, Rect::new(0, 0, 4, 2))]
     );
-    assert_eq!(buffer[(5, 0)].bg, Color::Gray, "the selection");
+    assert_eq!(
+        buffer[(5, 0)].bg,
+        Color::White,
+        "the selection: the accent ground"
+    );
     assert_eq!(buffer[(5, 0)].fg, Color::Black);
     assert!(buffer[(5, 0)].modifier.contains(Modifier::BOLD));
-    assert_eq!(buffer[(18, 0)].bg, Color::Yellow, "the pill");
-    assert_eq!(buffer[(19, 1)].bg, Color::Gray);
+    assert_eq!(
+        buffer[(18, 0)].bg,
+        Color::Black,
+        "the pill turns around on the accent"
+    );
+    assert_eq!(buffer[(18, 0)].fg, Color::White);
+    assert_eq!(buffer[(19, 1)].bg, Color::White);
+    // The second row keeps the one dark tone of the ground, regular weight, no dim.
+    assert_eq!(buffer[(5, 1)].fg, Color::Black, "the second row tone");
+    assert!(!buffer[(5, 1)].modifier.contains(Modifier::DIM));
+    assert!(!buffer[(5, 1)].modifier.contains(Modifier::BOLD));
 }
 
 #[test]

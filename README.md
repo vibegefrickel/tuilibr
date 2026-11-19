@@ -47,3 +47,13 @@ the Kitty layer are in `docs/pictures.md`.
 ## License
 
 MIT, see `LICENSE`.
+
+## The accent
+
+Everything active in the frame takes one accent, `frame::accent()`: the ground of the selected row,
+the box of the pane with the focus and the pill. It is the bright white of the terminal palette
+(slot 15), the foreground of a dark theme, with the black of the palette (slot 0) as the text on it.
+The pane without the focus takes the dark gray (slot 8). The rule for a highlighted row is one
+ground and one text tone, the name bold and the rest regular. The values are fixed: the theme of the
+terminal changes them, nothing else. The terminal multiplexer of the maintainer draws its active tab
+in the same block.

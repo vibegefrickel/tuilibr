@@ -40,6 +40,9 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
   the working tree of the crate as a path dependency with its own feature set and `-D warnings`,
   and cargo caps no lint of a path dependency. A `#[cfg_attr(..., expect(dead_code))]` of the
   app days has no place here: a `pub` item is never dead in a library.
+- **Everything active takes `frame::accent()`.** No other colour literal for a highlight in the
+  frame. A highlighted row has one ground and one text tone, the name bold, the
+  rest regular: a second tone or a dim on the ground has no contrast.
 - **The tests use `TestBackend` and plain asserts.** The snapshots of an app stay in the app.
 - **The comments follow ASD-STE100.** They describe the behavior, not an app.
 - **Functions stay small:** cognitive complexity 25, 150 lines, fewer than 7 arguments.
@@ -53,6 +56,7 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 src/lib.rs        the crate doc and the module list
 src/frame/        the screen frame: split, lines, style, entry, header, bar, help, text, clock,
                   pictures (the Pictures trait), tests/
+src/text_field.rs the one-line text input with a character cursor and the readline edits
 src/pictures/     the picture module: decode, resize, shape, jobs, kitty, names, test_support
 tests/fixtures/   the fixtures of the picture module tests, each folder with its make.sh
 docs/pictures.md  the rules of the picture module and of the Kitty layer
