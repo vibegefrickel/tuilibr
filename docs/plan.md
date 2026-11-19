@@ -661,6 +661,10 @@ The bar, the omnibox and the two-pane layout of schnattr are the one layout of e
 - The two-pane layout (`split`, `split_boxed`, `pane_box`, `divider`, `dim_pane`): schnattr and
   youtr have it, agendr has it in the Calendar Manager, phewr takes it for the additional info of
   a picture with its tab, the info as the left pane.
+- The layout toggle (the maintainer, 2026-11-19): `frame::Layout` with `Maximal` as the default.
+  schnattr, youtr and phewr read `layout` from their config and toggle it with `B`; the dotfiles
+  set `layout = "maximal"` for the three. agendr gets no `layout` key and no toggle: it uses only
+  the maximal split, in the Calendar Manager.
 
 The inventory of phewr for step 4 (phewr-89, 2026-11-19), so the interface fits a viewer:
 
