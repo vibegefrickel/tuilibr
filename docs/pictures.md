@@ -109,6 +109,12 @@ These rules make the output fast and keep every picture on screen:
    whole cells, padded with transparent pixels.
 9. **Synchronized update.** One update around the cells of ratatui and the picture writes of a
    frame.
+10. **One update per frame.** An app writes the loop frames (`kitty::loops::place_loop_frame`,
+    `transmit_loop_to`) only on an open `kitty::screen::Update`, in the same update as
+    `Screen::write_frame`. The update saves the cursor (`ESC 7`) before its first byte and
+    restores it (`ESC 8`) at its end, so a placement leaves the cursor of a typed field where the
+    draw put it. A write outside an update moves the cursor and tears the frame.
+
 
 ## The motion module
 
