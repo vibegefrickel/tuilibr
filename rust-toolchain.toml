@@ -1,0 +1,6 @@
+# Pins the toolchain for everyone who opens this repository. rustup reads the file,
+# so `cargo`, `rustfmt`, `clippy` and `rust-analyzer` agree.
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy", "rust-analyzer", "rust-src", "llvm-tools-preview"]
+profile = "minimal"
