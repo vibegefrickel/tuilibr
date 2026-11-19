@@ -4,6 +4,7 @@ mod clock;
 mod help;
 mod layout;
 mod text;
+mod text_input;
 mod widgets;
 
 use ratatui::{Frame, Terminal, backend::TestBackend, buffer::Buffer, layout::Rect};

@@ -332,7 +332,7 @@ fn unflipped_develop_flips_for_orientation_2_3_4() {
         for path in flip_files(dir.path(), (64, 32), orientation) {
             let jpeg = find(&path).unwrap();
             let unflipped = DynamicImage::from(stored.clone());
-            let shown = corrected(&path, developed(unflipped.clone()), &jpeg, None).image;
+            let shown = corrected(&path, developed(unflipped), &jpeg, None).image;
             assert_eq!(shown, want, "{} orientation {orientation}", path.display());
             // A develop that is correct already stays.
             let kept = corrected(&path, developed(want.clone()), &jpeg, None).image;
@@ -505,7 +505,7 @@ fn real_flipped_copy_shows_upright() {
         let start = std::time::Instant::now();
         let gap = flip_gap(&copy, &sips, &jpeg, rule).expect("reference");
         let spent = start.elapsed();
-        let mut turned = sips.clone();
+        let mut turned = sips;
         turned.apply_orientation(rule);
         let kept = flip_gap(&copy, &turned, &jpeg, rule).expect("reference");
         eprintln!(

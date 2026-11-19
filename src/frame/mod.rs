@@ -16,6 +16,7 @@ mod pictures;
 pub mod split;
 mod style;
 mod text;
+mod text_input;
 
 #[cfg(test)]
 mod tests;
@@ -32,3 +33,4 @@ pub use pictures::{CellSize, Pictures, Shade};
 pub use split::{split, split_boxed};
 pub use style::{accent, dim, pill, secondary, selected_pill, selection, unfocused_selection};
 pub use text::{display_width, spans_width, spread, truncate_start, truncate_width};
+pub use text_input::{Rows, TextFieldView, draw_text_field, text_field_width};

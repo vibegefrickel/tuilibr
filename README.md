@@ -48,6 +48,17 @@ the Kitty layer are in `docs/pictures.md`.
 
 MIT, see `LICENSE`.
 
+## The text field
+
+`text_field::TextField` is the text input of every app: a `String` with a character cursor, the
+readline edits that step over a grapheme cluster, `visible` for one row with `⏎` for a line
+break, and `wrap` for a box of rows with the cursor cell and the scroll that keeps the cursor row
+or the end in view. `text_field::edit_for_key` is the one readline key map (Enter, Esc and Tab
+stay with the app), and `frame::draw_text_field` draws a field as one row with a prefix and a
+suffix or as wrapped rows. Ctrl-G is `Edit::OpenEditor`: the app suspends its terminal session and
+runs `text_field::editor::edit_text`, which opens `$VISUAL`, `$EDITOR` or `nvim` with the text, a
+vim at the end of the text in insert mode, and gives the edited text back.
+
 ## The terminal
 
 `terminal` holds what every app did on its own before: `Session` enters raw mode, the alternate

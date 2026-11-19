@@ -169,11 +169,10 @@ fn raw_format(pixels: Pixels<'_>) -> u32 {
 /// The keys of every transmission: the format, the size, the id and the cell box.
 fn header_keys(pixels: Pixels<'_>, opts: &DisplayOptions, format: u32) -> String {
     let (w, h) = pixels.dimensions();
-    let id_part = opts.id.map(|id| format!(",i={id}")).unwrap_or_default();
+    let id_part = opts.id.map_or_default(|id| format!(",i={id}"));
     let placement_part = opts
         .placement
-        .map(|placement| format!(",p={placement}"))
-        .unwrap_or_default();
+        .map_or_default(|placement| format!(",p={placement}"));
     let box_part = match (opts.cell_box, opts.columns, opts.rows) {
         (None, Some(columns), _) => format!(",c={columns}"),
         (None, None, Some(rows)) => format!(",r={rows}"),
@@ -192,9 +191,7 @@ fn header_keys(pixels: Pixels<'_>, opts: &DisplayOptions, format: u32) -> String
 }
 
 fn cell_box_keys(cell_box: Option<(u16, u16)>) -> String {
-    cell_box
-        .map(|(cols, rows)| format!(",c={cols},r={rows}"))
-        .unwrap_or_default()
+    cell_box.map_or_default(|(cols, rows)| format!(",c={cols},r={rows}"))
 }
 
 fn write_direct<W: Write + ?Sized>(

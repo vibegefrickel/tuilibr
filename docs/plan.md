@@ -566,6 +566,31 @@ Alt-B and Alt-F (the other Alt letters fall through to the mode keys of the app)
 `delete_before`, Ctrl-D is `delete_under`. The tests of `InputRow::line` and of the key table move,
 the tests of the app behaviour stay in agendr.
 
+schnattr said yes (schnattr-2b, 2026-11-19) with six points, all in: `text`, `is_empty`,
+`set_text`; `draw_text_field` draws `Wrapped::rows` as plain lines, never through a second wrap,
+and `wrap` measures in cells, breaks at whitespace, cuts a word longer than the width, and a
+trailing `\n` gives an empty last row; the prefix carries its own style, shows on the first row
+while that row is in view and keeps its columns on every row, `style` applies to the text; the
+right padding and the choice of the omnibox stay app code, `Rows::One` keeps the end in view with
+the cursor behind the last cell; the readline semantics stay (Ctrl-U deletes to the line start,
+schnattr handles its own Ctrl-U before `edit_for_key`); the grapheme cases, the `tail_width`
+cases and the wrap cases are tests in the crate, the two render tests stay in schnattr.
+
+The maintainer (2026-11-19): the omnibox of schnattr and the event entry box of agendr are the
+same text field, on `TextField` with `draw_text_field`. Ctrl-G in every text field opens the
+editor of the user with the text, a vim in insert mode with the cursor at the end, as in Claude
+Code. So the editor of agendr (`external_editor.rs`) moved into the crate as
+`text_field::editor` (`edit_text`, `edit_text_with`, `editor_command`, `EditorError`,
+`insert_mode_arguments`), without `thiserror` and `uuid`, with its ten tests, and Ctrl-G is
+`Edit::OpenEditor` in the key map. The app suspends its `terminal::Session`, pauses its reader,
+runs `edit_text`, resumes and puts the result back with `set_text`.
+
+The code is in the crate since 2026-11-19: `src/text_field.rs` (the grown type, `wrap`,
+`Wrapped`), `src/text_field/keys.rs`, `src/text_field/editor.rs`, `src/frame/text_input.rs`
+(`TextFieldView`, `Rows`, `draw_text_field`, `text_field_width`); 454 tests. The apps switch: the
+schnattr composer (`compose.rs`, `draw_draft`, `draw_typed`) and the agendr notes box with the
+`external_editor` module gone.
+
 The omnibox of schnattr (`ui/composer.rs`: a question, a typed line, a status text or a draft
 under the bar) is a candidate when a second app wants the command line of vim.
 

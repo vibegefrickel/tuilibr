@@ -1,19 +1,47 @@
-//! A one-line text input with a cursor and the readline edits.
+//! A text input with a cursor and the readline edits, for one row or for a box of wrapped rows.
 //!
 //! The cursor is a character index, not a byte index. The text of an app contains umlauts and
-//! emoji, and a byte index into it can split a character. A word is a run of characters that
-//! are not whitespace. Each edit returns `true` when it changes the text or the cursor, so that
-//! a caller can skip a redraw.
+//! emoji, and a byte index into it can split a character. The moves and the deletes step over a
+//! grapheme cluster, so a flag, a family emoji or ❤️ is one step and one Backspace, and the cursor
+//! never sits inside a cluster. A word is a run of characters that are not whitespace. Each edit
+//! returns `true` when it changes the text or the cursor, so that a caller can skip a redraw.
 //!
-//! The field has one row. A line break of a multi-line text shows as `⏎` in one column, so that
-//! the cursor column and the text stay aligned.
+//! One row: `visible` cuts the text to the window that keeps the cursor in view, and a line break
+//! shows as `⏎` in one column, so that the cursor column and the text stay aligned. A box of
+//! rows: `wrap` breaks the text at the width and at each line break, and gives the cell of the
+//! cursor; `Wrapped::scroll` picks the first row for a box of a height.
 //!
 //! A field that is wider than its input scrolls. The field keeps the first visible character,
 //! so that the cursor moves inside the window and the text stays in place. The draw of an app
 //! reads the field through a shared reference, so `visible` cannot store the window. The caller
 //! runs `scroll_into_view` before the draw, where it has the mutable reference.
+//!
+//! The key map of readline is `keys::edit_for_key`, and `apply` runs an `Edit`. Enter, Esc and
+//! Tab stay with the app: it decides whether Enter sends or breaks the line. Ctrl-G is
+//! `Edit::OpenEditor`: the app suspends its terminal session, runs `editor::edit_text` and puts
+//! the result back with `set_text`.
 
-use unicode_width::UnicodeWidthChar;
+use unicode_segmentation::UnicodeSegmentation as _;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+#[cfg(unix)]
+pub mod editor;
+pub mod keys;
+
+pub use keys::{Edit, edit_for_key};
+
+/// The name in the temporary file of the editor: the app name of the pictures when the app set
+/// one, else the crate name.
+fn editor_app_name() -> &'static str {
+    #[cfg(feature = "pictures")]
+    {
+        crate::pictures::names::app_name()
+    }
+    #[cfg(not(feature = "pictures"))]
+    {
+        "tuilibr"
+    }
+}
 
 /// The text of an input and the cursor in it.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -47,16 +75,34 @@ impl TextField {
         &self.text
     }
 
+    /// Whether the text has no character.
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
+
     /// Gives the cursor as a character index, so that a renderer can place it.
     pub fn cursor(&self) -> usize {
         self.cursor
     }
 
-    /// Replaces the text, for example with the result of the external editor.
+    /// The text before the cursor, for a caller that completes a path or counts the rows.
+    pub fn text_before_cursor(&self) -> &str {
+        self.text
+            .get(..self.byte_index(self.cursor))
+            .unwrap_or(&self.text)
+    }
+
+    /// Replaces the text, for example with the result of the external editor. The cursor goes to
+    /// the end.
     pub fn set_text(&mut self, text: String) -> bool {
         let changed = text != self.text || self.cursor != text.chars().count();
         *self = Self::from(text);
         changed
+    }
+
+    /// Removes the text and puts the cursor at the start.
+    pub fn clear(&mut self) -> bool {
+        self.set_text(String::new())
     }
 
     /// Adds a typed character at the cursor.
@@ -67,14 +113,34 @@ impl TextField {
         true
     }
 
-    /// Moves the cursor one character to the left.
-    pub fn move_left(&mut self) -> bool {
-        self.move_to(self.cursor.saturating_sub(1))
+    /// Adds a pasted text at the cursor. A paste carries a line break as `\r\n` or `\r` in many
+    /// terminals; both become `\n`. An empty text changes nothing.
+    pub fn insert_text(&mut self, text: &str) -> bool {
+        let text = text.replace("\r\n", "\n").replace('\r', "\n");
+        if text.is_empty() {
+            return false;
+        }
+        let index = self.byte_index(self.cursor);
+        self.text.insert_str(index, &text);
+        self.cursor += text.chars().count();
+        true
     }
 
-    /// Moves the cursor one character to the right.
+    /// Breaks the line at the cursor. The app calls it when Enter means a new line.
+    pub fn insert_newline(&mut self) -> bool {
+        self.insert('\n')
+    }
+
+    /// Moves the cursor one grapheme cluster to the left.
+    pub fn move_left(&mut self) -> bool {
+        let target = self.previous_cluster(self.cursor);
+        self.move_to(target)
+    }
+
+    /// Moves the cursor one grapheme cluster to the right.
     pub fn move_right(&mut self) -> bool {
-        self.move_to((self.cursor + 1).min(self.character_count()))
+        let target = self.next_cluster(self.cursor);
+        self.move_to(target)
     }
 
     /// Moves the cursor to the start of the word before it, like readline `M-b`.
@@ -97,14 +163,56 @@ impl TextField {
         self.move_to(self.character_count())
     }
 
-    /// Deletes the character before the cursor, like Backspace.
-    pub fn delete_before(&mut self) -> bool {
-        self.delete_range(self.cursor.saturating_sub(1), self.cursor)
+    /// Moves the cursor to the start of its line, like Home in a text of many lines.
+    pub fn move_line_start(&mut self) -> bool {
+        let target = self.line_start(self.cursor);
+        self.move_to(target)
     }
 
-    /// Deletes the character under the cursor, like Delete.
+    /// Moves the cursor to the end of its line, before the line break, like End.
+    pub fn move_line_end(&mut self) -> bool {
+        let target = self.line_end(self.cursor);
+        self.move_to(target)
+    }
+
+    /// Moves the cursor one line up, to the same column or the end of a shorter line. On the
+    /// first line it changes nothing.
+    pub fn move_up(&mut self) -> bool {
+        let start = self.line_start(self.cursor);
+        if start == 0 {
+            return false;
+        }
+        let column = self.cursor - start;
+        let previous_start = self.line_start(start - 1);
+        let target = (previous_start + column).min(start - 1);
+        self.move_to(self.cluster_start_at_or_before(target))
+    }
+
+    /// Moves the cursor one line down, to the same column or the end of a shorter line. On the
+    /// last line it changes nothing.
+    pub fn move_down(&mut self) -> bool {
+        let start = self.line_start(self.cursor);
+        let end = self.line_end(self.cursor);
+        if end >= self.character_count() {
+            return false;
+        }
+        let column = self.cursor - start;
+        let next_start = end + 1;
+        let next_end = self.line_end(next_start);
+        let target = (next_start + column).min(next_end);
+        self.move_to(self.cluster_start_at_or_before(target))
+    }
+
+    /// Deletes the grapheme cluster before the cursor, like Backspace.
+    pub fn delete_before(&mut self) -> bool {
+        let start = self.previous_cluster(self.cursor);
+        self.delete_range(start, self.cursor)
+    }
+
+    /// Deletes the grapheme cluster under the cursor, like Delete.
     pub fn delete_under(&mut self) -> bool {
-        self.delete_range(self.cursor, (self.cursor + 1).min(self.character_count()))
+        let end = self.next_cluster(self.cursor);
+        self.delete_range(self.cursor, end)
     }
 
     /// Deletes the word before the cursor and the spaces after that word, like readline `C-w`.
@@ -122,22 +230,51 @@ impl TextField {
         self.delete_range(self.cursor, self.character_count())
     }
 
+    /// Runs one edit of the key map. Returns `true` when the text or the cursor changed.
+    pub fn apply(&mut self, edit: Edit) -> bool {
+        match edit {
+            Edit::Insert(character) => self.insert(character),
+            Edit::InsertText(text) => self.insert_text(&text),
+            Edit::Newline => self.insert_newline(),
+            Edit::Left => self.move_left(),
+            Edit::Right => self.move_right(),
+            Edit::WordLeft => self.move_word_left(),
+            Edit::WordRight => self.move_word_right(),
+            Edit::Up => self.move_up(),
+            Edit::Down => self.move_down(),
+            Edit::LineStart => self.move_line_start(),
+            Edit::LineEnd => self.move_line_end(),
+            Edit::Start => self.move_start(),
+            Edit::End => self.move_end(),
+            Edit::DeleteBefore => self.delete_before(),
+            Edit::DeleteUnder => self.delete_under(),
+            Edit::DeleteWordBefore => self.delete_word_before(),
+            Edit::DeleteToStart => self.delete_to_start(),
+            Edit::DeleteToEnd => self.delete_to_end(),
+            Edit::Clear => self.clear(),
+            // The app opens the editor; the field changes nothing by itself.
+            Edit::OpenEditor => false,
+        }
+    }
+
     /// Cuts the text to `width` columns around the cursor, so that the cursor stays in view.
     ///
     /// Returns the visible text and the column of the cursor in it. The window starts at the
     /// character of the last `scroll_into_view`. It moves only as far as necessary to show the
     /// cursor, and it moves left when free columns stay at the end. The cursor cell at the end
-    /// of the text takes one column.
+    /// of the text takes one column. A line break shows as `⏎`.
     pub fn visible(&self, width: usize) -> (String, usize) {
         let columns = ColumnOffsets::of(&self.text);
-        let start = self.window_start(&columns, width);
+        let starts = self.cluster_starts();
+        let start = self.window_start(&columns, &starts, width);
+        let first = starts.iter().position(|&s| s == start).unwrap_or(0);
         let mut used = 0;
         let window = self
             .text
-            .chars()
-            .skip(start)
-            .take_while(|character| {
-                used += column_width(*character);
+            .graphemes(true)
+            .skip(first)
+            .take_while(|cluster| {
+                used += cluster_width(cluster);
                 used <= width
             })
             .map(shown)
@@ -147,30 +284,89 @@ impl TextField {
 
     /// Keeps the window of `visible`, so that the text stays in place while the cursor moves.
     pub fn scroll_into_view(&mut self, width: usize) -> bool {
-        let start = self.window_start(&ColumnOffsets::of(&self.text), width);
+        let start = self.window_start(
+            &ColumnOffsets::of(&self.text),
+            &self.cluster_starts(),
+            width,
+        );
         let changed = start != self.scroll;
         self.scroll = start;
         changed
     }
 
+    /// Breaks the text into rows of at most `width` columns: at each line break, and before a
+    /// word that does not fit the rest of the row. A word longer than a row is cut. The spaces at
+    /// the end of a row that do not fit are dropped. A line break at the end gives an empty last
+    /// row, so the cursor after it has its row.
+    pub fn wrap(&self, width: usize) -> Wrapped {
+        let width = width.max(1);
+        let mut rows = vec![String::new()];
+        let mut cells = Vec::with_capacity(self.text.len() + 1);
+        let mut column = 0;
+        for (index, line) in self.text.split('\n').enumerate() {
+            if index > 0 {
+                // The line break: its cell is the end of the row, then a new row starts.
+                cells.push((rows.len() - 1, column));
+                rows.push(String::new());
+                column = 0;
+            }
+            for piece in pieces(line) {
+                let whitespace = piece.chars().all(char::is_whitespace);
+                let piece_width: usize = piece.graphemes(true).map(cluster_width).sum();
+                if !whitespace && column > 0 && column + piece_width > width {
+                    rows.push(String::new());
+                    column = 0;
+                }
+                for cluster in piece.graphemes(true) {
+                    let cluster_columns = cluster_width(cluster);
+                    if column + cluster_columns > width {
+                        if whitespace {
+                            // A space that does not fit the row is dropped: its cell is the end.
+                            cells.extend(cluster.chars().map(|_| (rows.len() - 1, column)));
+                            continue;
+                        }
+                        if column > 0 {
+                            rows.push(String::new());
+                            column = 0;
+                        }
+                    }
+                    let row = rows.len() - 1;
+                    cells.extend(cluster.chars().map(|_| (row, column)));
+                    rows[row].push_str(cluster);
+                    column += cluster_columns;
+                }
+            }
+        }
+        cells.push((rows.len() - 1, column));
+        let cursor = cells.get(self.cursor).copied().unwrap_or((0, 0));
+        Wrapped { rows, cursor }
+    }
+
     /// Finds the first visible character: the stored one, moved to show the cursor.
-    fn window_start(&self, columns: &ColumnOffsets, width: usize) -> usize {
+    fn window_start(&self, columns: &ColumnOffsets, starts: &[usize], width: usize) -> usize {
         let end = columns.character_count();
         let cursor_width = if self.cursor < end {
-            columns.between(self.cursor, self.cursor + 1).max(1)
+            columns
+                .between(self.cursor, self.next_cluster(self.cursor))
+                .max(1)
         } else {
             1
         };
-        let mut start = self.scroll.min(self.cursor);
-        while start < self.cursor && columns.between(start, self.cursor) + cursor_width > width {
-            start += 1;
+        let mut index = starts
+            .iter()
+            .rposition(|&s| s <= self.scroll.min(self.cursor))
+            .unwrap_or(0);
+        while starts[index] < self.cursor
+            && columns.between(starts[index], self.cursor) + cursor_width > width
+        {
+            index += 1;
         }
         // The cell after the text stays free, so that the window does not jump when the cursor
         // moves from the end into the text.
-        while start > 0 && columns.between(start - 1, end) < width {
-            start -= 1;
+        while index > 0 && columns.between(starts[index - 1], end) < width {
+            index -= 1;
         }
-        start
+        starts[index]
     }
 
     /// Sets the cursor and reports a move, so that each move edit has one exit.
@@ -202,6 +398,65 @@ impl TextField {
     /// Counts the characters, because the cursor never goes past the last one.
     fn character_count(&self) -> usize {
         self.text.chars().count()
+    }
+
+    /// The character index of the start of each grapheme cluster, and the count at the end.
+    fn cluster_starts(&self) -> Vec<usize> {
+        let mut starts = Vec::new();
+        let mut characters = 0;
+        for cluster in self.text.graphemes(true) {
+            starts.push(characters);
+            characters += cluster.chars().count();
+        }
+        starts.push(characters);
+        starts
+    }
+
+    /// The start of the cluster before `cursor`, or 0.
+    fn previous_cluster(&self, cursor: usize) -> usize {
+        self.cluster_starts()
+            .into_iter()
+            .rev()
+            .find(|&start| start < cursor)
+            .unwrap_or(0)
+    }
+
+    /// The start of the cluster after `cursor`, or the end.
+    fn next_cluster(&self, cursor: usize) -> usize {
+        let count = self.character_count();
+        self.cluster_starts()
+            .into_iter()
+            .find(|&start| start > cursor)
+            .unwrap_or(count)
+    }
+
+    /// The start of the cluster that holds `index`, so a line move never lands inside one.
+    fn cluster_start_at_or_before(&self, index: usize) -> usize {
+        self.cluster_starts()
+            .into_iter()
+            .rev()
+            .find(|&start| start <= index)
+            .unwrap_or(0)
+    }
+
+    /// The character index after the line break before `index`, or 0.
+    fn line_start(&self, index: usize) -> usize {
+        self.text
+            .chars()
+            .take(index)
+            .enumerate()
+            .filter(|(_, character)| *character == '\n')
+            .last()
+            .map_or(0, |(position, _)| position + 1)
+    }
+
+    /// The character index of the line break at or after `index`, or the end.
+    fn line_end(&self, index: usize) -> usize {
+        self.text
+            .chars()
+            .skip(index)
+            .position(|character| character == '\n')
+            .map_or(self.character_count(), |position| index + position)
     }
 
     /// Finds the start of the word before the cursor, after the whitespace between them.
@@ -236,7 +491,26 @@ impl TextField {
     }
 }
 
-/// The columns before each character, so that the width of a range takes one subtraction.
+/// The rows of a text at a width, and the cell of the cursor in them.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Wrapped {
+    /// The rows, each at most the width in columns, without the line breaks.
+    pub rows: Vec<String>,
+    /// The row and the column of the cursor.
+    pub cursor: (usize, usize),
+}
+
+impl Wrapped {
+    /// The first row to show in a box of `height` rows: the end of the text stays in view,
+    /// unless the cursor is above it; then the row of the cursor is the first row.
+    pub fn scroll(&self, height: usize) -> usize {
+        let end_first = self.rows.len().saturating_sub(height.max(1));
+        self.cursor.0.min(end_first)
+    }
+}
+
+/// The columns before each character, so that the width of a range takes one subtraction. A
+/// grapheme cluster puts its width on its first character and nothing on the rest.
 struct ColumnOffsets(Vec<usize>);
 
 impl ColumnOffsets {
@@ -244,9 +518,15 @@ impl ColumnOffsets {
     fn of(text: &str) -> Self {
         let mut offsets = vec![0];
         let mut total = 0;
-        for character in text.chars() {
-            total += column_width(character);
-            offsets.push(total);
+        for cluster in text.graphemes(true) {
+            let mut characters = cluster.chars();
+            if characters.next().is_some() {
+                total += cluster_width(cluster);
+                offsets.push(total);
+            }
+            for _ in characters {
+                offsets.push(total);
+            }
         }
         Self(offsets)
     }
@@ -263,20 +543,47 @@ impl ColumnOffsets {
 }
 
 /// The symbol of a line break in the one row of a field.
-const NEWLINE_SYMBOL: char = '⏎';
+const NEWLINE_SYMBOL: &str = "⏎";
 
-/// Gives the terminal columns of a character. A line break takes the column of its symbol. Any
-/// other control character takes no column.
-fn column_width(character: char) -> usize {
-    shown(character).width().unwrap_or(0)
+/// The pieces of one line: a run of whitespace or a word, in their order.
+fn pieces(line: &str) -> Vec<&str> {
+    let mut pieces = Vec::new();
+    let mut start = 0;
+    let mut whitespace = None;
+    for (index, character) in line.char_indices() {
+        let is_whitespace = character.is_whitespace();
+        if whitespace.is_some_and(|previous| previous != is_whitespace) {
+            pieces.push(line.get(start..index).unwrap_or_default());
+            start = index;
+        }
+        whitespace = Some(is_whitespace);
+    }
+    if start < line.len() {
+        pieces.push(line.get(start..).unwrap_or_default());
+    }
+    pieces
 }
 
-/// Gives the character that the row shows, so that a line break of a multi-line text stays visible.
-fn shown(character: char) -> char {
-    if character == '\n' {
+/// Gives the terminal columns of a grapheme cluster. A line break takes the column of its symbol.
+/// Any other control character takes no column.
+fn cluster_width(cluster: &str) -> usize {
+    if cluster == "\n" {
+        return 1;
+    }
+    let mut characters = cluster.chars();
+    match (characters.next(), characters.next()) {
+        (Some(character), None) => character.width().unwrap_or(0),
+        _ => cluster.width(),
+    }
+}
+
+/// Gives the text that the row shows for a cluster, so that a line break of a multi-line text
+/// stays visible.
+fn shown(cluster: &str) -> &str {
+    if cluster == "\n" {
         NEWLINE_SYMBOL
     } else {
-        character
+        cluster
     }
 }
 
