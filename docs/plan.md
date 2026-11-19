@@ -984,7 +984,8 @@ The steps for schnattr, after the module lands and phewr switched:
 
 1. The adapters keep what the networks send. Signal converts the sticker data pointer into an
    attachment. WhatsApp keeps `gif_playback` and `is_animated`, Signal its GIF flag, as an
-   `Attachment` field (`animated: bool`, one store migration step). Telegram keeps TGS and WebM
+   `Attachment` field (`animated: bool`, and `motion: Option<PathBuf>` for the cached video of a Live Photo; no store
+   migration, because the store keeps the message as JSON and old rows read the defaults). Telegram keeps TGS and WebM
    stickers as attachments and fetches documents on import up to the photo limit when they are
    GIFs or stickers. Slack shows its fetched video thumbnail. iMessage pairs the `.MOV` of a Live
    Photo with its still (the pairing stays in schnattr, as the module wants).
