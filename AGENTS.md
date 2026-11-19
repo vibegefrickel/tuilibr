@@ -36,6 +36,9 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
   uses the frame only sets `default-features = false`. A feature gates a native library or a
   measured build cost, nothing else. `test-support` is the one exception: it builds the test
   helpers for the tests of an app.
+- **The lint tables of the apps follow this one.** `just lints-diff` compares each app table with
+  the table of this crate; an intended difference has a line with its reason in
+  `lints-allow.toml`, every other difference is drift. Run it on demand, not in `check`.
 - **The crate builds with no feature and with every feature, with zero warnings.** An app builds
   the working tree of the crate as a path dependency with its own feature set and `-D warnings`,
   and cargo caps no lint of a path dependency. A `#[cfg_attr(..., expect(dead_code))]` of the

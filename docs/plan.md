@@ -1,15 +1,37 @@
 # tuilibr: the plan
 
+## Handoff
+
+- Date: 2026-11-19
+- Commit: 6624786
+- Done: phase 4 steps 1 to 4 in the crate: `terminal` (session, panic hooks, start query, late
+  answers), the multi-line `TextField` with the key map and the editor, `draw_text_field`,
+  `dialog_rect`, `pane_inner`, the question row, `frame::Layout` (maximal default), the omnibox.
+- Done: `time` on jiff (age, bar date and time, clock, media length, `MinuteClock`); phase 4d
+  `pictures::motion` from phewr with `LoopClock`; the picture docs; the stricter lints and the
+  shared audit text of the five repositories; rule 10 "one update per frame".
+- Open (agent): land the `tlottie` spike (worktree `agent-ae079fd3ff597b1d9`) under
+  `pictures::motion` after the real-sticker run; then tell schnattr-2b for the TGS stickers.
+- Open (agent): follow the schnattr timeline workers of 4d (adapters, timeline, Live pairing) and
+  the agendr omnibox; answer their crate requests.
+- Open (user): a folder of about 10 real `.tgs` stickers for
+  `TUILIBR_TEST_TGS_DIR=<dir> cargo test --lib lottie -- --ignored` (blocks TGS).
+- Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
+  `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`.
+- Open (user): the codeberg repository and `rev` versus `branch` for phase 5.
+- Health: `just check` green (588, 124 and 489 tests, audit clean); all four apps passed against
+  `fd9b703` and later report green in their sessions; no live herdr worker in tuilibr.
+- Rules of today: a multi-step crate change runs in a worktree and lands in one compiling step;
+  `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
+
 tuilibr is one library crate for the terminal UI parts that schnattr, youtr, phewr and agendr share.
 It replaces the copied modules and their sync recipes. This file is the master of the plan. The
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `15bc6af`, schnattr `b3c175c`, youtr
-`c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
-The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
-code since 2026-11-19. Phase 3
-waits for the gate of phase 2 in phewr (`phewr/docs/picture-refactor.md`).
+Status: see `## Handoff` above and the table of phases below. The tuilibr session (`tuilibr-82`)
+owns the crate code and the picture module; the schnattr session orchestrates the phases across
+the apps.
 
 ## Decisions of the maintainer (2026-11-19)
 
@@ -90,7 +112,8 @@ the docs, not from a line-by-line comparison:
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
 | 4c | One highlight in every app: the white of the palette. | none | done: tuilibr `ff0396f`, agendr `94e9522`, phewr, youtr and schnattr pass `just apps-check` from `69bb2ae` |
-| 4 | The other shared parts move, one at a time. Order (maintainer, 2026-11-19): the terminal setup, the multi-line TextField with the schnattr composer, the confirm body. | phase 3 | started |
+| 4 | The other shared parts move, one at a time: the terminal setup, the multi-line TextField with the composer, the question row, the layout and the omnibox, the time module. | phase 3 | crate done (steps 1 to 5, tuilibr up to `6624786`); the apps switch in their sessions |
+| 4d | The animated previews: the loops move from phewr into `pictures::motion`; schnattr shows them. | phase 4 | crate and phewr done (tuilibr `fd9b703`, `f79438c`; phewr `82428d8`); schnattr timeline running; TGS waits for real stickers |
 | 5 | The build for other people: a git dependency with a `rev`. | the maintainer (2026-11-19): when tuilibr is done and halfway stable, after phase 4 | open |
 
 ### Phase 0: the crate with the frame (done)

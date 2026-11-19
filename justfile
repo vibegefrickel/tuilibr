@@ -77,3 +77,36 @@ apps := "../schnattr ../youtr ../phewr ../agendr"
 # the recipe.
 apps-check:
     for app in {{ apps }}; do if [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml"; then echo "== $app"; (cd "$app" && just check); fi; done
+
+# The lint tables of the apps against the table of this crate. Each app keeps its own table; a
+# difference that `lints-allow.toml` does not list is drift and fails the recipe. Run it on demand,
+# not in `check`: it reads the sibling checkouts.
+lints-diff:
+    #!/usr/bin/env -S python3 -I
+    import pathlib, sys, tomllib
+    def lints(path):
+        table = tomllib.loads(pathlib.Path(path).read_text()).get("lints", {})
+        out = {}
+        for group, entries in table.items():
+            for name, value in entries.items():
+                out[f"{group}.{name}"] = value.get("level") if isinstance(value, dict) else value
+        return out
+    allow = tomllib.loads(pathlib.Path("lints-allow.toml").read_text())
+    base = lints("Cargo.toml")
+    drift = 0
+    for app in "{{ apps }}".split():
+        manifest = pathlib.Path(app, "Cargo.toml")
+        if not manifest.exists():
+            continue
+        name = pathlib.Path(app).name
+        known = {**allow.get("all", {}), **allow.get("app", {}).get(name, {})}
+        found = lints(manifest)
+        lines = [
+            f"  {key}: tuilibr={base.get(key)} {name}={found.get(key)}"
+            for key in sorted(set(base) | set(found))
+            if base.get(key) != found.get(key) and key not in known
+        ]
+        print(f"== {name}: " + ("no drift" if not lines else f"{len(lines)} not listed"))
+        print("\n".join(lines)) if lines else None
+        drift += len(lines)
+    sys.exit(1 if drift else 0)
