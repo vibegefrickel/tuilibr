@@ -87,7 +87,7 @@ the docs, not from a line-by-line comparison:
 | 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | open, in phewr |
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | the herdr part and the loss limit test of phase 2 pass | open |
-| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | open, started 2026-11-19 |
+| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | tuilibr `3fa749d` has `dialog_box`. schnattr and youtr done, uncommitted. phewr runs a worker. agendr starts. |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
@@ -244,14 +244,15 @@ The crate parts:
 The steps per app. Each app session runs its steps and reports. The maintainer commits tuilibr
 first, then the app.
 
-- schnattr: the call site of `help_box` in `ui/help.rs` takes the new name. Nothing else.
+- schnattr: the call site of `help_box` in `ui/help.rs` takes the new name. Nothing else. Done
+  on 2026-11-19 against tuilibr `3fa749d`, 1 735 tests, uncommitted.
 - youtr: one call site, the downloads window (`draw/downloads.rs`), takes `dialog_box`. The bar
-  stays.
+  stays. Done on 2026-11-19 against tuilibr `3fa749d`, 526 tests, uncommitted.
 - phewr: the status row becomes `BarView` (the mode block, the folder path as the left group, the
   file info in the middle, the counts and the zoom at the right, the icons). The help popups and
   every other popup become `dialog_box`, the key help with `HelpView`.
-  phewr starts when tuilibr is committed with `dialog_box` and the maintainer gives the go in the
-  phewr session. The change is one module, `src/ui/status.rs`, plus `src/ui/help.rs`.
+  A phewr worker (branch `frame-bar`, auto review) runs it since 2026-11-19 against tuilibr
+  `3fa749d`. The change is one module, `src/ui/status.rs`, plus `src/ui/help.rs`.
 - agendr: the footer becomes `BarView` (the mode block, NEXT at the left, the notice or the error
   in the middle, zoom and date at the right, the clock as `time`, the backend state as icons). The
   confirm box, the forms and the help become `dialog_box` with an own body, the key help with
