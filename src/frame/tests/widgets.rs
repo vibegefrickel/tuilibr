@@ -322,6 +322,7 @@ fn bar() -> BarView {
         middle: vec![BarText {
             parts: vec!["enter opens".to_owned()],
             style: Style::default(),
+            keep_end: false,
         }],
         right: vec!["2 unread".to_owned()],
         time: "Thu 16 Nov 22:13".to_owned(),
@@ -384,6 +385,7 @@ fn bar_without_tabs() -> BarView {
         middle: vec![BarText {
             parts: vec!["saved".to_owned()],
             style: Style::default().fg(Color::Red),
+            keep_end: false,
         }],
         right: vec!["7-DAY".to_owned(), "Wed 19 Nov".to_owned()],
         time: "14:02".to_owned(),
@@ -427,4 +429,21 @@ fn a_bar_without_a_time_ends_its_right_groups_at_the_icons() {
     });
     let text = row(&buffer, 0);
     assert!(text.ends_with(" 7-DAY  Wed 19 Nov  SYNCING "), "{text}");
+}
+
+#[test]
+fn a_bar_text_that_keeps_its_end_shows_the_end_of_a_long_query() {
+    let mut view = bar_without_tabs();
+    view.left = Vec::new();
+    view.middle = vec![BarText {
+        parts: vec!["search: a very long query that grows at its end".to_owned()],
+        style: Style::default(),
+        keep_end: true,
+    }];
+    let buffer = drawn(60, 1, |frame| {
+        draw_bar(frame, view, frame.area(), 0);
+    });
+    let text = row(&buffer, 0);
+    assert!(text.contains("…long query that grows at its end"), "{text}");
+    assert!(!text.contains("search:"), "{text}");
 }

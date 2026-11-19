@@ -11,8 +11,9 @@ use ratatui::{
 
 use super::style::dim;
 
-/// A heading and its keys with what they do.
-pub type Section = (&'static str, &'static [(&'static str, &'static str)]);
+/// A heading and its keys with what they do. The lifetime lets an app build rows at run time, on
+/// the stack; a const table is `Section<'static>`.
+pub type Section<'a> = (&'a str, &'a [(&'a str, &'a str)]);
 
 /// The columns between two columns of sections.
 pub const COLUMN_GAP: u16 = 2;
@@ -23,7 +24,7 @@ pub struct HelpView<'a> {
     pub title: &'a str,
     /// The two columns of sections. A narrow screen with room for the rows shows the second
     /// below the first.
-    pub columns: [&'a [Section]; 2],
+    pub columns: [&'a [Section<'a>]; 2],
     /// The cells of the key column.
     pub key_width: u16,
     /// The cells of the description column.
@@ -147,7 +148,7 @@ pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
 /// One column: a heading per section, a key per row, a blank row between sections. An app with
 /// its own help body renders these lines through `dialog_box`, so the keys look the same in each
 /// app.
-pub fn section_lines(sections: &[Section], key_width: u16) -> Vec<Line<'static>> {
+pub fn section_lines<'a>(sections: &[Section<'a>], key_width: u16) -> Vec<Line<'a>> {
     let heading = Style::default()
         .fg(Color::Yellow)
         .add_modifier(Modifier::BOLD);
@@ -172,7 +173,7 @@ pub fn section_lines(sections: &[Section], key_width: u16) -> Vec<Line<'static>>
 }
 
 /// The rows of one column as `draw_help` draws it.
-pub fn column_rows(sections: &[Section]) -> u16 {
+pub fn column_rows(sections: &[Section<'_>]) -> u16 {
     let keys: usize = sections.iter().map(|(_, keys)| keys.len() + 2).sum();
     u16::try_from(keys.saturating_sub(1)).unwrap_or(u16::MAX)
 }

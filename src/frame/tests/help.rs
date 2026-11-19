@@ -4,8 +4,8 @@ use super::super::{HelpView, Section, draw_help};
 use super::{drawn, row};
 use ratatui::layout::Rect;
 
-const LEFT: &[Section] = &[("Move", &[("j k", "down / up")])];
-const RIGHT: &[Section] = &[("Write", &[("enter", "send the message")])];
+const LEFT: &[Section<'static>] = &[("Move", &[("j k", "down / up")])];
+const RIGHT: &[Section<'static>] = &[("Write", &[("enter", "send the message")])];
 
 /// The help with `LEFT` and `RIGHT`, with key and text columns of 6 and 18 cells.
 fn view() -> HelpView<'static> {

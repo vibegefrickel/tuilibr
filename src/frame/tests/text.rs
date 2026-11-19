@@ -72,10 +72,13 @@ fn parts(texts: &[&str]) -> Vec<String> {
 #[test]
 fn the_middle_drops_its_last_parts_first_and_then_cuts() {
     let hint = parts(&["scope", "enter opens", "esc closes"]);
-    assert_eq!(fit_parts(&hint, 40), " scope  enter opens  esc closes ");
-    assert_eq!(fit_parts(&hint, 24), " scope  enter opens ");
-    assert_eq!(fit_parts(&hint, 6), " sco… ");
-    assert_eq!(fit_parts(&[], 40), "");
+    assert_eq!(
+        fit_parts(&hint, 40, false),
+        " scope  enter opens  esc closes "
+    );
+    assert_eq!(fit_parts(&hint, 24, false), " scope  enter opens ");
+    assert_eq!(fit_parts(&hint, 6, false), " sco… ");
+    assert_eq!(fit_parts(&[], 40, false), "");
 }
 
 #[test]
@@ -91,4 +94,24 @@ fn the_right_edge_drops_its_first_groups_and_keeps_the_time() {
     );
     assert_eq!(fit_right(groups.clone(), 20), " Thu 16 Nov 22:13 ");
     assert_eq!(fit_right(groups, 10), " Thu 16… ");
+}
+
+#[test]
+fn a_text_that_keeps_its_end_drops_the_first_parts_and_cuts_at_the_start() {
+    use super::super::truncate_start;
+    let hint: Vec<String> = ["scope", "enter opens", "esc closes"]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    assert_eq!(
+        fit_parts(&hint, 40, true),
+        " scope  enter opens  esc closes "
+    );
+    assert_eq!(fit_parts(&hint, 26, true), " enter opens  esc closes ");
+    assert_eq!(fit_parts(&hint, 8, true), " …loses ");
+    assert_eq!(truncate_start("long query", 20), "long query");
+    assert_eq!(truncate_start("long query", 6), "…query");
+    assert_eq!(truncate_start("日本語のテキスト", 7), "…キスト");
+    assert_eq!(truncate_start("abc", 1), "…");
+    assert_eq!(truncate_start("abc", 0), "");
 }

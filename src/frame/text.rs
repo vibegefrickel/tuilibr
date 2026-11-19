@@ -26,6 +26,31 @@ pub fn truncate_width(text: &str, max: usize) -> String {
     cut
 }
 
+/// Cut `text` to at most `max` terminal cells from its start, so the end stays: `…long query`
+/// for an input that grows at its end. The measure is per grapheme, as in `truncate_width`.
+pub fn truncate_start(text: &str, max: usize) -> String {
+    use unicode_segmentation::UnicodeSegmentation as _;
+    if display_width(text) <= max {
+        return text.to_owned();
+    }
+    let Some(room) = max.checked_sub(1) else {
+        return String::new();
+    };
+    let mut used = 0;
+    let mut tail: Vec<&str> = text
+        .graphemes(true)
+        .rev()
+        .take_while(|grapheme| {
+            used += display_width(grapheme);
+            used <= room
+        })
+        .collect();
+    tail.reverse();
+    let mut cut = String::from('…');
+    cut.push_str(tail.concat().trim_start());
+    cut
+}
+
 /// The terminal cells that `text` occupies.
 pub fn display_width(text: &str) -> usize {
     unicode_width::UnicodeWidthStr::width(text)

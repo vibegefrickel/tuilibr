@@ -334,8 +334,11 @@ and builds the frame only, with no decoder. `just check` of tuilibr runs three s
 `Section<'a>` (phewr: help rows at run time) and a `BarText` field `keep_end` (agendr: a typed
 query keeps its end when the bar cuts it). Both touch struct literals and type aliases in the apps.
 The tuilibr session changes the crate after a day of notice and tells each app session. The
-notice went out on 2026-11-19, the change comes on 2026-11-20. `Section<'a>` makes a `const`
-`&[Section<'static>]`, and every `BarText` literal adds `keep_end`. Each app
+notice went out on 2026-11-19, and the change came the same day on the request of the maintainer.
+`Section<'a>` makes a `const` `&[Section<'static>]`, and every `BarText` literal adds `keep_end`.
+`frame::truncate_start(text, max)` cuts from the start, the mirror of `truncate_width`. State
+(2026-11-19): done in the tuilibr tree. schnattr changed its two call sites with `keep_end: false`
+(the typed input lives in its omnibox), 1 398 tests pass. youtr, phewr and agendr follow. Each app
 session changes its own call sites within the same hour (schnattr: `ui/help.rs` and the bar fill in
 `ui/status.rs`) and runs `just check`. The maintainer commits tuilibr first, then the apps.
 

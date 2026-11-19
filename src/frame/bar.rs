@@ -14,7 +14,7 @@ use unicode_width::UnicodeWidthStr as _;
 use super::{
     split::NARROW_BELOW,
     style::bar,
-    text::{display_width, truncate_width},
+    text::{display_width, truncate_start, truncate_width},
 };
 
 /// Separates the parts of the middle and the groups at the right edge: room, no divider.
@@ -36,6 +36,9 @@ pub struct BarText {
     pub parts: Vec<String>,
     /// The style of the text.
     pub style: Style,
+    /// A cut keeps the end of the text (`…long query`) instead of its start (`long text…`), for a
+    /// typed query that grows at its end. The first parts go first then.
+    pub keep_end: bool,
 }
 
 /// What the bar shows, filled by the caller.
@@ -102,7 +105,7 @@ pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize
     let mut room = width.saturating_sub(right.width());
     let mut middle = Vec::with_capacity(view.middle.len());
     for text in view.middle {
-        let fitted = fit_parts(&text.parts, room);
+        let fitted = fit_parts(&text.parts, room, text.keep_end);
         room = room.saturating_sub(fitted.width());
         middle.push(Span::styled(fitted, text.style));
     }
@@ -190,18 +193,27 @@ fn mode_block(mode: &ModeView, width: u16) -> Span<'static> {
     )
 }
 
-/// The parts as they fit `room`: the last parts go first, then the rest is cut.
-pub(super) fn fit_parts(parts: &[String], room: usize) -> String {
+/// The parts as they fit `room`: the last parts go first, then the rest is cut at its end. With
+/// `keep_end`, the first parts go first and the cut keeps the end.
+pub(super) fn fit_parts(parts: &[String], room: usize, keep_end: bool) -> String {
     let inner = room.saturating_sub(2);
-    let mut kept = parts.len();
-    while kept > 1 && parts[..kept].join(SEPARATOR).width() > inner {
-        kept -= 1;
+    let mut kept = parts;
+    while kept.len() > 1 && kept.join(SEPARATOR).width() > inner {
+        kept = if keep_end {
+            &kept[1..]
+        } else {
+            &kept[..kept.len() - 1]
+        };
     }
-    let text = parts[..kept].join(SEPARATOR);
+    let text = kept.join(SEPARATOR);
     if text.is_empty() {
         return text;
     }
-    padded(&truncate_width(&text, inner))
+    if keep_end {
+        padded(&truncate_start(&text, inner))
+    } else {
+        padded(&truncate_width(&text, inner))
+    }
 }
 
 /// The groups at the right edge as they fit `room`: the first groups go first, and the last
