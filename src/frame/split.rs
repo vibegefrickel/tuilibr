@@ -40,9 +40,10 @@ pub fn split(area: Rect, list_shown: bool) -> (Rect, Split, Rect) {
     (list, Split::Beside(divider), main)
 }
 
-/// The list box and the main box of the boxed panes. The boxes touch, so there is no divider.
-/// The list box has the width of the list of `split` (`list_width`). The column of the divider
-/// goes to the main box. A hidden list has no area.
+/// The list box and the main box of the boxed panes.
+///
+/// The boxes touch, so there is no divider. The list box has the width of the list of `split`
+/// (`list_width`). The column of the divider goes to the main box. A hidden list has no area.
 pub fn split_boxed(area: Rect, list_shown: bool) -> (Rect, Rect) {
     if !list_shown {
         return (Rect::default(), area);

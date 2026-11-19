@@ -22,7 +22,7 @@ impl Transform {
     const IDENTITY: Self = Self([[1, 0], [0, 1]]);
 
     /// `irot`: quarter turns anti-clockwise.
-    fn rotation(quarter_turns: u8) -> Self {
+    const fn rotation(quarter_turns: u8) -> Self {
         match quarter_turns % 4 {
             0 => Self::IDENTITY,
             1 => Self([[0, -1], [1, 0]]),
@@ -32,7 +32,7 @@ impl Transform {
     }
 
     /// `imir`: axis 0 is the vertical axis (left and right change), axis 1 the horizontal axis.
-    fn mirror(axis: u8) -> Self {
+    const fn mirror(axis: u8) -> Self {
         if axis & 1 == 0 {
             Self([[-1, 0], [0, 1]])
         } else {
@@ -40,7 +40,7 @@ impl Transform {
         }
     }
 
-    fn swaps_axes(self) -> bool {
+    const fn swaps_axes(self) -> bool {
         self.0[0][0] == 0
     }
 
@@ -51,6 +51,7 @@ impl Transform {
     }
 }
 
+/// The item table of a HEIF `meta` box: the primary item, its thumbnails, transforms and sizes.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct HeifItems {
     primary: u32,

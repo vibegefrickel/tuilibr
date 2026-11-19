@@ -27,11 +27,13 @@ use transform::{Channels, transform_for};
 /// 256 KB of RGBA per parallel task.
 const PIXELS_PER_TASK: usize = 64 * 1024;
 
+/// The color space of the terminal surface: the destination of every conversion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum ColorTarget {
     /// Ghostty on macOS.
     #[default]
     DisplayP3,
+    /// Every other terminal, and the tests: an untagged image keeps its values.
     Srgb,
 }
 
@@ -58,10 +60,12 @@ impl ColorTarget {
 /// its values.
 static DISPLAY_P3: AtomicBool = AtomicBool::new(false);
 
+/// Set the target of every conversion. An app calls it once at start, before the first decode.
 pub fn set_target(target: ColorTarget) {
     DISPLAY_P3.store(target == ColorTarget::DisplayP3, Ordering::Relaxed);
 }
 
+/// The target of every conversion: sRGB until an app sets Display P3.
 pub fn target() -> ColorTarget {
     if DISPLAY_P3.load(Ordering::Relaxed) {
         ColorTarget::DisplayP3
@@ -80,22 +84,28 @@ pub enum SourceColor {
     DisplayP3,
     /// Adobe RGB (1998) without a profile: the EXIF mark of a camera JPEG.
     AdobeRgb,
+    /// An embedded ICC profile, shared between the copies of a decoded image.
     Icc(Arc<[u8]>),
     /// The CICP code points (ITU-T H.273) of a HEIF `nclx` box or a PNG `cICP` chunk.
     Cicp {
+        /// The color primaries code point (table 2 of H.273).
         primaries: u8,
+        /// The transfer characteristics code point (table 3 of H.273): 16 is PQ, 18 is HLG.
         transfer: u8,
     },
     /// The PNG `gAMA` and `cHRM` chunks, in units of 1/100000. The chromaticities are white,
     /// red, green and blue, each as x and y.
     PngGamma {
+        /// The `gAMA` value, 45455 for sRGB. `None` when the chunk is missing.
         gamma: Option<u32>,
+        /// The `cHRM` values. `None` when the chunk is missing.
         chromaticities: Option<[u32; 8]>,
     },
 }
 
 impl SourceColor {
-    pub fn of_target(target: ColorTarget) -> Self {
+    /// The source that already matches `target`, for a decoder that converts itself.
+    pub const fn of_target(target: ColorTarget) -> Self {
         match target {
             ColorTarget::DisplayP3 => Self::DisplayP3,
             ColorTarget::Srgb => Self::Srgb,

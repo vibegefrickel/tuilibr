@@ -122,7 +122,7 @@ pub(super) fn thumbnail_is_usable(
     covers && same_shape(thumbnail, primary)
 }
 
-fn same_shape(thumbnail: (u32, u32), primary: (u32, u32)) -> bool {
+const fn same_shape(thumbnail: (u32, u32), primary: (u32, u32)) -> bool {
     (thumbnail.0 >= thumbnail.1) == (primary.0 >= primary.1)
 }
 

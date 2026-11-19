@@ -7,6 +7,7 @@ use libheif_rs::{
 };
 use std::path::Path;
 
+/// A libheif image of one color `rgb` with an interleaved 8-bit RGB plane.
 pub fn solid_image(width: u32, height: u32, rgb: [u8; 3]) -> Image {
     let mut image = Image::new(width, height, ColorSpace::Rgb(RgbChroma::Rgb)).unwrap();
     image
@@ -23,6 +24,7 @@ pub fn solid_image(width: u32, height: u32, rgb: [u8; 3]) -> Image {
     image
 }
 
+/// The encoding options with `orientation` for the item.
 pub fn options(orientation: ImageOrientation) -> EncodingOptions {
     let mut options = EncodingOptions::new().unwrap();
     options.set_image_orientation(orientation);

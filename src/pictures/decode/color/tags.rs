@@ -60,6 +60,7 @@ pub fn png_color(path: &Path) -> Option<SourceColor> {
 }
 
 /// The HDR10 peak of a PNG in nits: `cLLI` (`MaxCLL`) or else `mDCV` (the mastering maximum).
+///
 /// Both store 0.0001 cd/m² units (PNG third edition, W3C Recommendation, tables 19 and 20). Older
 /// drafts and encoders spell the names `cLLi` and `mDCv`, so both spellings count.
 pub fn png_peak(path: &Path) -> Option<f64> {
@@ -232,7 +233,7 @@ mod tests {
     fn png_peak_reads_both_spellings() {
         let dir = test_dir();
         let chunk = |kind: &[u8; 4], body: &[u8]| {
-            let mut bytes = (body.len() as u32).to_be_bytes().to_vec();
+            let mut bytes = u32::try_from(body.len()).unwrap().to_be_bytes().to_vec();
             bytes.extend(kind);
             bytes.extend(body);
             bytes.extend([0; 4]);

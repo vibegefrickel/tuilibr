@@ -27,9 +27,11 @@ pub struct Filtered {
     pub answers: Vec<Answer>,
 }
 
-/// The filter of the terminal events. Every event passes it once, in its order. `AnswerKeys`
-/// reads the Kitty answers first and holds the keys that can start one for at most
-/// `ANSWER_WAIT`; then the owed late answers of the start go.
+/// The filter of the terminal events.
+///
+/// Every event passes it once, in its order. `AnswerKeys` reads the Kitty answers first and holds
+/// the keys that can start one for at most `ANSWER_WAIT`; then the owed late answers of the start
+/// go.
 #[derive(Debug, Default)]
 pub struct LateAnswerFilter {
     keys: AnswerKeys,

@@ -75,6 +75,11 @@ fn native_samples(bytes: &[u8]) -> Vec<u16> {
 }
 
 /// `size` scaled down to fit `max`, or `None` if it already fits or a side is zero.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`scale` is below 1, so each side stays in 0..=u32::MAX"
+)]
 pub fn scaled_down_size(size: (u32, u32), max: (u32, u32)) -> Option<(u32, u32)> {
     let ((orig_w, orig_h), (max_w, max_h)) = (size, max);
     if max_w == 0 || max_h == 0 || orig_w == 0 || orig_h == 0 {
@@ -97,8 +102,10 @@ fn resize_options() -> fir::ResizeOptions {
     fir::ResizeOptions::new().resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::CatmullRom))
 }
 
+/// The pixel layout of a resize. The layout picks the fastest path that keeps the result right.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Layout {
+    /// 3 bytes per pixel, no alpha: the fastest resize.
     Rgb,
     /// The resize multiplies the colors with the alpha before and divides after. A transparent
     /// pixel does not darken its neighbors.
@@ -112,7 +119,7 @@ pub enum Layout {
 }
 
 impl Layout {
-    pub(super) fn pixel_type(self) -> fir::PixelType {
+    pub(super) const fn pixel_type(self) -> fir::PixelType {
         match self {
             Self::Rgb => fir::PixelType::U8x3,
             Self::Rgba | Self::OpaqueRgba => fir::PixelType::U8x4,

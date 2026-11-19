@@ -776,6 +776,19 @@ The decisions of the tuilibr session for agendr (2026-11-19):
   has a confirm question (`y` confirms, every other key cancels) and a plain filter string, phewr
   has neither. A shared confirm body is a candidate for a later step of this phase, not for now.
 
+#### Step 5: one time crate and a shared `time` module (the maintainer, 2026-11-19)
+
+All four apps use jiff 1. schnattr moves from the `time` crate to jiff in a worker (`time-to-jiff`,
+auto review, started 2026-11-19). It needs no crate change. jiff 0.2 stays in schnattr under a
+renamed dependency for the dates of grammers, until grammers moves to jiff 1.
+
+Then tuilibr gets a `time` module on jiff 1, built in a worktree of tuilibr after the maintainer
+commits the omnibox step: the relative age with a "yesterday" option (youtr and schnattr), the
+bar date and time "Thu 19 Nov 13:46" (youtr and schnattr, the date half of agendr), the media
+length "1:02:03" with a padding option (youtr, phewr, schnattr), and the `MinuteClock` of schnattr
+with its guard against a backward clock jump, next to `until_next_minute`. The tuilibr session
+sends the interface for review, and each app session switches its own call sites.
+
 ### The checks of the five repositories (2026-11-19)
 
 The maintainer asked for stricter and more modern checks. A research agent compared the tables

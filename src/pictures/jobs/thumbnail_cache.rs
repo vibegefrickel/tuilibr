@@ -1,5 +1,6 @@
-//! The memory cache of the pictures: the pixels, their Kitty ids and the parked pictures. It
-//! counts the bytes of the pixels and never evicts a picture on the screen. The app sets the
+//! The memory cache of the pictures: the pixels, their Kitty ids and the parked pictures.
+//!
+//! It counts the bytes of the pixels and never evicts a picture on the screen. The app sets the
 //! limits and the key of a picture.
 use image::RgbaImage;
 use lru::LruCache;
@@ -33,7 +34,9 @@ impl CacheLimits {
 /// A grid picture: the padded pixels and the whole cells that the terminal scales it to.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GridPicture {
+    /// The padded RGBA pixels, ready for the Kitty transfer.
     pub image: RgbaImage,
+    /// The whole cells (`c=`, `r=`) that the terminal scales the picture to.
     pub cells: (u16, u16),
 }
 
@@ -57,7 +60,9 @@ impl From<RgbaImage> for GridPicture {
 /// The decode size of the parked thumbnails. Another grid zoom or cell size cannot use them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ParkKey {
+    /// The pixel box of the decode.
     pub target: (u32, u32),
+    /// The cell size in pixels at the time of the decode.
     pub cell_px: (u32, u32),
 }
 
@@ -79,6 +84,7 @@ impl FileStamp {
     }
 }
 
+/// The LRU of the grid pictures by key, with their Kitty ids, the visible set and the parked set.
 pub struct ThumbnailCache<K = usize> {
     cache: LruCache<K, CachedThumb>,
     /// The next Kitty id. The ids count up from 1 and never meet `kitty_output::VIDEO_IMAGE_ID`.
@@ -112,6 +118,7 @@ struct CachedThumb {
 }
 
 impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
+    /// An empty cache with `limits`. The entry cap grows with the first `fit_capacity`.
     pub fn new(limits: CacheLimits) -> Self {
         Self {
             cache: limits
@@ -129,7 +136,7 @@ impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
 
     /// The pixel bytes that the cache holds, for a test.
     #[cfg(any(test, feature = "test-support"))]
-    pub fn bytes(&self) -> usize {
+    pub const fn bytes(&self) -> usize {
         self.bytes
     }
 
@@ -155,6 +162,7 @@ impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
         self.cache.resize(capacity);
     }
 
+    /// The entry cap of the LRU, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn capacity(&self) -> usize {
         self.cache.cap().get()
@@ -264,6 +272,7 @@ impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
         (FileStamp::of(path) == Some(stamp)).then_some(picture)
     }
 
+    /// The count of parked pictures, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn parked_count(&self) -> usize {
         self.parked.len()

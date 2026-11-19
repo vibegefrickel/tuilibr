@@ -3,6 +3,7 @@
 mod clock;
 mod help;
 mod layout;
+mod omnibox;
 mod question;
 mod text;
 mod text_input;

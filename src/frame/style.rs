@@ -5,10 +5,12 @@
 use ratatui::style::{Color, Modifier, Style};
 
 /// The accent of the frame: the colour of everything active, the ground of the selected row, the
-/// box of the pane with the focus and the pill. It is the bright white of the palette (slot 15),
-/// the foreground of a dark theme, so the block is the brightest thing on the screen and the dark
-/// text on it reads at full contrast. The terminal multiplexer draws its active tab in the same
-/// colour. The value is fixed: the theme of the terminal changes it, nothing else.
+/// box of the pane with the focus and the pill.
+///
+/// It is the bright white of the palette (slot 15), the foreground of a dark theme, so the block is
+/// the brightest thing on the screen and the dark text on it reads at full contrast. The terminal
+/// multiplexer draws its active tab in the same colour. The value is fixed: the theme of the
+/// terminal changes it, nothing else.
 pub const fn accent() -> Color {
     Color::White
 }
@@ -18,31 +20,48 @@ pub fn dim() -> Style {
     Style::default().fg(Color::DarkGray)
 }
 
+/// A status note in the omnibox: the gray of the palette (slot 7), readable but quiet.
+pub fn note() -> Style {
+    Style::default().fg(Color::Gray)
+}
+
+/// An alert in the omnibox: the red of the palette (slot 1).
+pub fn alert() -> Style {
+    Style::default().fg(Color::Red)
+}
+
 /// The selected row in a focused pane: the dark of the palette on the accent (`accent`, the bright
-/// white of the palette). A terminal multiplexer draws its active tab in the same block,
-/// so the list and the tabs look the same. It is not reverse video: reverse video takes the bright
-/// text color as the ground, which is brighter than the rest of the screen.
+/// white of the palette).
+///
+/// A terminal multiplexer draws its active tab in the same block, so the list and the tabs look the
+/// same. It is not reverse video: reverse video takes the bright text color as the ground, which is
+/// brighter than the rest of the screen.
 pub fn selection() -> Style {
     Style::default().fg(Color::Black).bg(accent())
 }
 
 /// The selected row in the pane without the focus: the dark gray of the palette (slot 8) as the
-/// ground with the normal text, so the row stays found but does not catch the eye. The dim of the
-/// pane softens it further. The box of a pane without the focus takes the same dark gray.
+/// ground with the normal text, so the row stays found but does not catch the eye.
+///
+/// The dim of the pane softens it further. The box of a pane without the focus takes the same dark
+/// gray.
 pub fn unfocused_selection() -> Style {
     Style::default().bg(Color::DarkGray)
 }
 
-/// Secondary text (the second row, the markers, a faint name): dim on a plain row, and the one
-/// text tone of the ground on a selected row. There the weight makes the hierarchy, because a
-/// dimmed or gray second tone has no contrast on the ground.
+/// Secondary text (the second row, the markers, a faint name): dim on a plain row, and the one text
+/// tone of the ground on a selected row.
+///
+/// There the weight makes the hierarchy, because a dimmed or gray second tone has no contrast on
+/// the ground.
 pub fn secondary(selected: bool, _focused: bool) -> Style {
     if selected { Style::default() } else { dim() }
 }
 
 /// The unread count as a pill on the right edge of a row: the dark of the palette on the normal
-/// green (slot 2), the dimmer of the two greens. A count is a mark, not the active state, so it
-/// takes no accent and reads on every row ground.
+/// green (slot 2), the dimmer of the two greens.
+///
+/// A count is a mark, not the active state, so it takes no accent and reads on every row ground.
 pub fn pill() -> Style {
     Style::default()
         .fg(Color::Black)

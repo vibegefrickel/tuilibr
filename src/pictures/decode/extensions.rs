@@ -9,6 +9,7 @@ pub const IMAGE_EXTENSIONS: &[&str] = &[
     "tga",
 ];
 
+/// The one extension of the jxl-oxide route.
 #[cfg(feature = "jxl")]
 pub const JXL_EXTENSIONS: &[&str] = &["jxl"];
 

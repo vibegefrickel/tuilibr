@@ -24,8 +24,9 @@ pub fn divider(buffer: &mut Buffer, split: Split) {
 }
 
 /// The rounded box of a pane, with `title` in the top border after one line cell, as in lazygit.
-/// The box of the pane with the focus takes the accent, so the eye finds it. The caller names the panes,
-/// because the frame knows no app. It returns the area inside the box.
+///
+/// The box of the pane with the focus takes the accent, so the eye finds it. The caller names the
+/// panes, because the frame knows no app. It returns the area inside the box.
 pub fn pane_box(buffer: &mut Buffer, area: Rect, title: &str, active: bool) -> Rect {
     let color = box_color(active);
     let block = Block::default()
@@ -45,9 +46,10 @@ pub fn pane_inner(area: Rect) -> Rect {
     Block::default().borders(Borders::ALL).inner(area)
 }
 
-/// The rule across row `y` of the pane box `area` meets the side borders in T pieces (`├────┤`),
-/// so the header and the content below it look like two parts of one box. The whole row takes
-/// the colour of the box.
+/// The rule across row `y` of the pane box `area` meets the side borders in T pieces (`├────┤`), so
+/// the header and the content below it look like two parts of one box.
+///
+/// The whole row takes the colour of the box.
 pub fn join_rule(buffer: &mut Buffer, area: Rect, y: u16, active: bool) {
     if area.width < 2 || y <= area.top() || y + 1 >= area.bottom() {
         return;
@@ -69,7 +71,7 @@ pub fn join_rule(buffer: &mut Buffer, area: Rect, y: u16, active: bool) {
 
 /// The accent for the box of the pane with the focus, the same accent as the selected row and the
 /// active tab of the multiplexer, else the dark gray of the lines.
-fn box_color(active: bool) -> Color {
+const fn box_color(active: bool) -> Color {
     if active { accent() } else { Color::DarkGray }
 }
 
@@ -89,9 +91,11 @@ fn fill(buffer: &mut Buffer, area: Rect, symbol: &str) {
     }
 }
 
-/// The pane without the focus is faint. With the list hidden, there is one pane, and `pane` is
-/// `None`. The cells cannot dim a picture, because the terminal draws it over them. So the list
-/// draws the dimmed form of its pictures itself (`Shade::Dimmed`).
+/// The pane without the focus is faint.
+///
+/// With the list hidden, there is one pane, and `pane` is `None`. The cells cannot dim a picture,
+/// because the terminal draws it over them. So the list draws the dimmed form of its pictures
+/// itself (`Shade::Dimmed`).
 pub fn dim_pane(buffer: &mut Buffer, pane: Option<Rect>) {
     let Some(pane) = pane else {
         return;

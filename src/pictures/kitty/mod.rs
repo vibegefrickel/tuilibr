@@ -16,12 +16,15 @@ use std::sync::{Arc, Mutex, PoisonError};
 /// never touches the images of the real terminal.
 #[derive(Debug, Clone)]
 pub enum GraphicsOutput {
+    /// The real terminal.
     Stdout,
+    /// A shared byte buffer, for a test app that looks at the sequences.
     #[cfg(any(test, feature = "test-support"))]
     Buffer(Arc<Mutex<Vec<u8>>>),
 }
 
 impl GraphicsOutput {
+    /// An empty buffer output, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn buffer() -> Self {
         Self::Buffer(Arc::default())
@@ -68,6 +71,7 @@ impl Write for GraphicsOutput {
 /// There is no pixel offset (`X=`, `Y=`): herdr turns an offset into a stretched picture.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct DisplayOptions {
+    /// The image id (`i=`). Without an id, the terminal cannot place or delete the image later.
     pub id: Option<u32>,
     /// The placement id (`p=`) of the placement that a transmit with a place makes. A second
     /// place with the same ids moves the placement.
@@ -105,6 +109,11 @@ pub const MAX_PAYLOAD_BYTES: usize = 64 << 20;
 pub const EMIT_PASS_BYTES: usize = 4 * 1024 * 1024;
 
 /// `size`, or the largest box of its aspect ratio whose RGB payload fits [`MAX_PAYLOAD_BYTES`].
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`scale` is below 1, so the side stays in 0..=u32::MAX"
+)]
 pub fn capped_box(size: (u32, u32)) -> (u32, u32) {
     let (width, height) = size;
     let bytes = u64::from(width) * u64::from(height) * 3;
@@ -123,16 +132,21 @@ const OPACITY_CHUNK: usize = 4096;
 /// Raw pixels: RGB (`f=24`) or RGBA (`f=32`).
 #[derive(Debug, Clone, Copy)]
 pub struct Pixels<'a> {
+    /// The width in pixels.
     pub width: u32,
+    /// The height in pixels.
     pub height: u32,
+    /// True for RGBA (`f=32`), false for RGB (`f=24`).
     pub alpha: bool,
+    /// The pixel bytes: `width * height` times 3 or 4.
     pub data: &'a [u8],
     /// Send RGBA as it is through the temp file medium, without the scan and the RGB copy.
     pub keep_alpha: bool,
 }
 
 impl Pixels<'_> {
-    pub fn dimensions(&self) -> (u32, u32) {
+    /// The size in pixels as one pair.
+    pub const fn dimensions(&self) -> (u32, u32) {
         (self.width, self.height)
     }
 
@@ -203,6 +217,7 @@ pub enum Transfer {
     TempFile,
 }
 
+/// How the loop pictures play: the app swaps the frames, or the terminal plays them.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Loops {
     /// The app swaps the frame placements on the ticks of its loop clock.
@@ -223,6 +238,7 @@ impl Loops {
     }
 }
 
+/// The medium and the loop path of one terminal. The probe or the config picks both.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct KittyBackend {
     transfer: Transfer,
@@ -230,6 +246,7 @@ pub struct KittyBackend {
 }
 
 impl KittyBackend {
+    /// A backend with `transfer` and the tick loops, the path that every terminal supports.
     pub const fn new(transfer: Transfer) -> Self {
         Self {
             transfer,
@@ -237,17 +254,19 @@ impl KittyBackend {
         }
     }
 
+    /// The same backend with `loops`.
     #[must_use]
-    pub fn with_loops(self, loops: Loops) -> Self {
+    pub const fn with_loops(self, loops: Loops) -> Self {
         Self { loops, ..self }
     }
 
     /// The terminal player needs [`Transfer::TempFile`].
-    pub fn transfer(self) -> Transfer {
+    pub const fn transfer(self) -> Transfer {
         self.transfer
     }
 
-    pub fn loops(self) -> Loops {
+    /// The loop path of the terminal.
+    pub const fn loops(self) -> Loops {
         self.loops
     }
 
@@ -352,7 +371,8 @@ mod tests {
 
     #[test]
     fn opaque_check_reads_every_chunk() {
-        let mut image = RgbaImage::from_pixel(OPACITY_CHUNK as u32 + 1, 2, Rgba([1, 2, 3, 255]));
+        let chunk = u32::try_from(OPACITY_CHUNK).unwrap();
+        let mut image = RgbaImage::from_pixel(chunk + 1, 2, Rgba([1, 2, 3, 255]));
         let rgb = Pixels::from(&image).opaque_rgb().unwrap();
         assert_eq!(rgb.len(), image.as_raw().len() / 4 * 3);
         assert_eq!(rgb[rgb.len() - 3..], [1, 2, 3]);

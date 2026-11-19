@@ -24,10 +24,11 @@ pub enum Shade {
     Header,
 }
 
-/// The picture of one place. The implementation knows the source and the picture engine. The
-/// frame knows only the box. When the picture is not ready, the stand-in fills its place, so
-/// the text lines up. The terminal draws a picture above the text, so the frame writes no
-/// cells for a picture.
+/// The picture of one place.
+///
+/// The implementation knows the source and the picture engine. The frame knows only the box. When
+/// the picture is not ready, the stand-in fills its place, so the text lines up. The terminal draws
+/// a picture above the text, so the frame writes no cells for a picture.
 pub trait Pictures {
     /// The cells of the picture in a box of `columns` x `rows`. `None` while there is no
     /// picture or its decode runs.

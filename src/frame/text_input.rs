@@ -10,6 +10,7 @@ use ratatui::{
     widgets::Paragraph,
 };
 
+use crate::cells::to_u16;
 use crate::text_field::TextField;
 
 use super::text::display_width;
@@ -59,9 +60,7 @@ pub fn draw_text_field(
     if area.width == 0 || area.height == 0 {
         return None;
     }
-    let prefix_columns = u16::try_from(display_width(&view.prefix.content))
-        .unwrap_or(u16::MAX)
-        .min(area.width);
+    let prefix_columns = to_u16(display_width(&view.prefix.content)).min(area.width);
     let width = text_field_width(area, &view.prefix);
     let cursor = match view.rows {
         Rows::One => {
@@ -72,7 +71,7 @@ pub fn draw_text_field(
                 view.suffix.clone(),
             ]);
             frame.render_widget(Paragraph::new(line), Rect { height: 1, ..area });
-            let column = u16::try_from(column).unwrap_or(u16::MAX);
+            let column = to_u16(column);
             Some(Position::new(
                 area.x + prefix_columns.saturating_add(column).min(area.width - 1),
                 area.y,
@@ -94,7 +93,7 @@ pub fn draw_text_field(
                 .take(usize::from(area.height))
                 .enumerate()
             {
-                let y = text.y + u16::try_from(index).unwrap_or(u16::MAX);
+                let y = text.y + to_u16(index);
                 frame.render_widget(
                     Paragraph::new(Line::styled(row.clone(), view.style)),
                     Rect {
@@ -118,8 +117,8 @@ pub fn draw_text_field(
             (scroll..scroll + usize::from(area.height))
                 .contains(&row)
                 .then(|| {
-                    let column = u16::try_from(column).unwrap_or(u16::MAX);
-                    let row = u16::try_from(row - scroll).unwrap_or(u16::MAX);
+                    let column = to_u16(column);
+                    let row = to_u16(row - scroll);
                     Position::new(
                         area.x + prefix_columns.saturating_add(column).min(area.width - 1),
                         area.y + row,

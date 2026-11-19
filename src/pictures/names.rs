@@ -1,6 +1,7 @@
-//! The name of the app in the files, the threads and the variables of the module. The app sets its
-//! name one time at start, so two apps never share a cache key or a temp file name, and the module
-//! holds no app name of its own.
+//! The name of the app in the files, the threads and the variables of the module.
+//!
+//! The app sets its name one time at start, so two apps never share a cache key or a temp file
+//! name, and the module holds no app name of its own.
 
 use std::sync::OnceLock;
 

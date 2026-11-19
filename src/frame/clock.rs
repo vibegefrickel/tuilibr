@@ -2,9 +2,11 @@
 
 use std::time::{Duration, SystemTime};
 
-/// The wall clock time from `now` to the next full minute. A local offset has whole minutes, so
-/// the full minute of the system clock is also the full minute of the bar. The caller compares
-/// the wall clock, because a monotonic timer stops while the computer sleeps.
+/// The wall clock time from `now` to the next full minute.
+///
+/// A local offset has whole minutes, so the full minute of the system clock is also the full minute
+/// of the bar. The caller compares the wall clock, because a monotonic timer stops while the
+/// computer sleeps.
 pub fn until_next_minute(now: SystemTime) -> Duration {
     let since_epoch = now
         .duration_since(SystemTime::UNIX_EPOCH)

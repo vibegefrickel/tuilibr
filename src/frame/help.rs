@@ -10,6 +10,7 @@ use ratatui::{
 };
 
 use super::style::dim;
+use crate::cells::to_u16;
 
 /// A heading and its keys with what they do. The lifetime lets an app build rows at run time, on
 /// the stack; a const table is `Section<'static>`.
@@ -33,12 +34,14 @@ pub struct HelpView<'a> {
 }
 
 /// The one dialog box of every app: a help page, a confirm question, a form or a downloads window
-/// sits in it, so each app shows the same box. It is centered in `area`, with rounded corners like
-/// the panes of the maximal layout, its title after one line cell like a pane box, one cell of
-/// padding on every side, and an optional hint at the bottom right, before one line cell, as the
-/// mirror of the title. It keeps a margin of 4 columns and 2 rows. When `size` does not fit the
-/// height, the padding rows go first, then the margin rows, so a low screen gives the rows to the
-/// body. The caller draws the body in the returned area inside the box.
+/// sits in it, so each app shows the same box.
+///
+/// It is centered in `area`, with rounded corners like the panes of the maximal layout, its title
+/// after one line cell like a pane box, one cell of padding on every side, and an optional hint at
+/// the bottom right, before one line cell, as the mirror of the title. It keeps a margin of 4
+/// columns and 2 rows. When `size` does not fit the height, the padding rows go first, then the
+/// margin rows, so a low screen gives the rows to the body. The caller draws the body in the
+/// returned area inside the box.
 pub fn dialog_box(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -91,9 +94,11 @@ fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> (Rect, Padding) {
     (rect, padding)
 }
 
-/// The keys in two columns of sections, in a box in the middle of `area`. When the screen is
-/// too narrow for two columns and one column fits its height, the second column goes below the
-/// first. The box has no scroll, so a low screen keeps the two columns and cuts text, not keys.
+/// The keys in two columns of sections, in a box in the middle of `area`.
+///
+/// When the screen is too narrow for two columns and one column fits its height, the second column
+/// goes below the first. The box has no scroll, so a low screen keeps the two columns and cuts
+/// text, not keys.
 pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
     let column = view.key_width + view.text_width;
     let size = help_size(area, view);
@@ -125,8 +130,9 @@ pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
 const HINT: &str = "any key closes";
 
 /// The size that `draw_help` asks `dialog_box` for: the columns, the gap, the padding and the
-/// border, and every row plus the padding and the border, so a new key cannot push the last
-/// rows out unnoticed.
+/// border, and every row plus the padding and the border, so a new key cannot push the last rows
+/// out unnoticed.
+///
 /// One column when two columns do not fit the width and one column fits the height. `dialog_box`
 /// then keeps its margin of 4 columns and 2 rows.
 pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
@@ -176,5 +182,5 @@ pub fn section_lines<'a>(sections: &[Section<'a>], key_width: u16) -> Vec<Line<'
 /// The rows of one column as `draw_help` draws it.
 pub fn column_rows(sections: &[Section<'_>]) -> u16 {
     let keys: usize = sections.iter().map(|(_, keys)| keys.len() + 2).sum();
-    u16::try_from(keys.saturating_sub(1)).unwrap_or(u16::MAX)
+    to_u16(keys.saturating_sub(1))
 }

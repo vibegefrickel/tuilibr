@@ -24,6 +24,7 @@ impl Default for TerminalImages {
 }
 
 impl TerminalImages {
+    /// An empty record with the default budget.
     pub fn new() -> Self {
         Self {
             stored: LruCache::unbounded(),
@@ -39,12 +40,14 @@ impl TerminalImages {
         self.bytes += bytes;
     }
 
+    /// Forget `id` and its bytes, after a delete in the terminal.
     pub fn remove(&mut self, id: u32) {
         if let Some(bytes) = self.stored.pop(&id) {
             self.bytes -= bytes;
         }
     }
 
+    /// True when the terminal stores `id`, so `a=p` can place it.
     pub fn contains(&self, id: u32) -> bool {
         self.stored.contains(&id)
     }
@@ -59,21 +62,25 @@ impl TerminalImages {
         self.stored.promote(&id);
     }
 
+    /// Forget every image, after a delete of all images.
     pub fn clear(&mut self) {
         self.stored.clear();
         self.bytes = 0;
     }
 
+    /// The count of stored images, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn len(&self) -> usize {
         self.stored.len()
     }
 
+    /// True when the terminal stores no image, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn is_empty(&self) -> bool {
         self.stored.is_empty()
     }
 
+    /// The pixel bytes of every stored image.
     pub const fn bytes(&self) -> usize {
         self.bytes
     }

@@ -1,8 +1,10 @@
-//! The copies of a decoded picture for the boxes of cells that show it. The Kitty layer places a
-//! copy 1:1 in its cells, without a scale, so each copy has the exact pixel size of its box. A
-//! chat picture fills its box and gets rounded corners. A message picture keeps its aspect and
-//! its hard corners, and transparent pixels fill the rest of its box. A tile of a message fills
-//! its square box with the middle of the picture, with hard corners and a transparent inset.
+//! The copies of a decoded picture for the boxes of cells that show it.
+//!
+//! The Kitty layer places a copy 1:1 in its cells, without a scale, so each copy has the exact
+//! pixel size of its box. A chat picture fills its box and gets rounded corners. A message picture
+//! keeps its aspect and its hard corners, and transparent pixels fill the rest of its box. A tile
+//! of a message fills its square box with the middle of the picture, with hard corners and a
+//! transparent inset.
 //!
 //! Each resize goes through `fast_image_resize` with the filter of `resize`.
 
@@ -34,15 +36,19 @@ pub enum Kind {
     Chat,
     /// A picture of a message: it never grows and keeps its hard corners. An own message
     /// (`right`) puts it at the right edge of its box, so it sits flush right.
-    Message { right: bool },
+    Message {
+        /// True for an own message: the picture sits flush at the right edge of its box.
+        right: bool,
+    },
     /// A tile in the grid of a message with two or more pictures: the middle of the picture
     /// fills the box less `TILE_INSET`, with hard corners.
     Tile,
 }
 
 /// The pixel size of the copy for a box of `size` pixels: a message picture or a tile at most
-/// `MESSAGE_MAX_PX` on its longest side, with the shape of the box. A chat picture keeps the box
-/// size, so its inset and its corners stay one screen pixel.
+/// `MESSAGE_MAX_PX` on its longest side, with the shape of the box.
+///
+/// A chat picture keeps the box size, so its inset and its corners stay one screen pixel.
 pub fn capped((width, height): (u32, u32), kind: Kind) -> (u32, u32) {
     let longest = width.max(height);
     if matches!(kind, Kind::Chat) || longest <= MESSAGE_MAX_PX {
@@ -94,7 +100,7 @@ impl Bitmap {
     }
 
     /// Whether the bytes have an alpha channel.
-    pub fn has_alpha(&self) -> bool {
+    pub const fn has_alpha(&self) -> bool {
         matches!(self, Self::Rgba(_))
     }
 
@@ -125,9 +131,11 @@ impl<'a> From<&'a Bitmap> for Pixels<'a> {
     }
 }
 
-/// The copy of `source` for a box of `size` pixels. A chat picture gets the rounded corners and
-/// a transparent inset (`chat_copy`). A message picture shrinks into the box with its aspect.
-/// A tile is the middle of the picture in a transparent inset (`tile_copy`).
+/// The copy of `source` for a box of `size` pixels.
+///
+/// A chat picture gets the rounded corners and a transparent inset (`chat_copy`). A message picture
+/// shrinks into the box with its aspect. A tile is the middle of the picture in a transparent inset
+/// (`tile_copy`).
 pub fn boxed(source: &DynamicImage, size: (u32, u32), kind: Kind) -> Bitmap {
     match kind {
         Kind::Chat => Bitmap::Rgba(chat_copy(source, size)),
@@ -139,6 +147,11 @@ pub fn boxed(source: &DynamicImage, size: (u32, u32), kind: Kind) -> Bitmap {
 /// A copy of `bitmap` with the alpha of each pixel multiplied by `DIMMED_ALPHA`. A transparent
 /// pixel stays transparent, and the copy is RGBA. The dim reads the bright copy and decodes
 /// nothing.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`DIMMED_ALPHA` is in 0..=1, so the rounded alpha is in 0..=255"
+)]
 pub fn dimmed(bitmap: &Bitmap) -> Bitmap {
     let mut pixels = bitmap.to_rgba8();
     for pixel in pixels.pixels_mut() {

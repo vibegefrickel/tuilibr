@@ -83,6 +83,11 @@ fn whole_cells(size: (u32, u32), target: (u32, u32), cell_px: (u32, u32)) -> (u1
 }
 
 /// `size` scaled up to fit `target`: the size of the sharp decode of a preview.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the scale fits `size` into `target`, so each side stays in 0..=u32::MAX"
+)]
 fn scaled_up_to(size: (u32, u32), target: (u32, u32)) -> (u32, u32) {
     let (width, height) = (f64::from(size.0.max(1)), f64::from(size.1.max(1)));
     let scale = f64::min(f64::from(target.0) / width, f64::from(target.1) / height);
@@ -94,6 +99,11 @@ fn scaled_up_to(size: (u32, u32), target: (u32, u32)) -> (u32, u32) {
 }
 
 /// The smallest canvas with the shape of `target` that holds `size`.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the sides are positive, and `as` saturates a canvas above u32::MAX"
+)]
 fn box_shaped_canvas(size: (u32, u32), target: (u32, u32)) -> (u32, u32) {
     let (width, height) = (f64::from(size.0), f64::from(size.1));
     let (box_w, box_h) = (f64::from(target.0.max(1)), f64::from(target.1.max(1)));

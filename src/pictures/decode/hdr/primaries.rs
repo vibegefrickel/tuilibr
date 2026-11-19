@@ -14,7 +14,7 @@ pub(super) enum Primaries {
 
 impl Primaries {
     /// Other codes count as BT.2020, the primaries of BT.2100.
-    pub(super) fn of_cicp(primaries: u8) -> Self {
+    pub(super) const fn of_cicp(primaries: u8) -> Self {
         match primaries {
             1 => Self::Bt709,
             11 => Self::DciP3,
@@ -23,14 +23,14 @@ impl Primaries {
         }
     }
 
-    pub(super) fn of_target(target: ColorTarget) -> Self {
+    pub(super) const fn of_target(target: ColorTarget) -> Self {
         match target {
             ColorTarget::DisplayP3 => Self::DisplayP3,
             ColorTarget::Srgb => Self::Bt709,
         }
     }
 
-    fn chromaticities(self) -> [[f64; 2]; 3] {
+    const fn chromaticities(self) -> [[f64; 2]; 3] {
         match self {
             Self::Bt709 => [[0.64, 0.33], [0.30, 0.60], [0.15, 0.06]],
             Self::DisplayP3 | Self::DciP3 => [[0.680, 0.320], [0.265, 0.690], [0.150, 0.060]],
@@ -38,7 +38,7 @@ impl Primaries {
         }
     }
 
-    fn white(self) -> [f64; 2] {
+    const fn white(self) -> [f64; 2] {
         match self {
             Self::DciP3 => [0.314, 0.351],
             _ => D65,

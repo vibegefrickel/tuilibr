@@ -7,10 +7,14 @@ use std::sync::OnceLock;
 /// A QOI read takes one core. More threads than cores give nothing.
 const MAX_CACHE_READ_THREADS: usize = 8;
 
+/// The phase of a thumbnail job. Each phase has its own slots, and the cache reads their own pool.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ThumbPhase {
+    /// A read of the disk cache: a QOI decode.
     CacheRead,
+    /// A fast first picture: an embedded thumbnail or a downscaled decode.
     Preview,
+    /// The final thumbnail from the full decode.
     Sharp,
 }
 

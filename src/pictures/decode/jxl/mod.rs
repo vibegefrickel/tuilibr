@@ -319,7 +319,7 @@ impl IccToTarget {
     }
 
     /// The rendered samples and the output exist at the same time.
-    fn bytes_per_pixel(&self) -> usize {
+    const fn bytes_per_pixel(&self) -> usize {
         let sample_bytes = match self.transform {
             IccTransform::Eight(_) => 1,
             IccTransform::Sixteen(_) => 2,
@@ -634,11 +634,15 @@ impl Walk {
 #[cfg(any(test, feature = "test-support"))]
 #[derive(Debug)]
 pub struct CopyTimes {
+    /// The name of the copy route that the file took, for the report of a bench.
     pub route: &'static str,
     /// False when the file takes the stream, for example with patches.
     pub on_all_cores: bool,
+    /// The time of each render of the frame.
     pub render: Vec<std::time::Duration>,
+    /// The time of each copy on one core through the stream.
     pub stream: Vec<std::time::Duration>,
+    /// The time of each copy on all cores.
     pub parallel: Vec<std::time::Duration>,
 }
 

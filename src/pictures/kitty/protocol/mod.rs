@@ -120,6 +120,7 @@ fn with_opaque_as_rgb<T>(
     }
 }
 
+/// The control keys of a transfer: the first escape code and the chunks after it.
 pub struct Keys<'a> {
     /// The keys of the first escape code, for the format key of the medium.
     pub first: &'a dyn Fn(u32) -> String,
@@ -134,6 +135,7 @@ impl fmt::Debug for Keys<'_> {
     }
 }
 
+/// Write `pixels` through `transfer` with `keys`, in chunks. An empty image writes nothing.
 pub fn write_pixels<W: Write + ?Sized>(
     out: &mut W,
     pixels: Pixels<'_>,
@@ -169,7 +171,7 @@ pub fn write_pixels<W: Write + ?Sized>(
     }
 }
 
-fn raw_format(pixels: Pixels<'_>) -> u32 {
+const fn raw_format(pixels: Pixels<'_>) -> u32 {
     if pixels.alpha { 32 } else { 24 }
 }
 
@@ -306,11 +308,12 @@ pub fn delete_placement_to<W: Write + ?Sized>(
     apc(out, format_args!("a=d,d=i,i={id},p={placement},q=2"), b"")
 }
 
-/// Place a stored image at the cursor as the placement `placement`, scaled to `cell_box`. A
-/// second place with the same ids moves the placement. `C=1` keeps the text cursor fixed.
-/// `below_backgrounds` puts the picture under the cell backgrounds ([`BELOW_BACKGROUNDS`]).
-/// With `errors`, the terminal answers an error (`q=1`), for example `ENOENT` for an image that
-/// it does not hold. Else it answers nothing (`q=2`).
+/// Place a stored image at the cursor as the placement `placement`, scaled to `cell_box`.
+///
+/// A second place with the same ids moves the placement. `C=1` keeps the text cursor fixed.
+/// `below_backgrounds` puts the picture under the cell backgrounds ([`BELOW_BACKGROUNDS`]). With
+/// `errors`, the terminal answers an error (`q=1`), for example `ENOENT` for an image that it does
+/// not hold. Else it answers nothing (`q=2`).
 pub fn place_as_to<W: Write + ?Sized>(
     out: &mut W,
     id: u32,

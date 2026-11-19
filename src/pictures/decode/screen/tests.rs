@@ -11,6 +11,11 @@ use image::{DynamicImage, Rgb, RgbImage, Rgba, RgbaImage};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+/// A gradient value that fits a byte. The test images are small enough.
+fn byte(value: u32) -> u8 {
+    u8::try_from(value).unwrap()
+}
+
 /// Every checked-in SDR still that the build decodes. The HDR files resize in 16 bit before the
 /// tone map, and `decode::hdr` tests them.
 fn still_fixtures() -> Vec<PathBuf> {
@@ -181,7 +186,7 @@ fn wire_bytes_match_rgba_path() {
 fn opaque_zoom_crops_are_rgb() {
     let dir = test_dir();
     let path = dir.path().join("wide.png");
-    RgbImage::from_fn(64, 32, |x, y| Rgb([x as u8 * 4, y as u8 * 8, 7]))
+    RgbImage::from_fn(64, 32, |x, y| Rgb([byte(x * 4), byte(y * 8), 7]))
         .save(&path)
         .unwrap();
     let source = decode_image(&path, None, EmbeddedThumbnail::Deny)
@@ -194,7 +199,7 @@ fn opaque_zoom_crops_are_rgb() {
         assert_eq!(crop.dimensions(), dst);
     }
     let expected = RgbImage::from_fn(40, 20, |x, y| {
-        Rgb([(x + 8) as u8 * 4, (y + 4) as u8 * 8, 7])
+        Rgb([byte((x + 8) * 4), byte((y + 4) * 8), 7])
     });
     assert_eq!(
         source.crop_resized((8, 4, 40, 20), (40, 20)),
@@ -262,7 +267,7 @@ fn other_pixel_types_turn_8_bit() {
 
 #[test]
 fn crop_scales_region_both_ways() {
-    let image = RgbImage::from_fn(40, 30, |x, y| Rgb([x as u8 * 6, y as u8 * 8, 99]));
+    let image = RgbImage::from_fn(40, 30, |x, y| Rgb([byte(x * 6), byte(y * 8), 99]));
     let rgb = ScreenImage::from(image.clone());
     let rgba = ScreenImage::from(DynamicImage::ImageRgb8(image.clone()).into_rgba8());
     let ScreenImage::Rgba(opaque) = rgba.clone() else {

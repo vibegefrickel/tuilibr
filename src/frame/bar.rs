@@ -11,6 +11,8 @@ use ratatui::{
 };
 use unicode_width::UnicodeWidthStr as _;
 
+use crate::cells::to_u16;
+
 use super::{
     split::NARROW_BELOW,
     style::bar,
@@ -60,18 +62,17 @@ pub struct BarView {
     pub icons: Vec<Span<'static>>,
 }
 
-/// The bar, left to right: the mode block, the left group, the middle centered in the free
-/// room, the right groups and the icons at the end. The right groups give up their first groups
-/// when the middle does not fit whole, and keep the time whole as long as the bar has room: the
-/// left group gives way to the icons and the time. When the left group does not fit, it starts
-/// late enough that its part `current` (the selected tab) shows, so `H` and `L` scroll through
-/// it. Returns where each part of the left group landed, one area per part in its order, for
-/// the mouse. The parts that do not fit have an empty area.
+/// The bar, left to right: the mode block, the left group, the middle centered in the free room,
+/// the right groups and the icons at the end.
+///
+/// The right groups give up their first groups when the middle does not fit whole, and keep the
+/// time whole as long as the bar has room: the left group gives way to the icons and the time. When
+/// the left group does not fit, it starts late enough that its part `current` (the selected tab)
+/// shows, so `H` and `L` scroll through it. Returns where each part of the left group landed, one
+/// area per part in its order, for the mouse. The parts that do not fit have an empty area.
 pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize) -> Vec<Rect> {
     let block = mode_block(&view.mode, area.width);
-    let cells = |spans: &[Span<'_>]| {
-        u16::try_from(spans.iter().map(Span::width).sum::<usize>()).unwrap_or(u16::MAX)
-    };
+    let cells = |spans: &[Span<'_>]| to_u16(spans.iter().map(Span::width).sum::<usize>());
     let block_cells = cells(std::slice::from_ref(&block));
     let time = padded(&view.time).width();
     let mut groups = view.right;
@@ -85,7 +86,7 @@ pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize
         .width
         .saturating_sub(block_cells)
         .saturating_sub(cells(&view.icons))
-        .saturating_sub(u16::try_from(time).unwrap_or(u16::MAX));
+        .saturating_sub(to_u16(time));
     let left_from = area.x.saturating_add(block_cells);
     let (left, places) = fit_left(
         view.left,
@@ -135,7 +136,7 @@ fn fit_left(
 ) -> (Vec<Span<'static>>, Vec<Rect>) {
     let widths: Vec<u16> = parts
         .iter()
-        .map(|part| u16::try_from(display_width(&part.content)).unwrap_or(u16::MAX))
+        .map(|part| to_u16(display_width(&part.content)))
         .collect();
     let first = window_start(&widths, area.width, current);
     let mut kept = Vec::new();

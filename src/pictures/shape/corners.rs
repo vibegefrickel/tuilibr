@@ -7,10 +7,16 @@ use image::RgbaImage;
 /// not work, because the boxes of a list and of a header have different sizes.
 pub const CORNER_RADIUS: f32 = 0.1;
 
-/// `pixels` with the alpha of each pixel outside the four quarter circles set to 0. The edge is
-/// one pixel of the bitmap soft. The chat copy calls it after the resize to the box
+/// `pixels` with the alpha of each pixel outside the four quarter circles set to 0.
+///
+/// The edge is one pixel of the bitmap soft. The chat copy calls it after the resize to the box
 /// (`copies::boxed`), and the terminal shows the copy 1:1, so the soft edge is one pixel of the
 /// screen. The colors stay, so a scale blends no black into the edge.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`radius` is a tenth of a side and `cover` is in 0..=1, so both results fit"
+)]
 pub fn round_corners(mut pixels: RgbaImage) -> RgbaImage {
     let (width, height) = pixels.dimensions();
     let radius = width.min(height) as f32 * CORNER_RADIUS;

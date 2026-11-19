@@ -148,6 +148,7 @@ pub(super) mod tests {
         assert_eq!(jpeg_icc_profile(&split).unwrap(), icc);
     }
 
+    /// A JPEG whose EXIF holds `color_space` and `index`, for the Adobe RGB tests.
     pub fn jpeg_with_color_space(color_space: u16, index: &str) -> Vec<u8> {
         use exif::experimental::Writer;
         use exif::{Field, In, Tag, Value};

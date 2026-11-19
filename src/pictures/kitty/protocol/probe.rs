@@ -73,7 +73,7 @@ pub fn chosen_loops(
     override_value
         .and_then(Loops::parse)
         .or(config)
-        .or(herdr.then_some(Loops::Ticks))
+        .or_else(|| herdr.then_some(Loops::Ticks))
 }
 
 fn fixed_transfer(override_value: Option<&str>, ssh: bool) -> Option<Transfer> {
@@ -140,10 +140,12 @@ pub fn detect_backend(
     let transfer = fixed.unwrap_or_else(|| {
         probe_file.map_or(Transfer::Direct, |path| transfer_after_probe(answer, &path))
     });
-    let loops = loops.unwrap_or(if answer_for(answer, ANIMATION_PROBE_ID) == Some(true) {
-        Loops::Animation
-    } else {
-        Loops::Ticks
+    let loops = loops.unwrap_or_else(|| {
+        if answer_for(answer, ANIMATION_PROBE_ID) == Some(true) {
+            Loops::Animation
+        } else {
+            Loops::Ticks
+        }
     });
     KittyBackend::new(transfer).with_loops(loops)
 }
@@ -166,7 +168,7 @@ fn transfer_after_probe(answer: &[u8], path: &Path) -> Transfer {
 }
 
 /// The loop path with its protocol key. `None` is a grid without loops.
-pub fn describe_loops(loops: Option<Loops>) -> &'static str {
+pub const fn describe_loops(loops: Option<Loops>) -> &'static str {
     match loops {
         Some(Loops::Animation) => "Kitty animation (a=f)",
         Some(Loops::Ticks) => "ticks (a=p)",
@@ -175,7 +177,7 @@ pub fn describe_loops(loops: Option<Loops>) -> &'static str {
 }
 
 /// The medium with its protocol key.
-pub fn describe(transfer: Transfer) -> &'static str {
+pub const fn describe(transfer: Transfer) -> &'static str {
     match transfer {
         Transfer::Direct => "direct (t=d)",
         Transfer::Png => "PNG over SSH (t=d, f=100)",

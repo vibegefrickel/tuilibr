@@ -37,8 +37,10 @@ use std::sync::mpsc;
 pub enum Route {
     /// Unknown extensions go here too, and the content decides.
     Raster,
+    /// JPEG XL through jxl-oxide.
     #[cfg(feature = "jxl")]
     Jxl,
+    /// The formats of `ImageIO` that only `sips` reads, with the embedded JPEG first.
     #[cfg(all(feature = "sips", target_os = "macos"))]
     Sips,
 }
@@ -62,6 +64,7 @@ impl Route {
     }
 }
 
+/// The shown size from the header of the file, without a decode. `None` when no route reads it.
 pub fn dimensions(path: &Path) -> Option<(u32, u32)> {
     #[cfg(feature = "heic")]
     if decodes_with_libheif(path) {
@@ -92,14 +95,18 @@ pub fn real_test_file(variable: &str) -> Option<std::path::PathBuf> {
 /// use it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EmbeddedThumbnail {
+    /// A grid thumbnail: a close preview is fine at thumbnail size.
     Allow,
+    /// The fullscreen view: the primary image only.
     Deny,
 }
 
 /// A decoded image and the color space of its pixels. The conversion waits for the resize.
 #[derive(Debug)]
 pub struct Decoded {
+    /// The pixels in the color space of the file, at the decoded size.
     pub image: DynamicImage,
+    /// The color space of `image`, for the conversion after the resize.
     pub color: SourceColor,
     /// Every pixel is opaque: the RGBA buffer of a JPEG or of a HEIF image without alpha.
     pub opaque: bool,

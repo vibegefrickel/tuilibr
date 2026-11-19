@@ -52,7 +52,7 @@ impl Peak {
     }
 
     /// The peak in nits, for the names of the color cubes of an app.
-    pub fn nits(self) -> u32 {
+    pub const fn nits(self) -> u32 {
         self.0
     }
 
@@ -71,6 +71,7 @@ pub fn hdr10_peak(max_content: Option<f64>, mastering_max: Option<f64>) -> Optio
         .or_else(|| mastering_max.filter(plausible))
 }
 
+/// The transfer curve of an HDR source. The tone map needs the light, not the signal.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Curve {
     /// SMPTE ST 2084, CICP transfer 16.
@@ -80,7 +81,8 @@ pub enum Curve {
 }
 
 impl Curve {
-    pub fn of_transfer(transfer: u8) -> Option<Self> {
+    /// The curve of a CICP transfer code point. `None` for an SDR transfer.
+    pub const fn of_transfer(transfer: u8) -> Option<Self> {
         match transfer {
             16 => Some(Self::Pq),
             18 => Some(Self::Hlg),
@@ -119,14 +121,14 @@ impl Curve {
         };
         table.get_or_init(|| {
             (0..=u16::MAX)
-                .map(|signal| self.light(f64::from(signal) / 65_535.0) as f32)
+                .map(|signal| single(self.light(f64::from(signal) / 65_535.0)))
                 .collect()
         })
     }
 }
 
 /// `moxcms` cannot convert a PQ or HLG signal.
-pub fn is_hdr(source: &SourceColor) -> bool {
+pub const fn is_hdr(source: &SourceColor) -> bool {
     matches!(source, SourceColor::Cicp { transfer, .. } if Curve::of_transfer(*transfer).is_some())
 }
 
@@ -150,6 +152,7 @@ pub struct ToneMap {
 }
 
 impl ToneMap {
+    /// The map of a PQ or HLG source into `target`. `None` for an SDR source.
     pub fn of_source(source: &SourceColor, target: ColorTarget) -> Option<Self> {
         let SourceColor::Cicp {
             primaries,
@@ -166,15 +169,15 @@ impl ToneMap {
     fn new(curve: Curve, source: Primaries, target: ColorTarget) -> Self {
         let target = Primaries::of_target(target);
         let conversion = conversion(source, target);
-        let single = |row: [f64; 3]| row.map(|value| value as f32);
+        let single_row = |row: [f64; 3]| row.map(single);
         Self {
             curve,
-            matrix: conversion.map(|row| single(row.map(|value| value / SDR_WHITE_NITS))),
-            luma: single(rgb_to_xyz(target)[1]),
-            scene_luma: single(rgb_to_xyz(source)[1]),
+            matrix: conversion.map(|row| single_row(row.map(|value| value / SDR_WHITE_NITS))),
+            luma: single_row(rgb_to_xyz(target)[1]),
+            scene_luma: single_row(rgb_to_xyz(source)[1]),
             peak: match curve {
-                Curve::Pq => Peak::DEFAULT.over_sdr_white() as f32,
-                Curve::Hlg => (HDR_PEAK_NITS / SDR_WHITE_NITS) as f32,
+                Curve::Pq => single(Peak::DEFAULT.over_sdr_white()),
+                Curve::Hlg => single(HDR_PEAK_NITS / SDR_WHITE_NITS),
             },
         }
     }
@@ -183,7 +186,7 @@ impl ToneMap {
     #[must_use]
     pub fn with_peak(mut self, peak: Peak) -> Self {
         if self.curve == Curve::Pq {
-            self.peak = peak.over_sdr_white() as f32;
+            self.peak = single(peak.over_sdr_white());
         }
         self
     }
@@ -198,7 +201,7 @@ impl ToneMap {
             Curve::Hlg => {
                 // The OOTF of a 1000 nit display: system gamma 1.2 on the scene luminance.
                 let luma = dot(self.scene_luma, light);
-                let gain = HDR_PEAK_NITS as f32 * luma.max(0.0).powf(0.2);
+                let gain = single(HDR_PEAK_NITS) * luma.max(0.0).powf(0.2);
                 light.map(|value| value * gain)
             }
         };
@@ -222,6 +225,11 @@ impl ToneMap {
         linear.map(|value| value.clamp(0.0, 1.0))
     }
 
+    #[expect(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "`linear` clamps the value to 0..=1, so the step is in 0..ENCODE_STEPS"
+    )]
     fn pixel(&self, table: &[f32], encode: &[u8], signal: [u16; 3]) -> [u8; 3] {
         let light = signal.map(|value| table[usize::from(value)]);
         self.linear(light).map(|value| {
@@ -281,12 +289,27 @@ impl ToneMap {
     }
 }
 
+/// A double precision value in single precision. The tone map computes in single precision, as the
+/// cube of the player does, so the rounding is the intent.
+#[expect(
+    clippy::cast_possible_truncation,
+    reason = "the step to single precision is the intent, the values are near 0..=1000"
+)]
+const fn single(value: f64) -> f32 {
+    value as f32
+}
+
 fn dot(left: [f32; 3], right: [f32; 3]) -> f32 {
     left[0] * right[0] + left[1] * right[1] + left[2] * right[2]
 }
 
 /// The 8-bit output (gamma 2.4, as the cube writes) per square-root step. The square root
 /// spreads the steps over the dark values, where the curve is steep.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`root` is in 0..=1, so the rounded output is in 0..=255"
+)]
 fn encode_table() -> &'static [u8] {
     static TABLE: OnceLock<Vec<u8>> = OnceLock::new();
     TABLE.get_or_init(|| {
@@ -299,6 +322,7 @@ fn encode_table() -> &'static [u8] {
     })
 }
 
+/// A 16-bit sample as 8 bits with rounding, for an alpha channel that no curve maps.
 pub fn to_8bit(sample: u16) -> u8 {
     u8::try_from((u32::from(sample) * 255 + 32_767) / 65_535).unwrap_or(u8::MAX)
 }
@@ -310,14 +334,14 @@ pub const TARGETS: [ColorTarget; 2] = [ColorTarget::DisplayP3, ColorTarget::Srgb
 /// The exact output from 0 to 1 for one signal value per channel, for a test.
 #[cfg(any(test, feature = "test-support"))]
 pub fn exact(map: &ToneMap, signal: [f64; 3]) -> [f64; 3] {
-    let light = signal.map(|value| map.curve.light(value) as f32);
+    let light = signal.map(|value| single(map.curve.light(value)));
     map.linear(light)
         .map(|value| f64::from(value).powf(1.0 / 2.4))
 }
 
 /// A CICP source with `primaries` and `transfer`, for a test.
 #[cfg(any(test, feature = "test-support"))]
-pub fn cicp(primaries: u8, transfer: u8) -> SourceColor {
+pub const fn cicp(primaries: u8, transfer: u8) -> SourceColor {
     SourceColor::Cicp {
         primaries,
         transfer,

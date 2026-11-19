@@ -1,10 +1,13 @@
-//! What the terminal answers at the start, in one write and one read: the pixel size of a cell
-//! (`CSI 16 t`, because the window size includes the padding of Ghostty), the foreground colour
-//! (OSC 10), the plain Kitty query, the probes of the transfer medium and of the loops, and DA1.
+//! What the terminal answers at the start, in one write and one read.
+//!
+//! The queries are the pixel size of a cell (`CSI 16 t`, because the window size includes the
+//! padding of Ghostty), the foreground colour (OSC 10), the plain Kitty query, the probes of the
+//! transfer medium and of the loops, and DA1.
+//!
 //! The read takes every byte of the tty, so it runs in raw mode before the reader of the keys
-//! starts. It ends when every owed answer came or at DA1, and after DA1 it waits at most the
-//! grace of `query` for a missing answer (Ghostty 1.4 sends DA1 first). The answers that did not
-//! come in time come late as key presses, and `answers::LateAnswerFilter` drops them there.
+//! starts. It ends when every owed answer came or at DA1, and after DA1 it waits at most the grace
+//! of `query` for a missing answer (Ghostty 1.4 sends DA1 first). The answers that did not come in
+//! time come late as key presses, and `answers::LateAnswerFilter` drops them there.
 
 use crate::frame::CellSize;
 use crate::pictures::kitty::{

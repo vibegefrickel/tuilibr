@@ -1,8 +1,8 @@
-//! The frame engine: the pictures that the terminal stores and their places on the screen. The
-//! app puts the places of one frame into [`Placements`]. After the draw of ratatui, one
-//! `Screen::flush` or one [`Screen::write_frame`] writes the deletes, the
-//! transfers up to the byte cap of a pass in the order of the frame, and the changed placements,
-//! in one synchronized update.
+//! The frame engine: the pictures that the terminal stores and their places on the screen.
+//!
+//! The app puts the places of one frame into [`Placements`]. After the draw of ratatui, one
+//! `Screen::flush` or one [`Screen::write_frame`] writes the deletes, the transfers up to the byte
+//! cap of a pass in the order of the frame, and the changed placements, in one synchronized update.
 //!
 //! Each picture goes to the terminal one time, under its id, and each place gets a direct
 //! placement on its cells (`c=` and `r=`) with its own placement id (`p=`). The engine uses no
@@ -35,10 +35,13 @@ const MAX_LOSSES: usize = 3;
 /// The time within which `MAX_LOSSES` losses of one picture stop its new transfers.
 const LOSS_WINDOW: Duration = Duration::from_secs(10);
 
-/// The start and the end of a synchronized update: the terminal shows the bytes between them in
-/// one step. The mode is not a counter, so an app can put one update around the cells of a frame
-/// and the flush: the end of the flush ends that update, and a second end does nothing.
+/// The start and the end of a synchronized update: the terminal shows the bytes between them in one
+/// step.
+///
+/// The mode is not a counter, so an app can put one update around the cells of a frame and the
+/// flush: the end of the flush ends that update, and a second end does nothing.
 pub const BEGIN_SYNC: &[u8] = b"\x1b[?2026h";
+/// The end of a synchronized update. A second end does nothing.
 pub const END_SYNC: &[u8] = b"\x1b[?2026l";
 
 /// Which placements a flush writes.
@@ -143,10 +146,12 @@ impl Placements {
     }
 }
 
-/// One synchronized update. The start goes out before the first byte, so an update without
-/// bytes writes nothing. The cursor goes back to where ratatui left it. The update counts the
-/// pixel bytes of its transfers for the byte cap of a pass. A started update always ends: the
-/// drop ends it when an error returned before [`Update::finish`].
+/// One synchronized update.
+///
+/// The start goes out before the first byte, so an update without bytes writes nothing. The cursor
+/// goes back to where ratatui left it. The update counts the pixel bytes of its transfers for the
+/// byte cap of a pass. A started update always ends: the drop ends it when an error returned before
+/// [`Update::finish`].
 #[derive(Debug)]
 pub struct Update<'w, W: Write + ?Sized> {
     out: &'w mut W,
@@ -157,7 +162,8 @@ pub struct Update<'w, W: Write + ?Sized> {
 }
 
 impl<'w, W: Write + ?Sized> Update<'w, W> {
-    pub fn new(out: &'w mut W) -> Self {
+    /// An update over `out` with the byte cap of the screen. The start waits for the first byte.
+    pub const fn new(out: &'w mut W) -> Self {
         Self {
             out,
             started: false,
@@ -168,7 +174,7 @@ impl<'w, W: Write + ?Sized> Update<'w, W> {
 
     /// An update whose flushes send every picture of the frame, without a byte cap. A redraw
     /// shows the whole screen in one step.
-    pub fn uncapped(out: &'w mut W) -> Self {
+    pub const fn uncapped(out: &'w mut W) -> Self {
         let mut update = Self::new(out);
         update.pass_bytes = Some(usize::MAX);
         update
@@ -712,7 +718,7 @@ impl Screen {
     }
 
     /// The pixel bytes that the terminal stores now.
-    pub fn stored_bytes(&self) -> usize {
+    pub const fn stored_bytes(&self) -> usize {
         self.store.bytes()
     }
 

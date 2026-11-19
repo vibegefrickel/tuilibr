@@ -29,9 +29,10 @@ pub struct QuestionView<'a> {
     pub cancel: &'a str,
 }
 
-/// What a key means for a question. A key release gives no `Choice` at all, so an app that maps
-/// "no choice" to a cancel must filter the releases before the call, else the release of the key
-/// that put the question up cancels it.
+/// What a key means for a question.
+///
+/// A key release gives no `Choice` at all, so an app that maps "no choice" to a cancel must filter
+/// the releases before the call, else the release of the key that put the question up cancels it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Choice {
     /// The answer with this index in `QuestionView::answers` was picked.
@@ -40,9 +41,10 @@ pub enum Choice {
     Cancel,
 }
 
-/// The answer that `key` gives to `view`: `Picked` for an answer key, `Cancel` for Esc, and `None`
-/// for every other key and for every key release, so the question stays and the app decides
-/// what the key does. An answer key matches as it is, with no Ctrl and no Alt (Shift is in the
+/// The answer that `key` gives to `view`.
+///
+/// `Picked` for an answer key, `Cancel` for Esc, and `None` for every other key and for every key
+/// release, so the question stays and the app decides what the key does. An answer key matches as it is, with no Ctrl and no Alt (Shift is in the
 /// character already), so Ctrl-y picks nothing. An app that treats every other key as no maps
 /// `None` to its no; an app with a guard (the focus must be the part the question is about)
 /// checks it before `Picked` counts.
@@ -65,8 +67,9 @@ pub fn question_answer(key: &KeyEvent, view: &QuestionView<'_>) -> Option<Choice
     }
 }
 
-/// Draws `view` into the first row of `area`: the text, then each answer as its key in bold and
-/// its label in the dim style, then `esc` with the cancel label when it has one, set apart by
+/// Draws `view` into the first row of `area`.
+///
+/// The text comes first, then each answer as its key in bold and its label in the dim style, then `esc` with the cancel label when it has one, set apart by
 /// two spaces as the parts of the bar. The answers stay whole and the text gives way, so the keys
 /// never leave a narrow row. The area is drawn as given: an app with an inset passes it.
 pub fn draw_question(frame: &mut Frame<'_>, area: Rect, view: &QuestionView<'_>) {

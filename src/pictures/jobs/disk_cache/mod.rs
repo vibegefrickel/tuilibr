@@ -84,6 +84,7 @@ impl CacheEntry {
         }
     }
 
+    /// Write `img` through a temp file, so a reader never sees a half file.
     pub fn save(&self, img: &RgbaImage) -> io::Result<()> {
         write_cache_file(&self.file, |temp_path| {
             img.save_with_format(temp_path, CACHE_FORMAT)
@@ -91,11 +92,13 @@ impl CacheEntry {
         })
     }
 
+    /// True when the cache file is on disk. The read of the pixels is a separate step.
     pub fn exists(&self) -> bool {
         self.file.exists()
     }
 }
 
+/// The cache entry of `path` at `target` with the current version. `None` without a stamp.
 pub fn thumbnail_entry(cache_dir: &Path, path: &Path, target: (u32, u32)) -> Option<CacheEntry> {
     cache_entry(
         cache_dir,
@@ -117,7 +120,8 @@ pub struct LazyEntry<'a> {
 }
 
 impl<'a> LazyEntry<'a> {
-    pub fn new(cache_dir: &'a Path, path: &'a Path, target: (u32, u32)) -> Self {
+    /// Keep the inputs of the key. The key waits for the first `get`.
+    pub const fn new(cache_dir: &'a Path, path: &'a Path, target: (u32, u32)) -> Self {
         Self {
             cache_dir,
             path,
@@ -126,12 +130,14 @@ impl<'a> LazyEntry<'a> {
         }
     }
 
+    /// The entry, computed at the first call. `None` when the source file has no stamp.
     pub fn get(&self) -> Option<&CacheEntry> {
         self.entry
             .get_or_init(|| thumbnail_entry(self.cache_dir, self.path, self.target))
             .as_ref()
     }
 
+    /// The cached thumbnail, or `None` without a key or a file.
     pub fn load(&self) -> Option<RgbaImage> {
         self.get()?.load()
     }
@@ -181,6 +187,7 @@ fn cache_entry(
     })
 }
 
+/// The cache file for a `version` and an `extension`. A loop cache names its own version.
 pub fn cache_file_path(
     cache_dir: &Path,
     path: &Path,

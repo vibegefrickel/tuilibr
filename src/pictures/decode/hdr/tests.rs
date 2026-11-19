@@ -31,6 +31,11 @@ fn bt2020_luma_matches_bt2100() {
 }
 
 #[test]
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`linear` is in 0..=1, so the results are in 0..=255 and in 0..ENCODE_STEPS"
+)]
 fn encode_table_rounds_like_curve() {
     let encode = encode_table();
     let mut worst = 0u8;

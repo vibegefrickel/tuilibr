@@ -1,8 +1,11 @@
-//! The answers of the terminal for the self check: with `q=1` on a placement, the terminal
-//! answers only an error, for example `ESC _ G i=7,p=1;ENOENT: image not found ESC \` for a
-//! picture that it does not hold. [`AnswerReader`] finds these answers in the bytes that an app
-//! reads and gives the other bytes back untouched. [`AnswerKeys`] does the same for the key
-//! events of crossterm, because crossterm reads an answer as key presses.
+//! The answers of the terminal for the self check.
+//!
+//! With `q=1` on a placement, the terminal answers only an error, for example
+//! `ESC _ G i=7,p=1;ENOENT: image not found ESC \` for a picture that it does not hold.
+//!
+//! [`AnswerReader`] finds these answers in the bytes that an app reads and gives the other bytes
+//! back untouched. [`AnswerKeys`] does the same for the key events of crossterm, because crossterm
+//! reads an answer as key presses.
 
 use crossterm::event::{Event, KeyCode, KeyEventKind, KeyModifiers};
 use std::time::{Duration, Instant};
@@ -12,9 +15,10 @@ const ESC: u8 = 0x1b;
 const ANSWER_START: &[u8] = b"\x1b_G";
 /// The end of an APC (ST).
 const ANSWER_END: &[u8] = b"\x1b\\";
-/// The most bytes that the reader keeps for an answer without its end. A real answer has less
-/// than 100 bytes. Above the cap, the kept bytes go back as keys, so an unterminated APC cannot
-/// eat the keys forever.
+/// The most bytes that the reader keeps for an answer without its end.
+///
+/// A real answer has less than 100 bytes. Above the cap, the kept bytes go back as keys, so an
+/// unterminated APC cannot eat the keys forever.
 pub const MAX_ANSWER_BYTES: usize = 1024;
 
 /// One error answer of the terminal.
@@ -88,7 +92,7 @@ impl AnswerReader {
     }
 
     /// The bytes that wait for the end of an answer.
-    pub fn pending(&self) -> usize {
+    pub const fn pending(&self) -> usize {
         self.tail.len()
     }
 
@@ -153,10 +157,11 @@ fn parse(body: &[u8]) -> Option<Answer> {
     })
 }
 
-/// Finds the Kitty answers in the key events of crossterm. crossterm reads
-/// `ESC _ G i=7 ; OK ESC \` as the keys Alt+`_`, `G`, `i`, `=`, ... and Alt+`\`. The reader turns
-/// each such key back into its bytes for an [`AnswerReader`] and holds the events while an answer
-/// can still come.
+/// Finds the Kitty answers in the key events of crossterm. crossterm reads `ESC _ G i=7 ; OK ESC \`
+/// as the keys Alt+`_`, `G`, `i`, `=`, ... and Alt+`\`.
+///
+/// The reader turns each such key back into its bytes for an [`AnswerReader`] and holds the events
+/// while an answer can still come.
 ///
 /// The events of a started answer (`ESC _ G`) that never ends go: an arrow, a mouse event, the
 /// cap or [`ANSWER_WAIT`] ends them. As key presses, their letters run the actions of their
@@ -182,6 +187,7 @@ pub const ANSWER_WAIT: Duration = Duration::from_millis(50);
 pub struct KeyRead {
     /// The events that belong to no answer, in their order. A held event comes back later.
     pub events: Vec<Event>,
+    /// The error answers that the event completed. An `OK` answer counts in `ends` only.
     pub answers: Vec<Answer>,
     /// The count of whole Kitty answers that the event ended, `OK` included.
     pub ends: usize,
@@ -280,7 +286,7 @@ fn kept_events(events: Vec<Event>) -> Vec<Event> {
 
 /// True for an event that is no input of the user and no byte of the tty: a resize comes from a
 /// signal, and a focus report is a sequence of its own.
-fn passes_the_hold(event: &Event) -> bool {
+const fn passes_the_hold(event: &Event) -> bool {
     matches!(
         event,
         Event::Resize(..) | Event::FocusGained | Event::FocusLost

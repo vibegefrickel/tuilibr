@@ -1,7 +1,8 @@
-//! The one key map of readline for every text field: the edit that a key event means. Enter,
-//! Esc and Tab stay with the app: it decides whether Enter sends or breaks the line, and what Tab
-//! completes. Ctrl-G opens the editor of the user, as in Claude Code. A letter with Alt is no edit, except Alt-B and Alt-F; the other Alt letters fall
-//! through to the keys of the app.
+//! The one key map of readline for every text field: the edit that a key event means.
+//!
+//! Enter, Esc and Tab stay with the app: it decides whether Enter sends or breaks the line, and
+//! what Tab completes. Ctrl-G opens the editor of the user, as in Claude Code. A letter with Alt is
+//! no edit, except Alt-B and Alt-F; the other Alt letters fall through to the keys of the app.
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 

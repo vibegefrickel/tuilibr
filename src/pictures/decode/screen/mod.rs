@@ -45,14 +45,17 @@ impl ScreenImage {
         }
     }
 
+    /// The width in pixels, the same for every layout.
     pub fn width(&self) -> u32 {
         self.dimensions().0
     }
 
+    /// The height in pixels, the same for every layout.
     pub fn height(&self) -> u32 {
         self.dimensions().1
     }
 
+    /// The size in pixels, from the buffer of the layout.
     pub fn dimensions(&self) -> (u32, u32) {
         match self {
             Self::Rgb(rgb) => rgb.dimensions(),
@@ -105,6 +108,7 @@ impl ScreenImage {
         }
     }
 
+    /// Convert the pixels from `source` into `target` and keep the layout.
     #[must_use]
     pub fn convert(self, source: &SourceColor, target: ColorTarget, peak: Peak) -> Self {
         match self {

@@ -32,6 +32,13 @@ pub use keys::{Edit, edit_for_key};
 
 /// The name in the temporary file of the editor: the app name of the pictures when the app set
 /// one, else the crate name.
+#[cfg_attr(
+    not(feature = "pictures"),
+    expect(
+        clippy::missing_const_for_fn,
+        reason = "with the pictures feature the body reads the name that an app set at run time"
+    )
+)]
 fn editor_app_name() -> &'static str {
     #[cfg(feature = "pictures")]
     {
@@ -76,12 +83,12 @@ impl TextField {
     }
 
     /// Whether the text has no character.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
 
     /// Gives the cursor as a character index, so that a renderer can place it.
-    pub fn cursor(&self) -> usize {
+    pub const fn cursor(&self) -> usize {
         self.cursor
     }
 
@@ -154,7 +161,7 @@ impl TextField {
     }
 
     /// Moves the cursor to the start of the text.
-    pub fn move_start(&mut self) -> bool {
+    pub const fn move_start(&mut self) -> bool {
         self.move_to(0)
     }
 
@@ -370,7 +377,7 @@ impl TextField {
     }
 
     /// Sets the cursor and reports a move, so that each move edit has one exit.
-    fn move_to(&mut self, cursor: usize) -> bool {
+    const fn move_to(&mut self, cursor: usize) -> bool {
         let changed = cursor != self.cursor;
         self.cursor = cursor;
         changed
@@ -456,7 +463,7 @@ impl TextField {
             .chars()
             .skip(index)
             .position(|character| character == '\n')
-            .map_or(self.character_count(), |position| index + position)
+            .map_or_else(|| self.character_count(), |position| index + position)
     }
 
     /// Finds the start of the word before the cursor, after the whitespace between them.
@@ -532,7 +539,7 @@ impl ColumnOffsets {
     }
 
     /// Counts the characters of the text, because the offsets have one more entry.
-    fn character_count(&self) -> usize {
+    const fn character_count(&self) -> usize {
         self.0.len() - 1
     }
 

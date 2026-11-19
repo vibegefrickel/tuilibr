@@ -13,6 +13,12 @@ pub(super) fn is_jpeg(path: &Path) -> bool {
     extensions::has_extension(path, &["jpg", "jpeg"])
 }
 
+/// A side that libjpeg-turbo reports as `u32`. A JPEG side is at most 65535, so the cap never
+/// applies.
+fn side_u32(value: usize) -> u32 {
+    u32::try_from(value).unwrap_or(u32::MAX)
+}
+
 /// The scales with SIMD code in libjpeg-turbo (NEON IDCTs of 8x8, 4x4 and 2x2). 3/8, 5/8, 6/8 and
 /// 7/8 run in plain C: 5/8 to 7/8 take 1.1 to 1.6 times the time of the full decode (12 MP,
 /// Apple Silicon), and 3/8 is slower than 1/2 (measured 2026-11-03).
@@ -81,7 +87,7 @@ pub(super) fn decode_jpeg_turbo_bytes(
     // libjpeg-turbo writes RGB and RGBA at the same speed. RGB without a resize or for a downscale
     // to 1/2 or less, else RGBA without the alpha multiply.
     let scaled = header.scaled(scaling);
-    let size = (scaled.width as u32, scaled.height as u32);
+    let size = (side_u32(scaled.width), side_u32(scaled.height));
     let rgb =
         target.is_some_and(|box_px| rgb_resize_is_fastest(size, scaled_down_size(size, box_px)));
     let mut img = decompress(&mut decompressor, data, scaled, rgb)?;
@@ -118,7 +124,7 @@ fn decompress(
     decompressor
         .decompress(data, image.as_deref_mut())
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-    let (w, h) = (image.width as u32, image.height as u32);
+    let (w, h) = (side_u32(image.width), side_u32(image.height));
     let image = if rgb {
         RgbImage::from_raw(w, h, image.pixels).map(DynamicImage::ImageRgb8)
     } else {
@@ -129,7 +135,7 @@ fn decompress(
 
 /// A quarter turn swaps the box sides. The DCT scaling keeps enough pixels for the turned
 /// picture.
-fn turned_target(target: (u32, u32), orientation: Option<Orientation>) -> (u32, u32) {
+const fn turned_target(target: (u32, u32), orientation: Option<Orientation>) -> (u32, u32) {
     match orientation {
         Some(
             Orientation::Rotate90

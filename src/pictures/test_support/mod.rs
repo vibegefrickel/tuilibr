@@ -18,7 +18,9 @@ pub use heif::*;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
+/// The color of the primary image of the synthetic files.
 pub const RED: [u8; 3] = [255, 0, 0];
+/// The color of the thumbnail or of the right half of the synthetic files.
 pub const BLUE: [u8; 3] = [0, 0, 255];
 
 /// The key events that crossterm reads for the input `bytes`: an `ESC` and a key is Alt and that
@@ -49,6 +51,7 @@ pub fn key_events(bytes: &[u8]) -> Vec<Event> {
     events
 }
 
+/// A temp folder that goes away with the value.
 pub fn test_dir() -> TempDir {
     tempfile::tempdir().unwrap()
 }
@@ -60,6 +63,7 @@ pub fn fixture(name: &str) -> PathBuf {
         .join(name)
 }
 
+/// Panic when a channel of `pixel` differs from `expected` by 60 or more. A lossy codec moves less.
 pub fn assert_close(pixel: [u8; 4], expected: [u8; 3]) {
     let close = pixel
         .iter()

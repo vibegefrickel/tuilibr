@@ -19,14 +19,14 @@ pub(super) enum Channels {
 }
 
 impl Channels {
-    fn layout(self) -> Layout {
+    const fn layout(self) -> Layout {
         match self {
             Self::Rgb => Layout::Rgb,
             Self::Rgba => Layout::Rgba,
         }
     }
 
-    pub(super) fn count(self) -> usize {
+    pub(super) const fn count(self) -> usize {
         match self {
             Self::Rgb => 3,
             Self::Rgba => 4,

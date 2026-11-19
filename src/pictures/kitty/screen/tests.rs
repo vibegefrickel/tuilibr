@@ -718,8 +718,8 @@ fn a_dropped_update_still_ends() {
 fn an_uncapped_update_sends_every_picture() {
     let mut screen = Screen::default().with_pass_bytes(4);
     let mut frame = Placements::default();
-    for row in 0..3 {
-        frame.place(row + 1, Rect::new(0, row as u16 * 2, 4, 2));
+    for row in 0..3u16 {
+        frame.place(u32::from(row) + 1, Rect::new(0, row * 2, 4, 2));
     }
     let mut out = Vec::new();
     let mut update = Update::uncapped(&mut out);

@@ -57,6 +57,11 @@ fn tone(sample: f32, white: f32) -> u8 {
 }
 
 /// NaN becomes 0.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the clamp keeps the value in 0..=1, so the rounded result is in 0..=255"
+)]
 fn unit_to_byte(value: f64) -> u8 {
     let value = if value.is_nan() { 0.0 } else { value };
     (value.clamp(0.0, 1.0) * 255.0).round() as u8

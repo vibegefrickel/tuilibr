@@ -31,11 +31,12 @@ pub struct HeaderAreas {
     pub below: Rect,
 }
 
-/// Draws the picture and the rule of a header in `area`, and returns the areas for the text
-/// and for the content below. The picture needs `HEADER_ROWS` rows and the rows below it, so a
-/// header lower than `min_height` gets one row without a picture: Kitty cannot clip. With no
-/// `picture` or in a terminal without pictures, the header has one row too. Below 8 x 3 cells,
-/// there is no header.
+/// Draws the picture and the rule of a header in `area`, and returns the areas for the text and for
+/// the content below.
+///
+/// The picture needs `HEADER_ROWS` rows and the rows below it, so a header lower than `min_height`
+/// gets one row without a picture: Kitty cannot clip. With no `picture` or in a terminal without
+/// pictures, the header has one row too. Below 8 x 3 cells, there is no header.
 pub fn draw_header(
     frame: &mut Frame<'_>,
     picture: Option<&mut dyn Pictures>,
@@ -105,7 +106,7 @@ fn draw_shaded_header(
 }
 
 /// The rest of `header` after the first `used` columns, for the text.
-fn beside(header: Rect, used: u16) -> Rect {
+const fn beside(header: Rect, used: u16) -> Rect {
     Rect::new(
         header.x + used,
         header.y,

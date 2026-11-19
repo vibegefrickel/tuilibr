@@ -76,7 +76,7 @@ fn write_cache_file_with(
 }
 
 /// Write 0 skips the prune: the first write of the session pruned the cache a moment before.
-fn prunes_after_write(sequence: u64) -> bool {
+const fn prunes_after_write(sequence: u64) -> bool {
     sequence != 0 && sequence.is_multiple_of(64)
 }
 

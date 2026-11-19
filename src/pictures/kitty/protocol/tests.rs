@@ -9,6 +9,11 @@ use base64::engine::general_purpose::STANDARD;
 use image::RgbaImage;
 use std::fs;
 
+/// The low byte of a coordinate: a gradient that wraps every 256 pixels.
+fn byte(value: u32) -> u8 {
+    value.to_le_bytes()[0]
+}
+
 fn options(id: Option<u32>) -> DisplayOptions {
     DisplayOptions {
         id,
@@ -134,7 +139,7 @@ fn png_transfer_sends_png() {
 
 #[test]
 fn opaque_image_goes_out_as_rgb() {
-    let image = RgbaImage::from_fn(3, 2, |x, y| image::Rgba([x as u8, y as u8, 7, 255]));
+    let image = RgbaImage::from_fn(3, 2, |x, y| image::Rgba([byte(x), byte(y), 7, 255]));
     let rgb: Vec<u8> = image
         .pixels()
         .flat_map(|pixel| [pixel[0], pixel[1], pixel[2]])
@@ -193,7 +198,7 @@ fn transparent_pixel_keeps_alpha() {
 
 #[test]
 fn rgb_pixels_go_out_unchanged() {
-    let image = image::RgbImage::from_fn(2, 2, |x, y| image::Rgb([x as u8, y as u8, 3]));
+    let image = image::RgbImage::from_fn(2, 2, |x, y| image::Rgb([byte(x), byte(y), 3]));
     let encoded = transmit_pixels((&image).into(), &options(Some(4)), Transfer::Direct);
     assert_eq!(
         encoded,
@@ -233,7 +238,7 @@ fn splits_large_payload_into_chunks() {
 
 #[test]
 fn temp_file_transfer_writes_marked_file() {
-    let image = RgbaImage::from_fn(300, 200, |x, y| image::Rgba([x as u8, y as u8, 7, x as u8]));
+    let image = RgbaImage::from_fn(300, 200, |x, y| image::Rgba([byte(x), byte(y), 7, byte(x)]));
     let encoded = transmit(&image, &options(Some(5)), Transfer::TempFile);
 
     assert!(

@@ -26,6 +26,7 @@ pub fn decodes_with_libheif(path: &Path) -> bool {
     extensions::has_extension(path, extensions::LIBHEIF_EXTENSIONS)
 }
 
+/// The size of the primary image as libheif reports it. `None` when the file does not open.
 pub fn libheif_dimensions(path: &Path) -> Option<(u32, u32)> {
     let ctx = open_heif_context(path).ok()?;
     let handle = ctx.primary_image_handle().ok()?;

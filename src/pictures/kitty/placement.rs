@@ -15,7 +15,7 @@ pub fn box_px(rect: Rect, cell_px: (u32, u32)) -> (u32, u32) {
 }
 
 /// A box of `cols` x `rows` terminal cells centered in `outer`, in whole cells.
-pub fn centered(outer: Rect, cols: u16, rows: u16) -> Rect {
+pub const fn centered(outer: Rect, cols: u16, rows: u16) -> Rect {
     Rect {
         x: outer.x + outer.width.saturating_sub(cols) / 2,
         y: outer.y + outer.height.saturating_sub(rows) / 2,
@@ -26,6 +26,11 @@ pub fn centered(outer: Rect, cols: u16, rows: u16) -> Rect {
 
 /// `img`, or a copy shrunk until its payload fits [`MAX_PAYLOAD_BYTES`]: Ghostty 1.4.0 refuses
 /// a larger payload. The decode box keeps the image below the cap, and this is a fallback.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "`scale` is below 1, so the side stays in 0..=u32::MAX"
+)]
 pub fn within_payload_cap(img: &ScreenImage) -> Cow<'_, ScreenImage> {
     let (width, height) = img.dimensions();
     let pixels = u64::from(width) * u64::from(height);
@@ -45,18 +50,27 @@ pub fn within_payload_cap(img: &ScreenImage) -> Cow<'_, ScreenImage> {
     Cow::Owned(img.crop_resized((0, 0, img.width(), img.height()), (width, height)))
 }
 
-/// The cells of the fullscreen image and the one side that the terminal scales it to. With one
-/// side, the terminal takes the other side from the aspect ratio, so the image never stretches to
-/// a rounded box.
+/// The cells of the fullscreen image and the one side that the terminal scales it to.
+///
+/// With one side, the terminal takes the other side from the aspect ratio, so the image never
+/// stretches to a rounded box.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Placement {
+    /// The cells of the image on the screen, for the cursor move and the clear.
     pub cells: Rect,
+    /// Scale to this many columns (`c=`), and the rows follow the aspect ratio.
     pub columns: Option<u16>,
+    /// Scale to this many rows (`r=`), and the columns follow the aspect ratio.
     pub rows: Option<u16>,
 }
 
 /// The image at its own pixel size, centered. The terminal scales a copy that the payload cap
 /// shrank back to the width of `img` in cells.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the clamp keeps `columns` in 1..=u16::MAX"
+)]
 pub fn native_placement(
     rect: Rect,
     cell_px: (u32, u32),
@@ -66,7 +80,7 @@ pub fn native_placement(
     let columns = (fitted.dimensions() != img.dimensions()).then(|| {
         let columns = (f64::from(img.width()) / f64::from(cell_px.0))
             .round()
-            .max(1.0);
+            .clamp(1.0, f64::from(u16::MAX));
         columns as u16
     });
     Placement {

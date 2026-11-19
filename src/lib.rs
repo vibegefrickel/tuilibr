@@ -6,8 +6,10 @@
 //! cursor and the readline edits. `terminal` holds the session of the terminal (raw mode, the
 //! alternate screen, the modes, the panic hook), the start queries and the filter of the late
 //! answers. The crate knows no app type: an app fills plain view structs and places its pictures
-//! through the `frame::Pictures` trait.
+//! through the `frame::Pictures` trait. `cells` holds the saturating conversions between a
+//! text measure in `usize` and a cell count in `u16`.
 
+pub mod cells;
 pub mod frame;
 pub mod terminal;
 pub mod text_field;

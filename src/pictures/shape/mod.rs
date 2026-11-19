@@ -1,7 +1,8 @@
-//! The shapes of the pictures: the box copies of a place (`copies`, `corners`) and the shape of
-//! the photos in a folder, from the file headers. A folder of portraits gets narrow cells, a
-//! folder of landscapes wide ones. A header read costs a fraction of a millisecond. A file
-//! without a cheap header (PDF, video) counts as 3:2.
+//! The shapes of the pictures: the box copies of a place (`copies`, `corners`) and the shape of the
+//! photos in a folder, from the file headers.
+//!
+//! A folder of portraits gets narrow cells, a folder of landscapes wide ones. A header read costs a
+//! fraction of a millisecond. A file without a cheap header (PDF, video) counts as 3:2.
 
 pub mod copies;
 pub mod corners;

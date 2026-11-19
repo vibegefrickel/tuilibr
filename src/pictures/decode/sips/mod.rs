@@ -236,12 +236,18 @@ fn requested_side(path: &Path, target: Option<(u32, u32)>) -> io::Result<Option<
 /// size. `None` when the full image is not larger than that side.
 fn covering_side(stored: (u32, u32), target: (u32, u32)) -> Option<u32> {
     let longest = |(w, h): (u32, u32)| w.max(h);
-    let fitted = |size: (u32, u32)| scaled_down_size(size, target).map_or(longest(size), longest);
+    let fitted =
+        |size: (u32, u32)| scaled_down_size(size, target).map_or_else(|| longest(size), longest);
     let side = fitted(stored).max(fitted((stored.1, stored.0)));
     (side < longest(stored)).then_some(side)
 }
 
 /// The longest side that fills `target`, larger or smaller than the vector image.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the side is at least 1 and at most the longer side of `target`"
+)]
 fn enlarged_side(size: (u32, u32), target: (u32, u32)) -> u32 {
     let (w, h) = (f64::from(size.0.max(1)), f64::from(size.1.max(1)));
     let scale = f64::min(f64::from(target.0) / w, f64::from(target.1) / h);
@@ -253,12 +259,16 @@ fn on_white(image: &DynamicImage) -> DynamicImage {
     let mut page = image.to_rgba8();
     for Rgba([r, g, b, a]) in page.pixels_mut() {
         let alpha = u16::from(*a);
-        let blend = |c: u8| ((u16::from(c) * alpha + 255 * (255 - alpha) + 127) / 255) as u8;
+        let blend = |c: u8| {
+            u8::try_from((u16::from(c) * alpha + 255 * (255 - alpha) + 127) / 255)
+                .unwrap_or(u8::MAX)
+        };
         (*r, *g, *b, *a) = (blend(*r), blend(*g), blend(*b), 255);
     }
     DynamicImage::ImageRgba8(page)
 }
 
+/// The stored size that sips reports, before the orientation. `None` when sips fails.
 pub fn dimensions(path: &Path) -> Option<(u32, u32)> {
     stored_size(&argument_path(path)).ok()
 }
@@ -311,6 +321,11 @@ fn parse_size(stdout: &str) -> Option<(u32, u32)> {
 }
 
 /// `None` for `<nil>`, zero, a negative or a huge value.
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "the condition keeps the value in 1..=u32::MAX"
+)]
 fn pixels(value: &str) -> Option<u32> {
     let value = value.parse::<f64>().ok()?.ceil();
     (value >= 1.0 && value <= f64::from(u32::MAX)).then_some(value as u32)

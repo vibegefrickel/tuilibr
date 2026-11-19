@@ -31,9 +31,13 @@ const SOF_SCAN_BYTES: u64 = 512 * 1024;
 /// An embedded JPEG: its place in the file, its stored size and the orientation to apply.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EmbeddedJpeg {
+    /// The first byte of the JPEG in the container file.
     pub offset: u64,
+    /// The byte count of the JPEG. The read stops here, not at the end of the file.
     pub length: u64,
+    /// The stored width, before the orientation.
     pub width: u32,
+    /// The stored height, before the orientation.
     pub height: u32,
     /// The container orientation (IFD0 of a TIFF RAW or an ORF, `CMT1` of a CR3), else the EXIF of
     /// the JPEG.
@@ -42,6 +46,7 @@ pub struct EmbeddedJpeg {
 }
 
 impl EmbeddedJpeg {
+    /// The size after the orientation: a quarter turn swaps the sides.
     pub fn shown_size(&self) -> (u32, u32) {
         if self.orientation.is_some_and(|o| (5..=8).contains(&o)) {
             (self.height, self.width)
@@ -69,6 +74,7 @@ pub fn may_have_embedded_jpeg(path: &Path) -> bool {
     listed(extensions::SIPS_EXTENSIONS) && !listed(WITHOUT_PREVIEW)
 }
 
+/// The best preview of a RAW or PSD file. `None` when the route or the file has none.
 pub fn find(path: &Path) -> Option<EmbeddedJpeg> {
     if !may_have_embedded_jpeg(path) {
         return None;
@@ -91,6 +97,7 @@ pub fn container_orientation(path: &Path) -> Option<u8> {
     tiff_based.then(|| ifd0_orientation(&mut Source::open(path).ok()?))?
 }
 
+/// Decode the found JPEG with the container orientation. `target` is the downscale hint.
 pub fn decode(path: &Path, jpeg: &EmbeddedJpeg, target: Option<(u32, u32)>) -> io::Result<Decoded> {
     let mut source = Source::open(path)?;
     let data = source.read_at(jpeg.offset, jpeg.length)?;
@@ -109,8 +116,9 @@ fn smaller_reference(found: &EmbeddedJpeg, best: &EmbeddedJpeg) -> bool {
     big_enough(found) && (!big_enough(best) || found.pixels() < best.pixels())
 }
 
-/// A small picture of the same image as `jpeg`, oriented like `jpeg`, for a pixel compare. It
-/// decodes the smallest JPEG of the file or the EXIF thumbnail of `jpeg` instead of the large
+/// A small picture of the same image as `jpeg`, oriented like `jpeg`, for a pixel compare.
+///
+/// It decodes the smallest JPEG of the file or the EXIF thumbnail of `jpeg` instead of the large
 /// preview, because the entropy decode of the large one takes 30 ms to 60 ms.
 pub fn decode_reference(path: &Path, jpeg: &EmbeddedJpeg, target: (u32, u32)) -> Option<Decoded> {
     let mut source = Source::open(path).ok()?;

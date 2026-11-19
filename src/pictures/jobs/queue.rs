@@ -24,14 +24,18 @@ impl Priority {
 /// A picture job: the key of the picture in the app, its cells and its rank.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ThumbJob<K = usize> {
+    /// The key of the picture in the app, for example its index or its path.
     pub key: K,
+    /// The cells of the picture on the screen: the box of the decode.
     pub rect: Rect,
+    /// The rank that orders the waiting jobs.
     pub priority: Priority,
 }
 
 /// A job with the first rank, for the tests.
 #[cfg(any(test, feature = "test-support"))]
 impl<K> ThumbJob<K> {
+    /// A job of `key` at `rect` with the first rank.
     pub fn new(key: K, rect: Rect) -> Self {
         Self {
             key,
@@ -69,12 +73,14 @@ impl<K: Clone + Eq + Hash> JobQueue<K> {
         self.jobs.insert(position, job);
     }
 
+    /// Take the job with the lowest rank and forget its key.
     pub fn pop_front(&mut self) -> Option<ThumbJob<K>> {
         let job = self.jobs.pop_front()?;
         self.forget(&job.key);
         Some(job)
     }
 
+    /// Take the job at `position` in the rank order and forget its key.
     pub fn remove(&mut self, position: usize) -> Option<ThumbJob<K>> {
         let job = self.jobs.remove(position)?;
         self.forget(&job.key);
@@ -92,6 +98,7 @@ impl<K: Clone + Eq + Hash> JobQueue<K> {
         }
     }
 
+    /// True when a job of `key` waits. The count per key makes this a hash lookup.
     pub fn contains<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -100,6 +107,7 @@ impl<K: Clone + Eq + Hash> JobQueue<K> {
         self.members.contains_key(key)
     }
 
+    /// The waiting jobs in their rank order.
     #[expect(
         clippy::iter_without_into_iter,
         reason = "the apps read the queue through `iter` only. clippy 1.99 misses an `IntoIterator` impl here"
@@ -108,15 +116,18 @@ impl<K: Clone + Eq + Hash> JobQueue<K> {
         self.jobs.iter()
     }
 
+    /// The count of waiting jobs, for a test.
     #[cfg(any(test, feature = "test-support"))]
     pub fn len(&self) -> usize {
         self.jobs.len()
     }
 
+    /// True when no job waits.
     pub fn is_empty(&self) -> bool {
         self.jobs.is_empty()
     }
 
+    /// Drop every waiting job and every key count.
     pub fn clear(&mut self) {
         self.jobs.clear();
         self.members.clear();
@@ -143,12 +154,15 @@ impl<K: PartialEq, const N: usize> PartialEq<[ThumbJob<K>; N]> for JobQueue<K> {
 /// sets the limit of each phase.
 #[derive(Debug)]
 pub struct JobSlots<K = usize> {
+    /// The keys of the jobs that run now.
     pub running: HashSet<K>,
+    /// The jobs that wait for a free slot, in rank order.
     pub waiting: JobQueue<K>,
     limit: usize,
 }
 
 impl<K: Clone + Eq + Hash> JobSlots<K> {
+    /// Empty slots with room for `limit` running jobs.
     pub fn new(limit: usize) -> Self {
         Self {
             running: HashSet::new(),
@@ -157,10 +171,12 @@ impl<K: Clone + Eq + Hash> JobSlots<K> {
         }
     }
 
+    /// True when fewer than `limit` jobs run.
     pub fn has_free_slot(&self) -> bool {
         self.running.len() < self.limit
     }
 
+    /// True when a job of `key` runs or waits.
     pub fn holds<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -175,10 +191,12 @@ impl<K: Clone + Eq + Hash> JobSlots<K> {
         self.running.iter().cloned().chain(waiting).collect()
     }
 
+    /// True when no job runs and no job waits.
     pub fn is_idle(&self) -> bool {
         self.running.is_empty() && self.waiting.is_empty()
     }
 
+    /// Drop every running key and every waiting job.
     pub fn clear(&mut self) {
         self.running.clear();
         self.waiting.clear();

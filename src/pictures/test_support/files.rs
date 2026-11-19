@@ -4,6 +4,7 @@ use super::{BLUE, RED};
 use std::fs;
 use std::path::Path;
 
+/// A JPEG with a red left half and a blue right half: a mirror or a turn moves the colors.
 pub fn red_left_blue_right_jpeg(width: u32, height: u32) -> Vec<u8> {
     let mut image = image::RgbImage::new(width, height);
     for (x, _, pixel) in image.enumerate_pixels_mut() {
@@ -12,6 +13,7 @@ pub fn red_left_blue_right_jpeg(width: u32, height: u32) -> Vec<u8> {
     encode_jpeg(&image)
 }
 
+/// A JPEG of one color `rgb`.
 pub fn solid_jpeg(width: u32, height: u32, rgb: [u8; 3]) -> Vec<u8> {
     encode_jpeg(&image::RgbImage::from_pixel(width, height, image::Rgb(rgb)))
 }
@@ -28,6 +30,7 @@ pub fn quadrant_image(width: u32, height: u32) -> image::RgbImage {
     })
 }
 
+/// `image` as a JPEG at quality 95, so a solid color survives the compression.
 pub fn encode_jpeg(image: &image::RgbImage) -> Vec<u8> {
     let mut out = std::io::Cursor::new(Vec::new());
     image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 95)
@@ -55,6 +58,7 @@ fn tiff_ifd(entries: &[(u16, u16, u32, u32)], next: u32) -> Vec<u8> {
     ifd
 }
 
+/// `jpeg` with an EXIF APP1 segment that holds only `orientation`.
 pub fn with_exif_orientation(jpeg: &[u8], orientation: u32) -> Vec<u8> {
     with_exif(jpeg, &tiff_with_orientation(orientation))
 }
@@ -164,12 +168,15 @@ pub fn write_tiff_raw(path: &Path, orientation: u32) {
 /// The maker note headers of an ORF: the current Olympus form, the OM System form and the old
 /// form, whose offsets count from the TIFF header.
 pub const ORF_OLYMPUS: &[u8] = b"OLYMPUS\0II\x03\0";
+/// The OM System form of the maker note header.
 pub const ORF_OM_SYSTEM: &[u8] = b"OM SYSTEM\0\0\0II\x04\0";
+/// The old form of the maker note header. Its offsets count from the TIFF header.
 pub const ORF_OLD: &[u8] = b"OLYMP\0\x01\0";
 
-/// An ORF as an Olympus camera writes it: IFD0 holds the orientation and the EXIF IFD, the EXIF
-/// IFD the maker note with `header`, and its `CameraSettings` IFD (0x2020) names `jpeg`. The old
-/// form stores `CameraSettings` inline, as undefined data.
+/// An ORF as an Olympus camera writes it: IFD0 holds the orientation and the EXIF IFD, the EXIF IFD
+/// the maker note with `header`, and its `CameraSettings` IFD (0x2020) names `jpeg`.
+///
+/// The old form stores `CameraSettings` inline, as undefined data.
 pub fn orf_bytes(header: &[u8], jpeg: &[u8], orientation: u32) -> Vec<u8> {
     // IFD0 (2 entries) is 30 bytes and starts at 8, the EXIF IFD (1 entry) is 18 bytes.
     let (exif, note) = (8 + 30, 8 + 30 + 18);

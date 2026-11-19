@@ -213,10 +213,12 @@ fn copy_follows_each_orientation() {
     let ten_bits = BitDepth::IntegerSample {
         bits_per_sample: 10,
     };
-    let level = |x: usize, y: usize| (x * 7 + y * 13) % 300;
+    let level = |x: usize, y: usize| i32::try_from((x * 7 + y * 13) % 300).unwrap();
     let color = Grid::F32(ramp(width, height, |x, y| level(x, y) as f32 / 255.0 - 0.1));
-    let deep = Grid::I32(ramp(width, height, |x, y| level(x, y) as i32 * 4 - 40));
-    let alpha = Grid::I16(ramp(width - 3, height - 5, |x, y| level(x, y) as i16 - 20));
+    let deep = Grid::I32(ramp(width, height, |x, y| level(x, y) * 4 - 40));
+    let alpha = Grid::I16(ramp(width - 3, height - 5, |x, y| {
+        i16::try_from(level(x, y)).unwrap() - 20
+    }));
     let planes = [
         Plane {
             buffer: &color,
@@ -233,8 +235,8 @@ fn copy_follows_each_orientation() {
     ];
     let expected = |plane: usize, x: usize, y: usize| match plane {
         0 => u8::from_float(level(x, y) as f32 / 255.0 - 0.1),
-        1 => u8::from_float(ten_bits.parse_integer_sample(level(x, y) as i32 * 4 - 40)),
-        _ if x < width - 3 && y < height - 5 => u8::from_integer(level(x, y) as i32 - 20),
+        1 => u8::from_float(ten_bits.parse_integer_sample(level(x, y) * 4 - 40)),
+        _ if x < width - 3 && y < height - 5 => u8::from_integer(level(x, y) - 20),
         _ => 0,
     };
     for orientation in 1..=8 {

@@ -1,6 +1,7 @@
-//! Edits a text in the editor of the user: `$VISUAL`, then `$EDITOR`, then `nvim`. Ctrl-G in a
-//! text field opens it, as in Claude Code: a vim gets the text with the cursor at the end in
-//! insert mode, another editor gets the file.
+//! Edits a text in the editor of the user: `$VISUAL`, then `$EDITOR`, then `nvim`.
+//!
+//! Ctrl-G in a text field opens it, as in Claude Code: a vim gets the text with the cursor at the
+//! end in insert mode, another editor gets the file.
 //!
 //! `edit_text` does not touch the terminal. The editor needs the terminal for itself, so the
 //! caller runs three steps: `terminal::Session::suspend`, then `edit_text`, then
@@ -75,8 +76,9 @@ pub fn edit_text(text: &str, multi_line: bool) -> Result<String, EditorError> {
 }
 
 /// Finds the editor command from the variables that `variable` reads: `$VISUAL`, then `$EDITOR`,
-/// then `nvim` when it is in `$PATH`. The caller gives the lookup, so that a test does not change
-/// the environment of the process.
+/// then `nvim` when it is in `$PATH`.
+///
+/// The caller gives the lookup, so that a test does not change the environment of the process.
 pub fn editor_command(variable: impl Fn(&str) -> Option<OsString>) -> Option<String> {
     ["VISUAL", "EDITOR"]
         .into_iter()
@@ -89,11 +91,12 @@ pub fn editor_command(variable: impl Fn(&str) -> Option<OsString>) -> Option<Str
         })
 }
 
-/// Opens `text` with the editor `command` and returns the edited text. The command splits on
-/// whitespace: the first word is the program, the rest are arguments before the file path
-/// (`code --wait`). A vim gets two more arguments, so the cursor sits at the end of the text in
-/// insert mode. An empty command gives `EditorError::NoEditor`. The caller gives the command, so
-/// that a test can use a fake editor.
+/// Opens `text` with the editor `command` and returns the edited text.
+///
+/// The command splits on whitespace: the first word is the program, the rest are arguments before
+/// the file path (`code --wait`). A vim gets two more arguments, so the cursor sits at the end of
+/// the text in insert mode. An empty command gives `EditorError::NoEditor`. The caller gives the
+/// command, so that a test can use a fake editor.
 pub fn edit_text_with(command: &str, text: &str, multi_line: bool) -> Result<String, EditorError> {
     let mut words = command.split_whitespace();
     let program = words.next().ok_or(EditorError::NoEditor)?;
