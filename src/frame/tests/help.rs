@@ -2,6 +2,7 @@
 
 use super::super::{HelpView, Section, draw_help};
 use super::{drawn, row};
+use ratatui::layout::Rect;
 
 const LEFT: &[Section] = &[("Move", &[("j k", "down / up")])];
 const RIGHT: &[Section] = &[("Write", &[("enter", "send the message")])];
@@ -127,4 +128,23 @@ fn the_box_has_rounded_corners() {
     // 30 x 6 in the middle of 40 x 8: columns 5 to 34, rows 1 to 6.
     let corners = [(5, 1), (34, 1), (5, 6), (34, 6)].map(|at| buffer[at].symbol().to_owned());
     assert_eq!(corners, ["╭", "╮", "╰", "╯"]);
+}
+
+#[test]
+fn dialog_rect_is_the_inner_area_of_dialog_box() {
+    for (area, size) in [
+        (Rect::new(0, 0, 80, 24), (30, 6)),
+        (Rect::new(0, 0, 20, 5), (30, 6)),
+        (Rect::new(3, 2, 61, 17), (200, 100)),
+    ] {
+        let mut drawn_inner = Rect::default();
+        drawn(area.right(), area.bottom(), |frame| {
+            drawn_inner = super::super::dialog_box(frame, area, "window", size, None);
+        });
+        assert_eq!(
+            super::super::dialog_rect(area, size),
+            drawn_inner,
+            "{area:?} {size:?}"
+        );
+    }
 }

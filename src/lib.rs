@@ -6,4 +6,10 @@
 
 pub mod frame;
 
+#[cfg(feature = "pictures")]
 pub mod pictures;
+
+// The dev-dependency `tempfile` serves the tests of the pictures only. Without them, the
+// `unused_crate_dependencies` lint of the test build needs this use.
+#[cfg(all(test, not(feature = "pictures")))]
+use tempfile as _;

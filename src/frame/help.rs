@@ -42,10 +42,7 @@ pub fn dialog_box(
     (width, height): (u16, u16),
     hint: Option<&str>,
 ) -> Rect {
-    let rect = area.centered(
-        Constraint::Length(width.min(area.width.saturating_sub(4))),
-        Constraint::Length(height.min(area.height.saturating_sub(2))),
-    );
+    let rect = dialog_outer(area, (width, height));
     frame.render_widget(Clear, rect);
     let mut block = Block::default()
         .borders(Borders::ALL)
@@ -58,6 +55,24 @@ pub fn dialog_box(
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
     inner
+}
+
+/// The area inside the box that `dialog_box` draws for `size` in `area`, without a draw. An app
+/// that computes its scroll limits and its input widths before the draw gets the same rect.
+pub fn dialog_rect(area: Rect, size: (u16, u16)) -> Rect {
+    Block::default()
+        .borders(Borders::ALL)
+        .padding(Padding::uniform(1))
+        .inner(dialog_outer(area, size))
+}
+
+/// The box with its border, centered in `area`, at most `size` and inside the margin of 4
+/// columns and 2 rows.
+fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> Rect {
+    area.centered(
+        Constraint::Length(width.min(area.width.saturating_sub(4))),
+        Constraint::Length(height.min(area.height.saturating_sub(2))),
+    )
 }
 
 /// The keys in two columns of sections, in a box in the middle of `area`. When the screen is

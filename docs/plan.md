@@ -5,8 +5,9 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0 and 1 are committed (tuilibr `901aa79`, schnattr `9758a73`, youtr
-`7a7499c`). The tuilibr session (`tuilibr-82`) owns the crate
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `39ba87d`, schnattr `4879d62`, youtr
+`4ef19f3`, phewr `62a1fb9`). Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
+The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
 waits for the gate of phase 2 in phewr (`phewr/docs/picture-refactor.md`).
 
@@ -40,7 +41,7 @@ The frame interface: `split`, `split_boxed`, `list_width`, `NARROW_BELOW`, `divi
 `join_rule`, `pane_box`, `dim_pane`, the styles `dim`, `pill`, `secondary`, `selection`,
 `unfocused_selection`, `EntryView` with `draw_entry` and `square_columns`, `draw_header`,
 `draw_dimmed_header` with `HeaderAreas`, `BarView` with `draw_bar`, `HelpView` with
-`draw_help`, `dialog_box` and `column_rows`, the text helpers `display_width`, `spans_width`,
+`draw_help`, `dialog_box`, `dialog_rect` and `column_rows`, the text helpers `display_width`, `spans_width`,
 `spread`, `truncate_width`, the `Pictures` trait with `CellSize` and `Shade`, and
 `until_next_minute`.
 
@@ -86,8 +87,8 @@ the docs, not from a line-by-line comparison:
 | 0 | The crate with the frame. schnattr uses it. The frame recipes of schnattr go. | none | done, tuilibr `901aa79`, schnattr `9758a73` |
 | 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
-| 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | tuilibr `1840c09` holds the module. youtr done (288 tests), schnattr done (1 398 tests), phewr `cbaec43` (795 tests, no bench regression). phewr hands the module orchestration to the tuilibr session. The `test-support` gates of `cells`, `bytes` and the test names wait for a commit. |
-| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | tuilibr `3fa749d` has `dialog_box`. schnattr and youtr done, uncommitted. phewr `ba8d0cd`. agendr runs. |
+| 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
+| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`. agendr bar `f3c512d` (1 255 tests), its dialog step runs as a worker. |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
@@ -168,6 +169,9 @@ tests skip without `TUILIBR_TEST_*`). The decisions of the move:
   hashes `<app>-thumbnail-v22`.
 - The `kitty-*` gates are gone. `#[cfg_attr(..., expect(dead_code))]` of the app days are gone: a
   `pub` item is never dead in a library.
+- The module sits behind the default feature `pictures` (2026-11-19, on the request of agendr): an
+  app with the frame only sets `default-features = false` and builds no module dependency. The
+  three picture apps keep their Cargo lines, because the feature is on by default.
 - The lint union adds `#[must_use]` on the builder methods, `Default` on `TerminalImages` and
   `PathCounter`, and one `expect(clippy::iter_without_into_iter)` on `JobQueue::iter`.
 - `[profile.dev.package."*"] opt-level = 2` lives in `.cargo/config.toml`, because cargo ignores
@@ -309,11 +313,28 @@ first, then the app.
   in the middle, zoom and date at the right, the clock as `time`, the backend state as icons). The
   confirm box, the forms and the help become `dialog_box` with an own body, the key help with
   `HelpView`. `popup_block`, `centered` and `centered_fixed` of agendr go.
+  The bar landed as agendr `f3c512d` against tuilibr `39ba87d`, 1 255 tests. The dialog step runs
+  as a worker.
 
 One rule for the look: the mode names are upper case words (`NORMAL`, `INSERT`, `SEARCH`,
 `COMMAND`), one letter below `NARROW_BELOW`. The colors of the blocks are per app. A dialog box
 keeps a margin of 4 columns and 2 rows to the screen edge and cuts its body when the screen is
 smaller.
+
+### Phase 3b: the picture module behind a feature
+
+On the request of agendr (2026-11-19), the picture module sits behind the feature `pictures`, on by
+default. schnattr, youtr and phewr keep their Cargo lines. agendr sets `default-features = false`
+and builds the frame only, with no decoder. `just check` of tuilibr runs three sets: no feature,
+`pictures` alone, every feature. Uncommitted in the tuilibr tree.
+
+### Phase 4b: two interface changes after the agendr merge of phase 4a
+
+`Section<'a>` (phewr: help rows at run time) and a `BarText` field `keep_end` (agendr: a typed
+query keeps its end when the bar cuts it). Both touch struct literals and type aliases in the apps.
+The tuilibr session changes the crate after a day of notice and tells each app session. Each app
+session changes its own call sites within the same hour (schnattr: `ui/help.rs` and the bar fill in
+`ui/status.rs`) and runs `just check`. The maintainer commits tuilibr first, then the apps.
 
 ### Phase 4: the other shared parts
 

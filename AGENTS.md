@@ -30,11 +30,12 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
   passes in each app. Lints are in `Cargo.toml` and `clippy.toml`, not in attributes. A local
   exception is `#[expect(lint, reason = "...")]`, never a bare `#[allow]`.
 - **The frame imports `ratatui`, `unicode-width`, `unicode-segmentation` and `std`.** The picture
-  module adds `crossterm` (the Kitty answers come as key events), `image`, `fast_image_resize`,
-  `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru` and `rustix`, and its decoders behind the
-  features `turbo`, `heic`, `jxl` and `sips`. A feature gates a native library or a measured
-  build cost, nothing else. `test-support` is the one exception: it builds the test helpers for
-  the tests of an app.
+  module sits behind the default feature `pictures` with `crossterm` (the Kitty answers come as
+  key events), `image`, `fast_image_resize`, `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru`
+  and `rustix`, and its decoders behind the features `turbo`, `heic`, `jxl` and `sips`. An app
+  that uses the frame only sets `default-features = false`. A feature gates a native library or a
+  measured build cost, nothing else. `test-support` is the one exception: it builds the test
+  helpers for the tests of an app.
 - **The crate builds with no feature and with every feature, with zero warnings.** An app builds
   the working tree of the crate as a path dependency with its own feature set and `-D warnings`,
   and cargo caps no lint of a path dependency. A `#[cfg_attr(..., expect(dead_code))]` of the

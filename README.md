@@ -25,10 +25,13 @@ Homebrew's rustup is keg-only. The justfile puts `/opt/homebrew/opt/rustup/bin` 
 
 ## The picture module and its features
 
-The crate has no default feature. An app turns on the decoders that it needs:
+The feature `pictures` is on by default. An app that uses the frame only sets
+`default-features = false` and builds no decoder. The decoder features are off by default, an app
+turns on the ones that it needs:
 
 | Feature | What it adds | Build requirement |
 |---|---|---|
+| `pictures` (default) | The picture module: the pure Rust decoders of `image`, the resize, the shapes, the decode pool, the Kitty layer | none |
 | `turbo` | libjpeg-turbo, the JPEG decoder with DCT scaling | `brew install pkgconf jpeg-turbo` |
 | `heic` | libheif 1.19 or later, for HEIC, HEIF and AVIF | `brew install libheif` |
 | `jxl` | JPEG XL in pure Rust (jxl-oxide) | none |

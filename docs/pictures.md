@@ -45,8 +45,12 @@ module, so its thumbnail cache stays warm.
 
 ## The features
 
-The crate has no default feature. `turbo` adds libjpeg-turbo, `heic` adds libheif, `jxl` adds
-jxl-oxide, and `sips` adds the macOS `sips` route with its temp file. `test-support` builds
+The module sits behind the feature `pictures`, which is on by default. An app with the frame only
+(agendr) sets `default-features = false` and builds none of the module dependencies, so its
+`cargo deny` sees no `BSD` license and no duplicate version from the module (agendr session,
+2026-11-19). The decoder features are off by default: `turbo` adds libjpeg-turbo, `heic` adds
+libheif, `jxl` adds jxl-oxide, and `sips` adds the macOS `sips` route with its temp file. Each of
+them turns `pictures` on. `test-support` builds
 `pictures::test_support` for the tests of an app. The former `kitty-*` features of phewr are gone:
 a library has no dead code for a public item, and they saved no dependency and no build time.
 
@@ -70,6 +74,11 @@ jobs, `From<RgbaImage> for GridPicture`, `ThumbnailCache::capacity` and `parked_
 `Placements::cells`, `ThumbnailCache::bytes`, `names::{test_variable, test_file}`,
 `disk_cache::PathCounter` with `KEY_COMPUTATIONS` and the three disk cache test helpers. The
 counting of the key computations runs under the feature, so an app counts them in its tests.
+
+The fixtures are committed as they are, and nobody rebuilds them (the maintainer, 2026-11-19).
+The `make.sh` scripts are the record of how each file was made, not a step of the work. The hdr
+script needs no `cjxl`: the apps decode JPEG XL with jxl-oxide, and no libjxl tool is on the
+machine.
 
 ## The rules of the Kitty layer
 
@@ -110,9 +119,9 @@ These rules make the output fast and keep every picture on screen:
   numbers were six times slower on one branch and said nothing (phewr session, 2026-11-19). The
   crate split showed no regression: 24 MP sRGB to Display P3 5.6 ms against 5.9 to 8.2 ms,
   lanczos3 to 2688x2016 51 ms against 54 ms.
-- `tests/fixtures/hdr/make.sh` needs the phewr checkout next to tuilibr, or `PHEWR=<path>`: the
-  references come from the HDR cube of the phewr player, which the ignored phewr test
-  `write_the_player_hdr_cubes` writes.
+- `tests/fixtures/hdr/make.sh` is a record only. If anyone runs it, it needs the phewr checkout
+  next to tuilibr, or `PHEWR=<path>`, because the references come from the HDR cube of the phewr
+  player (the ignored phewr test `write_the_player_hdr_cubes`).
 
 ## The handover from phewr (2026-11-19)
 
@@ -217,10 +226,6 @@ closed both on 2026-11-17 without a code change:
   dependency. jxl-oxide 0.12 converts ICC v2 samples wrong, so moxcms converts lossless files
   with an ICC profile. moxcms 0.9.1 truncated its output curves, so the crate needs 0.9.2 or
   later.
-- `tests/fixtures/hdr/make.sh` has not run from the tuilibr tree yet. The JPEG XL fixtures stay as
-  committed and the script does not rebuild them, so it needs no `cjxl` (the maintainer,
-  2026-11-19: the apps decode JPEG XL with jxl-oxide, no libjxl on the machine). The first run must
-  leave `git status` clean.
 
 ### Decisions of the maintainer about the module
 

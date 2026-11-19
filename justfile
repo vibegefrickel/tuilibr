@@ -20,6 +20,7 @@ fmt-check:
 lint:
     cargo clippy --all-targets --all-features -- -D warnings
     cargo clippy --all-targets --no-default-features -- -D warnings
+    cargo clippy --all-targets --no-default-features --features pictures -- -D warnings
 
 # Apply the lint and formatting fixes that clippy and rustfmt can do on their own.
 fix:
@@ -30,9 +31,11 @@ fix:
 test *ARGS:
     if command -v cargo-nextest >/dev/null; then cargo nextest run --all-features {{ARGS}}; else cargo test --all-features {{ARGS}}; fi
 
-# The tests with no feature, as youtr builds the crate.
+# The tests with the frame only, as agendr builds the crate, and with the pictures without a
+# decoder, as youtr builds it.
 test-lean *ARGS:
     if command -v cargo-nextest >/dev/null; then cargo nextest run --no-default-features {{ARGS}}; else cargo test --no-default-features {{ARGS}}; fi
+    if command -v cargo-nextest >/dev/null; then cargo nextest run --no-default-features --features pictures {{ARGS}}; else cargo test --no-default-features --features pictures {{ARGS}}; fi
 
 # rustdoc over the crate, warnings fatal (broken links, bad code blocks).
 doc:
