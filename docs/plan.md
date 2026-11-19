@@ -426,6 +426,9 @@ query goes with the id 30 in the same write as the probes of the medium (31) and
 so one read answers `kitty`, the transfer and the loops. `Filtered.answers` come before the
 events of the same read. `crossterm` is a plain dependency now, so the session is in the
 frame-only build.
+`install_panic_hook_with(modes, worker)` runs a closure for a panic on another thread in place of
+the previous hook, so a worker panic prints nothing onto the alternate screen (youtr finding,
+2026-11-19).
 
 The code is `src/terminal/mod.rs` (the session), `start.rs` and `answers.rs`, the tests in
 `src/terminal/tests.rs`: 24 tests, among them the four of schnattr and the ten of phewr. The

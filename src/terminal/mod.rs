@@ -7,6 +7,7 @@
 //! alternate screen, the cursor and the modes, and gives them back in the reverse order.
 
 use std::io::{self, Write};
+use std::panic::PanicHookInfo;
 
 use crossterm::{
     cursor,
@@ -232,9 +233,27 @@ pub fn repaint_on_next_draw<B: Backend>(terminal: &mut Terminal<B>) {
 
 /// A panic on the thread that installs the hook gives the terminal back before the message
 /// prints, else the alternate screen swallows the message. A panic on another thread (a decode
-/// worker) leaves the terminal to the UI, which goes on drawing. The hook exits nowhere: the app
+/// worker, an async task) leaves the terminal to the UI, which goes on drawing, and runs the hook
+/// that was in place before, which prints the message on stderr, onto the alternate screen. An app
+/// that wants no print there uses `install_panic_hook_with`. The hook exits nowhere: the app
 /// decides what happens after the message.
 pub fn install_panic_hook(modes: Modes) {
+    install_hook(modes, None);
+}
+
+/// `install_panic_hook`, with `worker` for a panic on another thread in place of the hook that
+/// was in place before. The app logs the panic there and prints nothing onto its screen.
+pub fn install_panic_hook_with(
+    modes: Modes,
+    worker: impl Fn(&PanicHookInfo<'_>) + Send + Sync + 'static,
+) {
+    install_hook(modes, Some(Box::new(worker)));
+}
+
+/// The hook of a worker panic, or `None` for the hook that was in place before.
+type WorkerHook = Box<dyn Fn(&PanicHookInfo<'_>) + Send + Sync>;
+
+fn install_hook(modes: Modes, worker: Option<WorkerHook>) {
     let ui_thread = std::thread::current().id();
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -244,8 +263,12 @@ pub fn install_panic_hook(modes: Modes) {
                 reason = "the terminal is in a panic, a failed release cannot be reported"
             )]
             let _ = release_terminal_to(&mut io::stdout(), modes, disable_raw_mode);
+            previous(info);
+        } else if let Some(worker) = &worker {
+            worker(info);
+        } else {
+            previous(info);
         }
-        previous(info);
     }));
 }
 
