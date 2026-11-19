@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `3461a0a`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `ff0396f`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -89,7 +89,7 @@ the docs, not from a line-by-line comparison:
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
-| 4c | One highlight in every app: the white of the palette. | none | in the tuilibr tree, the apps follow after the commit |
+| 4c | One highlight in every app: the white of the palette. | none | tuilibr `ff0396f`. schnattr and youtr pass in their trees, uncommitted. phewr and agendr follow. |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
@@ -365,8 +365,10 @@ network, a mode block, a reaction, a delivery mark) stay with the app.
 
 State (2026-11-19): schnattr has the turned pill in `ui/sidebar.rs`, three tests assert
 `frame::accent()`, and no own literal highlights the active state (checked: the message header
-uses `selection()`). Its snapshots wait for the tuilibr commit. youtr did the same in its tree
-(288 tests). phewr and agendr follow and check their status row, popups, footer and dialogs for a
+uses `selection()`). Its snapshots did not change, because they hold cells, not colours. `just check` passes against
+tuilibr `ff0396f` with 1 398 tests. youtr did the same in its tree
+(288 tests): the grid cursor takes `frame::accent()`, the downloads title used `selection()`
+already. phewr and agendr follow and check their status row, popups, footer and dialogs for a
 literal.
 
 ### Phase 4: the other shared parts
