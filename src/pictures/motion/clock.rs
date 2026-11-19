@@ -1,7 +1,7 @@
 //! The loop of one cell on the shared clock of the grid.
 
 use crate::pictures::jobs::thumbnail_cache::GridPicture;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 /// The highest rate of an animation loop (`loop_frames::MAX_LOOP_FPS`).
 ///
@@ -12,6 +12,39 @@ pub const TICKS_PER_SECOND: u64 = 12;
 /// The ticks of a video frame (333 ms). Each loop starts at a multiple of it, and all video
 /// cells change frames in the same tick.
 const START_ALIGN: u64 = 4;
+
+/// The shared clock of the loops of a screen: the ticks since its start.
+///
+/// Every loop of a screen reads the same clock, so the cells change their frames in the same tick.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct LoopClock {
+    /// The time of tick 0.
+    epoch: Instant,
+}
+
+impl LoopClock {
+    /// A clock that starts at `epoch`, so a test can pin the start.
+    #[must_use]
+    pub const fn starting_at(epoch: Instant) -> Self {
+        Self { epoch }
+    }
+
+    /// The tick at `now`: 12 ticks per second since the start, 0 before it.
+    #[must_use]
+    pub fn tick_at(&self, now: Instant) -> u64 {
+        let ticks = now.saturating_duration_since(self.epoch).as_nanos()
+            * u128::from(TICKS_PER_SECOND)
+            / 1_000_000_000;
+        u64::try_from(ticks).unwrap_or(u64::MAX)
+    }
+
+    /// The time of `tick`, rounded up to the nanosecond, so `tick_at` of it is `tick` again.
+    #[must_use]
+    pub fn instant_of(&self, tick: u64) -> Instant {
+        let nanos = (u128::from(tick) * 1_000_000_000).div_ceil(u128::from(TICKS_PER_SECOND));
+        self.epoch + Duration::from_nanos(u64::try_from(nanos).unwrap_or(u64::MAX))
+    }
+}
 
 /// The loop of one visible cell: its padded frames, their Kitty ids and their ends on the clock.
 #[derive(Debug)]
@@ -140,6 +173,23 @@ fn tick_ends(delays: &[Duration]) -> Vec<u64> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_tick_and_its_instant_round_trip_and_time_before_the_start_is_tick_zero() {
+        use super::LoopClock;
+        use std::time::{Duration, Instant};
+        let epoch = Instant::now();
+        let clock = LoopClock::starting_at(epoch);
+        assert_eq!(clock.tick_at(epoch), 0);
+        assert_eq!(clock.tick_at(epoch + Duration::from_millis(1000)), 12);
+        assert_eq!(clock.tick_at(epoch + Duration::from_millis(83)), 0);
+        assert_eq!(clock.tick_at(epoch + Duration::from_millis(84)), 1);
+        for tick in [0, 1, 7, 12, 1_000_000] {
+            assert_eq!(clock.tick_at(clock.instant_of(tick)), tick, "{tick}");
+        }
+        let later = LoopClock::starting_at(epoch + Duration::from_secs(5));
+        assert_eq!(later.tick_at(epoch), 0, "a time before the start");
+    }
+
     use super::{CellLoop, START_ALIGN, tick_ends};
     use crate::pictures::jobs::thumbnail_cache::GridPicture;
     use image::RgbaImage;
