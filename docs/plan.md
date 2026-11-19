@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `d2f204a`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `15bc6af`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -631,6 +631,41 @@ The decisions of the tuilibr session for agendr (2026-11-19):
   has a confirm question (`y` confirms, every other key cancels) and a plain filter string, phewr
   has neither. A shared confirm body is a candidate for a later step of this phase, not for now.
 
+### The checks of the five repositories (2026-11-19)
+
+The maintainer asked for stricter and more modern checks. A research agent compared the tables
+and the tools; the decisions and the state:
+
+- One layout: a module with children is `name/mod.rs`, enforced by `self_named_module_files`.
+  tuilibr moved seven files, agendr moves 26 in its stricter-checks worker (the maintainer,
+  2026-11-19, no `mod_module_files`).
+- `[lints.cargo] unused_dependencies = "deny"` replaces the rustc `unused_crate_dependencies`.
+  Warnings are denied through `CARGO_BUILD_WARNINGS=deny` in the recipes, not through
+  `-- -D warnings`, so rust-analyzer and the gate share their artifacts and the test builds get
+  denied warnings too. `cargo test --doc` runs after nextest. The dead line
+  `module_name_repetitions = "allow"` goes: the lint left the pedantic group.
+- New lints: `missing_docs`, `missing_debug_implementations`, `ambiguous_negative_literals`,
+  `closure_returning_async_block`, `impl_trait_redundant_captures`; `panic_in_result_fn`,
+  `assertions_on_result_states`, `lossy_float_literal`, `float_cmp_const`,
+  `self_named_module_files`, `empty_structs_with_brackets`, `unnecessary_self_imports`,
+  `pub_without_shorthand`, `redundant_type_annotations`, `unused_async`; rustdoc
+  `unescaped_backticks`, `missing_crate_level_docs`. Not `let_underscore_drop`: it fights the house
+  style `let _ = result` with the `let_underscore_must_use` expects.
+- `just audit`: `taplo fmt --check`, `just --fmt --check --unstable`, `shellcheck` and `shfmt` on
+  the shell scripts, `typos`, `cargo shear`; schnattr and agendr add `cargo insta test
+  --unreferenced=reject`. It joins `check` when every repository is clean.
+- nextest: a `ci` profile without fail-fast and with a junit file; agendr retries its PTY tests
+  one time.
+- Measured in tuilibr, not on: `cast_possible_truncation` 54, `cast_sign_loss` 21,
+  `cast_possible_wrap` 5 (one saturating helper, then the three lints), `indexing_slicing` 193
+  (stays off), `too_long_first_doc_paragraph` 50, `or_fun_call` 6, `missing_const_for_fn` 41.
+- The picture module carries `#![expect(missing_docs)]` with a reason: its items came from phewr
+  as `pub(crate)` without docs. Documenting them is a step of its own.
+- The hooks: the shared pre-commit hook of the dotfiles runs `just fmt-check lint` on the working
+  tree, the pre-push hook the full `just check`; the worker merges run `just check` through
+  merge.sh. The apps drop their `.githooks/pre-commit` and the `hooks` recipe, the maintainer
+  unsets the local `core.hooksPath` of schnattr and agendr.
+
 ### Phase 5: the build for other people
 
 The maintainer (2026-11-19): phase 5 comes when tuilibr is done and halfway stable, that is after
@@ -691,12 +726,29 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
 - The hooks: the pre-commit hook of the dotfiles becomes the fast gate `just fmt-check lint` on the
   working tree as it is. The full `just check` runs at the worker merge and in a new pre-push
   hook. `.githooks/pre-commit` and the `hooks` recipe leave each app.
-- State (2026-11-19): youtr done in its tree (286 tests: ten `assertions_on_result_states` in tests,
-  five `self_named_module_files` moved to `name/mod.rs`, the rest found nothing; no shell script,
-  so no shellcheck and shfmt lines). schnattr runs a heavy worker (auto review). phewr runs a
-  worker after its current merge (11 self-named module files). agendr follows. None of the audit
-  tools is installed yet, so `audit` stays out of `check` until
-  `brew install taplo shellcheck shfmt typos-cli cargo-shear cargo-insta`.
+- State (2026-11-19): done in all five repositories, `just apps-check` from tuilibr `15bc6af`
+  passes: schnattr `59e8865` (1 387 tests), youtr `9d636d4` (286), phewr `f94c92b` (787 and 765),
+  agendr `616c08f` (1 242). The lints found: `assertions_on_result_states` 41 in schnattr, 17 in
+  phewr, 22 in agendr, 10 in youtr; `closure_returning_async_block` 19 in schnattr; module moves to
+  `mod.rs` 3 in schnattr, 11 in phewr, 26 in agendr, 5 in youtr, 7 in tuilibr; `missing_docs` 628
+  and `missing_debug_implementations` 5 in agendr; one `panic_in_result_fn` each in schnattr and
+  agendr. The local `core.hooksPath` is unset everywhere, so the shared hooks run in every
+  repository.
+- The audit tools are installed and in the Brewfile of the dotfiles (2026-11-19). `audit` joins
+  `check` in each repository as soon as its own audit is clean: tuilibr, agendr and phewr
+  (`5e64e7a`) are clean, schnattr is clean with `audit` in `check` (uncommitted), youtr follows. The
+  first runs needed `taplo fmt` (one array entry per line), `just --fmt` once, a `_typos.toml` for
+  names, domain words and commit hashes, and `cargo insta test --bins` in a binary crate. `check`
+  runs the tests once: in a repository with insta, `audit` takes the place of `test`.
+- One audit text in all five repositories (the maintainer, 2026-11-19): taplo, `just --fmt`,
+  typos, cargo shear, shellcheck and shfmt when `git ls-files '*.sh'` is not empty, and
+  `CARGO_BUILD_WARNINGS=deny cargo insta test {{ test_profile }} --all-targets
+  --unreferenced=reject` when the repository uses insta. `test_profile` is a variable per
+  repository (`"--release"` in schnattr and agendr, `""` elsewhere), so the insta step builds no
+  second profile. `.taplo.toml` and `_typos.toml` keep one shape, with the words of each
+  repository. schnattr has the text in its tree. The tuilibr session sends it to the others.
+- Open in the crate: the docs of the picture module items. The module carries a `missing_docs`
+  expect with a reason until a step of its own writes them.
 - Measured in tuilibr for later: `cast_possible_truncation` 54, `cast_sign_loss` 21,
   `cast_possible_wrap` 5, `indexing_slicing` 193 (stays off), `too_long_first_doc_paragraph` 50,
   `or_fun_call` 6, `missing_const_for_fn` 41.

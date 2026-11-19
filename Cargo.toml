@@ -151,7 +151,19 @@ unicode-width = "0.2"
 base64 = { version = "0.23", optional = true }
 fast_image_resize = { version = "6.1", optional = true }
 # Only the decoders for the formats that the apps list. AVIF goes through libheif.
-image = { version = "0.25.10", default-features = false, optional = true, features = ["bmp", "exr", "gif", "hdr", "ico", "jpeg", "png", "qoi", "tga", "tiff", "webp"] }
+image = { version = "0.25.10", default-features = false, optional = true, features = [
+  "bmp",
+  "exr",
+  "gif",
+  "hdr",
+  "ico",
+  "jpeg",
+  "png",
+  "qoi",
+  "tga",
+  "tiff",
+  "webp",
+] }
 # JPEG XL in pure Rust. The default feature `rayon` decodes on the shared rayon pool. `moxcms`
 # converts an ICC profile to sRGB. `image` still uses moxcms 0.8.
 # Both JPEG XL pins are exact on purpose. The sample copy on all cores in `decode/jxl.rs` reads
@@ -175,7 +187,10 @@ rustix = { version = "1", features = ["event"], optional = true }
 tempfile = { version = "3.27", optional = true }
 # Without the default feature `cmake`, turbojpeg-sys finds the Homebrew libjpeg-turbo through
 # pkgconf and never builds it from source.
-turbojpeg = { version = "1.5", default-features = false, features = ["pkg-config", "require-simd"], optional = true }
+turbojpeg = { version = "1.5", default-features = false, features = [
+  "pkg-config",
+  "require-simd",
+], optional = true }
 
 [dev-dependencies]
 tempfile = "3.27"
@@ -188,14 +203,14 @@ default = ["pictures"]
 # The picture module with the pure Rust decoders of `image`, the resize, the shapes, the decode
 # pool with its caches and the Kitty layer.
 pictures = [
-    "dep:base64",
-    "dep:fast_image_resize",
-    "dep:image",
-    "dep:kamadak-exif",
-    "dep:lru",
-    "dep:moxcms",
-    "dep:rayon",
-    "dep:rustix",
+  "dep:base64",
+  "dep:fast_image_resize",
+  "dep:image",
+  "dep:kamadak-exif",
+  "dep:lru",
+  "dep:moxcms",
+  "dep:rayon",
+  "dep:rustix",
 ]
 # Fast JPEG decoding with DCT downscaling (libjpeg-turbo).
 turbo = ["pictures", "dep:turbojpeg"]

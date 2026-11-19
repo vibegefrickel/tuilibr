@@ -12,16 +12,16 @@ ignore = []
 [licenses]
 # tuilibr is MIT, so its dependencies must be permissive.
 allow = [
-    "MIT",
-    "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
-    "BSD-2-Clause",
-    "BSD-3-Clause",
-    "0BSD",
-    "Zlib",
-    "BSL-1.0",
-    "Unlicense",
-    "Unicode-3.0",
+  "MIT",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "0BSD",
+  "Zlib",
+  "BSL-1.0",
+  "Unlicense",
+  "Unicode-3.0",
 ]
 confidence-threshold = 0.8
 private = { ignore = true }
@@ -34,12 +34,12 @@ highlight = "all"
 # the crate that holds the old one, so a dependency update that drops it shows up as an unused
 # skip. The list keeps `just check` and the pre-commit hook free of warnings.
 skip = [
-    { crate = "lru@0.18.5", reason = "ratatui-core uses lru 0.18, the crate lru 0.19" },
-    { crate = "miniz_oxide@0.8.9", reason = "png and exr use miniz_oxide 0.8, flate2 0.9" },
-    { crate = "moxcms@0.8.1", reason = "image uses moxcms 0.8, the crate 0.9 for the ICC curves" },
-    { crate = "syn@2.0.119", reason = "derive_more, strum and zerocopy still derive with syn 2" },
-    { crate = "thiserror@1.0.69", reason = "turbojpeg uses thiserror 1" },
-    { crate = "thiserror-impl@1.0.69", reason = "turbojpeg uses thiserror 1" },
+  { crate = "lru@0.18.5", reason = "ratatui-core uses lru 0.18, the crate lru 0.19" },
+  { crate = "miniz_oxide@0.8.9", reason = "png and exr use miniz_oxide 0.8, flate2 0.9" },
+  { crate = "moxcms@0.8.1", reason = "image uses moxcms 0.8, the crate 0.9 for the ICC curves" },
+  { crate = "syn@2.0.119", reason = "derive_more, strum and zerocopy still derive with syn 2" },
+  { crate = "thiserror@1.0.69", reason = "turbojpeg uses thiserror 1" },
+  { crate = "thiserror-impl@1.0.69", reason = "turbojpeg uses thiserror 1" },
 ]
 
 [sources]

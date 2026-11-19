@@ -38,7 +38,7 @@ awk 'BEGIN {
     }
     print line
   }
-}' > "$work/plain.ppm"
+}' >"$work/plain.ppm"
 # cjxl reads only the binary PPM.
 magick "$work/plain.ppm" -depth 8 "$work/chart.ppm"
 magick "$work/chart.ppm" -depth 16 "$work/chart16.ppm"
@@ -100,7 +100,7 @@ encode gray-pq "$work/gray-pq.pgm" -x color_space=Gra_D65_Rel_PeQ --intensity_ta
 # The same signals with the BT.2100 PQ and HLG ICC profiles of macOS (with a cicp tag), which
 # sips writes into a PNG. A lossless file keeps the profile.
 for tf in pq hlg; do
-  sips -s format png "$tf.jxl" --out "$work/$tf-sips.png" > /dev/null
+  sips -s format png "$tf.jxl" --out "$work/$tf-sips.png" >/dev/null
   magick "$work/$tf-sips.png" "$work/$tf.icc"
   magick "$work/$tf.ppm" -set profile "$work/$tf.icc" "$work/$tf-icc.png"
   encode "$tf-icc" "$work/$tf-icc.png" -d 0
@@ -111,7 +111,7 @@ mkdir ref
 for file in *.jxl; do
   name=${file%.jxl}
   case $name in
-    pq | hlg | pq-icc | hlg-icc | gray-pq) continue ;;
+  pq | hlg | pq-icc | hlg-icc | gray-pq) continue ;;
   esac
   djxl "$file" "ref/$name.png" --color_space=RGB_D65_SRG_Rel_SRG --bits_per_sample=8 \
     --display_nits=0 --quiet

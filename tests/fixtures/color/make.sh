@@ -44,7 +44,7 @@ awk 'BEGIN {
     }
     print line
   }
-}' > "$work/plain.ppm"
+}' >"$work/plain.ppm"
 magick "$work/plain.ppm" -depth 8 "$work/plain.png"
 
 # The JPEG fixtures keep full chroma (4:4:4) and quality 100, so the patches stay flat.
@@ -59,10 +59,10 @@ magick "$work/plain.png" $jpeg srgb.jpg
 magick "$work/plain.png" -define png:exclude-chunk=all srgb.png
 
 # heif-enc copies the ICC profile of the PNG into a prof box, as an iPhone writes it.
-heif-enc -L "$work/p3.png" -o p3-icc.heic > /dev/null
+heif-enc -L "$work/p3.png" -o p3-icc.heic >/dev/null
 heif-enc -L --matrix_coefficients 0 --colour_primaries 12 --transfer_characteristic 13 \
-  --full_range_flag 1 "$work/plain.png" -o p3-nclx.heic > /dev/null
-avifenc -l --cicp 12/13/0 "$work/plain.png" p3-nclx.avif > /dev/null
+  --full_range_flag 1 "$work/plain.png" -o p3-nclx.heic >/dev/null
+avifenc -l --cicp 12/13/0 "$work/plain.png" p3-nclx.avif >/dev/null
 
 # Insert color chunks after IHDR. ImageMagick cannot write a cICP chunk, so python3 writes
 # the color chunks.
@@ -95,9 +95,9 @@ reference() {
   name=$1
   source=$2
   sips -s format png --matchTo "$profiles/Display P3.icc" "$source" --out "ref/$name-p3.png" \
-    > /dev/null
+    >/dev/null
   sips -s format png --matchTo "$profiles/sRGB Profile.icc" "$source" --out "ref/$name-srgb.png" \
-    > /dev/null
+    >/dev/null
 }
 for name in p3-icc.jpg p3-icc.png p3-icc.webp p3-icc.tiff p3-icc.heic p3-nclx.heic p3-nclx.avif \
   p3-cicp.png p3-chrm.png adobe-rgb-icc.jpg; do

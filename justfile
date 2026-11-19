@@ -4,6 +4,9 @@
 set shell := ["zsh", "-euo", "pipefail", "-c"]
 export PATH := "/opt/homebrew/opt/rustup/bin:" + env("PATH")
 
+# The build profile of the test runs: empty here, `--release` in an app that tests in release.
+test_profile := ""
+
 # Everything a commit must pass: formatting, lints, tests, docs, dependency policy.
 default: check
 
@@ -31,13 +34,13 @@ fix:
 # Tests through nextest, then the doc tests, which nextest does not run. Without nextest,
 # `cargo test` runs both.
 test *ARGS:
-    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --all-features {{ARGS}} && CARGO_BUILD_WARNINGS=deny cargo test --doc --all-features; else CARGO_BUILD_WARNINGS=deny cargo test --all-features {{ARGS}}; fi
+    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --all-features {{ ARGS }} && CARGO_BUILD_WARNINGS=deny cargo test --doc --all-features; else CARGO_BUILD_WARNINGS=deny cargo test --all-features {{ ARGS }}; fi
 
 # The tests with the frame only, as agendr builds the crate, and with the pictures without a
 # decoder, as youtr builds it.
 test-lean *ARGS:
-    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --no-default-features {{ARGS}}; else CARGO_BUILD_WARNINGS=deny cargo test --no-default-features {{ARGS}}; fi
-    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --no-default-features --features pictures {{ARGS}}; else CARGO_BUILD_WARNINGS=deny cargo test --no-default-features --features pictures {{ARGS}}; fi
+    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --no-default-features {{ ARGS }}; else CARGO_BUILD_WARNINGS=deny cargo test --no-default-features {{ ARGS }}; fi
+    if command -v cargo-nextest >/dev/null; then CARGO_BUILD_WARNINGS=deny cargo nextest run --no-default-features --features pictures {{ ARGS }}; else CARGO_BUILD_WARNINGS=deny cargo test --no-default-features --features pictures {{ ARGS }}; fi
 
 # rustdoc over the crate, warnings fatal (broken links, bad code blocks).
 doc:
@@ -52,18 +55,20 @@ outdated:
     cargo update --dry-run --verbose 2>&1 | grep -E '^\s*(Updating|Unchanged)' || true
 
 # The full gate.
-check: fmt-check lint test test-lean doc deny
+check: fmt-check lint test test-lean doc deny audit
 
-# The checks outside cargo: the TOML format, the justfile format, the shell scripts of the fixtures,
-# the spelling, the unused dev-dependencies. `brew install taplo shellcheck shfmt typos-cli
-# cargo-shear` once. The recipe joins `check` when it is clean in every repository.
+# The checks outside cargo, one text in every repository: the TOML format, the justfile format,
+# the spelling, the unused dev-dependencies, the shell scripts when the repository has some, and
+# every test with the orphan snapshots when the repository uses insta. The tools come from the
+# Brewfile of the dotfiles: taplo, typos-cli, cargo-shear, shellcheck, shfmt, cargo-insta. Part of
+# `check`, in place of `test` when the repository uses insta, so the suite runs once.
 audit:
     taplo fmt --check
     just --fmt --check --unstable
-    shellcheck -S warning tests/fixtures/make.sh tests/fixtures/*/make.sh
-    shfmt -d -i 2 tests/fixtures/make.sh tests/fixtures/*/make.sh
     typos
     cargo shear
+    scripts=$(git ls-files '*.sh'); if [ -n "$scripts" ]; then shellcheck -S warning ${=scripts}; shfmt -d -i 2 ${=scripts}; fi
+    if grep -q '^insta' Cargo.toml; then CARGO_BUILD_WARNINGS=deny cargo insta test {{ test_profile }} --test-runner nextest --all-targets --unreferenced=reject; fi
 
 # The apps that use this crate through a path dependency. `just apps-check` builds each one.
 apps := "../schnattr ../youtr ../phewr ../agendr"
@@ -71,4 +76,4 @@ apps := "../schnattr ../youtr ../phewr ../agendr"
 # Run `just check` in each app that uses the crate and exists next to it. A failing app fails
 # the recipe.
 apps-check:
-    for app in {{apps}}; do if [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml"; then echo "== $app"; (cd "$app" && just check); fi; done
+    for app in {{ apps }}; do if [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml"; then echo "== $app"; (cd "$app" && just check); fi; done
