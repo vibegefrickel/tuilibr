@@ -67,6 +67,7 @@ jobs, `From<RgbaImage> for GridPicture`, `ThumbnailCache::capacity` and `parked_
 `ScreenImage::put_pixel`, `Decoded::into_display`,
 `decode_image_with_hint`, `real_test_file`, `color::converts`, `jxl::copy_times` with `CopyTimes`,
 `protocol::temp_file_paths`, `probe::detect_transfer`, `hdr::{TARGETS, exact, cicp}`,
+`Placements::cells`, `ThumbnailCache::bytes`, `names::{test_variable, test_file}`,
 `disk_cache::PathCounter` with `KEY_COMPUTATIONS` and the three disk cache test helpers. The
 counting of the key computations runs under the feature, so an app counts them in its tests.
 
@@ -105,3 +106,136 @@ These rules make the output fast and keep every picture on screen:
 - The lint table of tuilibr is the union of the tables of the apps. The module passes it with
   `--all-features`. Every `#[expect(lint, reason)]` in the module names a lint of that table.
 - `just check` needs libjpeg-turbo and libheif on the machine, see the README.
+- A bench of an app (`bench::decoders` of phewr) needs an idle machine. Under a load of 22 the
+  numbers were six times slower on one branch and said nothing (phewr session, 2026-11-19). The
+  crate split showed no regression: 24 MP sRGB to Display P3 5.6 ms against 5.9 to 8.2 ms,
+  lanczos3 to 2688x2016 51 ms against 54 ms.
+- `tests/fixtures/hdr/make.sh` needs the phewr checkout next to tuilibr, or `PHEWR=<path>`: the
+  references come from the HDR cube of the phewr player, which the ignored phewr test
+  `write_the_player_hdr_cubes` writes.
+
+## The handover from phewr (2026-11-19)
+
+phewr merged its switch as `cbaec43` and is an app of the crate. From that day the module work is
+tuilibr work: the gotchas, the design pages, the benches, the open tests, the issue drafts and the
+decisions below. phewr sends app-side findings only.
+
+### Where the knowledge lives
+
+The pages stay in phewr until a step moves them. Each one says at its top that the code is in
+`tuilibr::pictures`.
+
+- phewr `AGENTS.md`, sections "Kitty output and the terminal" and "Decoders and colors": the short
+  gotchas with the numbers. The long form with dates and decisions: phewr `docs/gotchas.md`, the
+  same item names.
+- phewr `docs/grid-and-kitty.md`: the grid write, the emit passes, the temp file medium, the
+  storage budget, the image ids, the loops, the icons, the cell size probe, the late answers, the
+  self check, the loss limit.
+- phewr `docs/images-and-colors.md`: the decode routes, Display P3, moxcms, JPEG XL, HEIC
+  previews, the sips route, the embedded JPEG orientation, HDR stills and the cube math.
+- phewr `docs/picture-refactor.md`: the history of the module phases 0 to 7.
+- phewr `docs/benchmarks.md` and `src/bench/`: the benches stay in phewr, because they need the
+  app. They call the module through the pub API. `just bench [DIR] [FILTER]` runs them on
+  `PHEWR_TEST_DIR` (default `~/Pictures/phewr-test/01-mixed-big`), `just bench-live` the Live
+  benches. An idle machine only.
+- phewr `docs/testing.md`: the `PHEWR_TEST_*` variables of the real-file tests that stayed in
+  phewr, and the fixture folders.
+- The upstream issue drafts in `~/Projects/dev/`, unposted on the decision of the maintainer
+  (2026-11-09, no upstream tasks for now): `herdr-issue-kitty-graphics-performance.md`,
+  `herdr-issue-kitty-graphics-lost-pictures.md`, `herdr-issue-kitty-graphics-offset.md`,
+  `crossterm-issue-visibility-report.md` (the mode 2033 report),
+  `jxl-oxide-issue-parallel-stream.md`.
+
+### The test matrix (phase 7 of the module plan)
+
+Each app, in each terminal, with each scenario:
+
+- Terminals: Ghostty, Ghostty inside herdr, Kitty, WezTerm, Terminal.app (text only), SSH to the
+  same Mac.
+- Scenarios: the first start, ten scrolls up and down, a resize, a focus change to another app and
+  back, the help overlay, a chat or folder with more than 500 pictures, the quit.
+- Measures: the bench numbers of phewr before the module (phase 0 of the module plan,
+  2026-11-11). The matrix is done when no picture goes away, and each measure is equal to or
+  better than the baseline.
+
+The maintainer runs the scenarios that need a real terminal. The workers write the rest as tests.
+
+Results:
+
+- youtr (2026-11-16, youtr M14, the module copy of youtr `c7f2ece`): every scenario passed in
+  Ghostty and in Ghostty inside herdr. The scenario with more than 500 pictures was the `All`
+  entry, scrolled to its end. The maintainer decided not to test Kitty and WezTerm in youtr.
+  Terminal.app and SSH are not tested. The measures of phase 0 were not taken. Before the run,
+  youtr dropped its own skip of the answer reader for a resize and a focus event, because
+  `AnswerKeys` passes these events itself.
+- phewr and schnattr: open. The maintainer moved them to later on 2026-11-19.
+
+Two notes from the youtr review of 2026-11-16. Neither showed in the test matrix. The maintainer
+closed both on 2026-11-17 without a code change:
+
+- **A focus gain sends every picture again.** `Screen::focus_gained` marks every stored picture
+  for a new transmit, also in Ghostty, which keeps them. Only youtr and schnattr call it: phewr
+  enables no focus reports. The cost is one screen of pixels for each focus gain, 2.5 MB for a
+  full schnattr screen, less than one update of 4 MB. The alternative (with the self check, a
+  focus gain sends only the placements, and each `ENOENT` resends one picture) is correct only if
+  herdr answers `ENOENT` for a picture that it dropped without the focus. Nobody tested that.
+  Decision: keep the full resend.
+- **An error other than `ENOENT` hides a picture until it moves.** The screen keeps such a
+  picture as placed, and the default placing policy sends nothing until the picture moves or the
+  window gets a resize. The realistic trigger is `ENOSPC` from a full storage quota. The store of
+  `Screen` keeps every app below `TERMINAL_IMAGE_BUDGET` (128 MB). Ghostty cannot trigger it: its
+  quota is 320 MB per terminal surface, and above the quota it evicts pictures without a placement
+  without a notice. Two apps in two herdr panes share one Ghostty surface and can reach
+  2 x 128 MB x 2 = 512 MB (herdr stores each image twice). That case ends as a later `ENOENT`,
+  which the self check handles, not as `ENOSPC`. The storage limit of herdr is not known, so
+  herdr can still answer `ENOSPC`. Decision: no retry. A future retry needs a cap of one per
+  picture, never for `EINVAL`, or a full terminal gets the same transmit on every frame. If the
+  budget grows above 160 MB, read this note again.
+
+### Open module work (from the maintainer test run in phewr)
+
+- herdr, part 2: the start speed in herdr against plain Ghostty (the DA1 answer must end the
+  read), the SVG grid icons when herdr answers OSC 10 or the octant icons when not, and the late
+  OSC 10 answer. Test: Alt+`]`, then `j` two times. If the cursor does not move, herdr owes the
+  OSC 10 answer and the late answer filter eats the keys. A terminal that answers DA1 but never
+  OSC 10 keeps one owed answer for the whole run.
+- The loss limit (`MAX_LOSSES` 3 in `LOSS_WINDOW` 10 s, `Screen::answer_at`,
+  `release_held_losses`): nobody tested it in a real terminal. Test: Ghostty `image-storage-limit`
+  below 128 MB, ten scrolls. The transfers must stop and come back after 10 s.
+- The phase 7 scenarios for phewr and schnattr in Ghostty and herdr: a resize, a focus change, the
+  help overlay, ten scrolls, a folder with 678 pictures (`~/Pictures/iphone-20250401`), the quit.
+  No picture may stay away.
+- The RGBA fast path for herdr (`f=32`, so that the herdr `t=f` path applies): measure first with
+  `~/Projects/dev/kitty-frames-ack.py` (`grid 24`, `grid 32`, `frames 24`, `frames 32` in plain
+  Ghostty and in a herdr pane). If `grid 32` is not faster than `grid 24` in herdr, drop the
+  idea. `~/Projects/dev/kitty-frames.py` measures the write side. The numbers of 2026-10-30 are in
+  phewr `TODO.md`, "Next", item 1.
+- JPEG XL: jxl-oxide `=0.12.6` and jxl-render `=0.12.4` are exact pins, because the sample copy
+  reads the private layout of jxl-render. An update is a deliberate step: run
+  `parallel_copy_matches_stream` and a byte comparison on real files. The upstream draft
+  `jxl-oxide-issue-parallel-stream.md` names the four API items that would drop the jxl-render
+  dependency. jxl-oxide 0.12 converts ICC v2 samples wrong, so moxcms converts lossless files
+  with an ICC profile. moxcms 0.9.1 truncated its output curves, so the crate needs 0.9.2 or
+  later.
+- `tests/fixtures/hdr/make.sh` has not run from the tuilibr tree yet. The JPEG XL fixtures stay as
+  committed and the script does not rebuild them, so it needs no `cjxl` (the maintainer,
+  2026-11-19: the apps decode JPEG XL with jxl-oxide, no libjxl on the machine). The first run must
+  leave `git status` clean.
+
+### Decisions of the maintainer about the module
+
+- The self check (`q=1`) is on by default, because herdr passes the `ENOENT` answers through
+  (2026-11-11). phewr keeps `d=A` on an overlay, a resize and the quit, no `hide()` and no focus
+  reports. A resend when a scroll stops is not needed.
+- `t=t` wins only when the probe answer is OK and the terminal deleted the probe file. The file
+  name contains `tty-graphics-protocol`. A terminal that keeps the files leaves them in `$TMPDIR`
+  (626 MB on 2026-11-11, the maintainer deletes them by hand).
+- Every image converts into Display P3 (phewr `[terminal] colorspace`), because Ghostty shows the
+  pixels without a conversion.
+- The thumbnail cache key hashes the version (`<app>-thumbnail-v22`), the path, the size, the
+  mtime, the target size and the color target. When the thumbnail output changes, raise `v22` in
+  `jobs/disk_cache/mod.rs`. The thumbnails of phewr sit at the top of `~/Library/Caches/phewr`,
+  and the prune refuses a folder with a subfolder.
+- herdr 0.9.5 answers the animation probe but plays no Kitty animation, so herdr gets the ticks
+  without the probe (2026-11-03). phewr `PHEWR_KITTY_LOOPS` and `[gallery] loops` win.
+- No release before Q1 2027, no Homebrew release. The users clone and build.

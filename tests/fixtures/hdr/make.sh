@@ -1,8 +1,12 @@
 #!/bin/sh
 # Rebuilds the HDR fixtures of src/decode/hdr.rs and their references through the video cube.
 #
-# Needs avifenc, heif-enc (Homebrew libheif with x265), cjxl 0.12, ImageMagick 7 (magick), sips,
-# python3, ffmpeg and just. Run it from any directory: ./tests/fixtures/hdr/make.sh
+# Needs avifenc, heif-enc (Homebrew libheif with x265), ImageMagick 7 (magick), sips, python3,
+# ffmpeg, just and the phewr checkout next to tuilibr (or PHEWR=<path>). Run it from any
+# directory: ./tests/fixtures/hdr/make.sh
+#
+# The JPEG XL fixtures (*.jxl) are not rebuilt: they stay as committed, and the script needs no
+# cjxl. cjxl 0.12 made them on 2026-11 with the commands that the comments below keep.
 #
 # The chart is 128x64 pixels: 4 rows of 8 patches, 16x16 pixels each. The values are BT.2100
 # signal values from 0 to 1 with the BT.2020 primaries, rounded to 10 bit:
@@ -58,8 +62,6 @@ awk 'BEGIN {
   }
 }' > "$work/plain.ppm"
 magick "$work/plain.ppm" -depth 16 -define png:exclude-chunk=all "$work/signal.png"
-# cjxl reads only the binary PPM.
-magick "$work/plain.ppm" -depth 16 "$work/signal.ppm"
 
 for curve in pq hlg; do
   case $curve in
@@ -73,10 +75,11 @@ for curve in pq hlg; do
   heif-enc -b 10 -p chroma=444 -q 100 --matrix_coefficients 9 --colour_primaries 9 \
     --transfer_characteristic "$transfer" --full_range_flag 1 "$work/signal.png" -o "$curve.heic" \
     > /dev/null
-  cjxl "$work/signal.ppm" "$curve.jxl" -x "color_space=$jxl" -d 0 --quiet
-  cjxl "$work/signal.ppm" "$curve-lossy.jxl" -x "color_space=$jxl" -d 1 --quiet
+  # Kept as committed: cjxl "$work/signal.ppm" "$curve.jxl" -x "color_space=$jxl" -d 0
+  # and the same with "$curve-lossy.jxl" -d 1, from the binary PPM of plain.ppm.
 done
-cjxl "$work/signal.ppm" pq-4000.jxl -x color_space=Rec2100PQ -d 0 --intensity_target=4000 --quiet
+# Kept as committed: cjxl signal.ppm pq-4000.jxl -x color_space=Rec2100PQ -d 0
+#   --intensity_target=4000
 avifenc -d 10 -y 444 -q 100 -r full --cicp 9/16/9 --clli 4000,400 "$work/signal.png" \
   pq-4000.avif > /dev/null 2>&1
 heif-enc -b 10 -p chroma=444 -q 100 --matrix_coefficients 9 --colour_primaries 9 \
@@ -90,12 +93,11 @@ heif-enc -b 10 -p chroma=444 -q 100 --matrix_coefficients 9 --colour_primaries 9
   --transfer_characteristic 16 --full_range_flag 1 --clli 4000,400 -t 32 "$work/signal.png" \
   -o pq-4000-thumb.heic > /dev/null
 
-# sips writes the BT.2100 PQ ICC profile of macOS into a PNG. A lossless JPEG XL file keeps the
-# profile and gets no enum encoding.
+# sips writes the BT.2100 PQ ICC profile of macOS into a PNG. The committed pq-icc.jxl keeps the
+# profile and has no enum encoding (kept as committed: cjxl pq-icc.png pq-icc.jxl -d 0).
 sips -s format png pq.jxl --out "$work/pq-sips.png" > /dev/null
 magick "$work/pq-sips.png" "$work/pq.icc"
 magick "$work/signal.png" -set profile "$work/pq.icc" "$work/pq-icc.png"
-cjxl "$work/pq-icc.png" pq-icc.jxl -d 0 --quiet
 
 # ImageMagick cannot write a cICP chunk, so python3 inserts it after IHDR, with a cLLI chunk
 # when a MaxCLL in nits is given. The transfer 0 writes no cICP chunk.
@@ -121,8 +123,11 @@ insert_cicp "$work/signal.png" hlg.png 18
 insert_cicp "$work/signal.png" pq-4000.png 16 4000
 insert_cicp "$work/pq-icc.png" pq-icc-4000.png 0 4000
 
-# The cubes of the player, then the references through them.
-PHEWR_HDR_CUBE_DIR=$work just test-real write_the_player_hdr_cubes > /dev/null 2>&1
+# The cubes of the player, then the references through them. The cube writer is the ignored
+# phewr test `write_the_player_hdr_cubes` (`src/player/tone_map/tests.rs`), player code, not
+# module code. PHEWR names the phewr checkout, by default the sibling of tuilibr.
+phewr=${PHEWR:-$(cd ../../../../phewr && pwd)}
+PHEWR_HDR_CUBE_DIR=$work just -f "$phewr/justfile" -d "$phewr" test-real write_the_player_hdr_cubes > /dev/null 2>&1
 rm -rf ref
 mkdir ref
 for curve in pq pq4000 hlg; do

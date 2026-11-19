@@ -86,7 +86,7 @@ the docs, not from a line-by-line comparison:
 | 0 | The crate with the frame. schnattr uses it. The frame recipes of schnattr go. | none | done, tuilibr `901aa79`, schnattr `9758a73` |
 | 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
-| 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | started |
+| 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | tuilibr `1840c09` holds the module. youtr done (288 tests), schnattr done (1 398 tests), phewr `cbaec43` (795 tests, no bench regression). phewr hands the module orchestration to the tuilibr session. The `test-support` gates of `cells`, `bytes` and the test names wait for a commit. |
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | tuilibr `3fa749d` has `dialog_box`. schnattr and youtr done, uncommitted. phewr `ba8d0cd`. agendr runs. |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
@@ -142,6 +142,10 @@ through a worker. After the switch of phewr, the phewr session hands the orchest
 module to the tuilibr session with a complete handover: the gotchas and design pages, the benches,
 the open module tests of the test run, the upstream issue drafts and the decisions. From then on
 the module work is tuilibr work, and phewr is one of its apps.
+
+phewr merged its switch as `cbaec43` and handed the module over on 2026-11-19. The open module
+work, the decisions and the pointers to the phewr pages are in `docs/pictures.md`, "The handover
+from phewr".
 
 The state of the move (tuilibr session, 2026-11-19): `src/pictures/` and the fixtures are in the
 tuilibr working tree, uncommitted. `just check` passes with every feature (369 tests, 8 real-file

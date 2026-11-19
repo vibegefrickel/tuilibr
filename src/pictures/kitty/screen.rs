@@ -107,7 +107,7 @@ impl Placements {
     }
 
     /// The places of this frame, in the order of `place`.
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-support"))]
     pub fn cells(&self) -> Vec<(u32, Rect)> {
         self.places
             .iter()

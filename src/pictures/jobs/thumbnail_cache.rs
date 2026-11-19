@@ -120,7 +120,8 @@ impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
         }
     }
 
-    #[cfg(test)]
+    /// The pixel bytes that the cache holds, for a test.
+    #[cfg(any(test, feature = "test-support"))]
     pub fn bytes(&self) -> usize {
         self.bytes
     }

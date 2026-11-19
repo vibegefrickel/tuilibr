@@ -27,13 +27,13 @@ pub fn app_name() -> &'static str {
 
 /// The environment variable of the real-file test `name`: `<APP>_TEST_JPEG` for `JPEG`, with the
 /// app name in upper case.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn test_variable(name: &str) -> String {
     format!("{}_TEST_{name}", app_name().to_ascii_uppercase())
 }
 
 /// The file of the real-file test `name`. Without the variable the test skips with a note.
-#[cfg(test)]
+#[cfg(any(test, feature = "test-support"))]
 pub fn test_file(name: &str) -> Option<std::path::PathBuf> {
     crate::pictures::decode::real_test_file(&test_variable(name))
 }
