@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `69bb2ae`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `f00cbaf`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -383,6 +383,14 @@ The order of the maintainer (2026-11-19):
    `tui/answers.rs`, phewr `terminal.rs` and `LateAnswerFilter` in `run_loop.rs`, youtr
    `thumbs/terminal.rs`. The tuilibr session compares the three versions first and writes the
    shared interface into this file, then moves the code. Each app session switches its own app.
+   State (2026-11-19): the crate part is tuilibr `ea4c8ad`, the worker panic hook `f00cbaf`.
+   schnattr switched (`b7b220f`, 1 388 tests): `terminal::Session` with `tui::MODES`, one start
+   query through `tui::query_start`, `LateAnswerFilter` in its reader, `Session::suspend` and
+   `resume` around the picker, `install_panic_hook_with` that logs a worker panic. `tui/terminal.rs`
+   and `tui/answers.rs` are gone, four filter tests moved into the crate. youtr switched (`492536c`, 286 tests), phewr
+   switched (`356d8fc`, 786 tests), agendr runs its worker. A fix waits in the tuilibr tree: a
+   failed `Session::resume` marks the session active as soon as raw mode is on, so `restore`
+   still turns raw mode off.
 2. The multi-line `TextField` with its draw helper, and the schnattr composer (`tui/compose.rs`,
    the draft with its newline keys) on it.
 3. The shared confirm body for the dialog boxes.
@@ -429,6 +437,12 @@ frame-only build.
 `install_panic_hook_with(modes, worker)` runs a closure for a panic on another thread in place of
 the previous hook, so a worker panic prints nothing onto the alternate screen (youtr finding,
 2026-11-19).
+A failed `Session::resume` leaves the session active, so `restore` frees raw mode (agendr
+finding, 2026-11-19). Step 1 is done: tuilibr `ea4c8ad` and `f00cbaf`, schnattr `b7b220f`, youtr
+`492536c`, phewr `356d8fc`; agendr follows with one worker. Later, app side: the run loop of phewr
+owns no `Session`, so its mouse toggle writes `enable_mouse` and `disable_mouse` directly and the
+session reports `mouse: true` at the restore; `set_mouse` through the session needs the session in
+the run loop.
 
 The code is `src/terminal/mod.rs` (the session), `start.rs` and `answers.rs`, the tests in
 `src/terminal/tests.rs`: 24 tests, among them the four of schnattr and the ten of phewr. The
@@ -492,6 +506,65 @@ transfer when `kitty`, `cell_from_terminal: true`, no owed answers. The youtr mo
 `Modes { mouse: true, focus_reports: true, bracketed_paste: false, keyboard_enhancement: false }`;
 its panic hook is the schnattr form. `release` has no caller in youtr (mpv opens a window, youtr
 never leaves the terminal).
+
+#### Step 2: the multi-line `TextField`, compared (tuilibr session, 2026-11-19)
+
+| Part | agendr | schnattr |
+|---|---|---|
+| The type | `tuilibr::text_field::TextField`: a `String` with a character cursor, the readline edits, `visible(width)` for one row with `⏎` for a line break, `scroll_into_view(width)`; 23 tests in the crate | `composer.text: String` with a byte cursor on a char boundary; `tui/compose.rs`: `insert`, `paste` (CRLF to LF, a path replaces the input while attaching), `backspace`, `delete`, `delete_word` (Ctrl-W), `left`, `right` (per grapheme: a flag or a family emoji is one step), `home`, `end`, `clear`, `before_cursor` |
+| The key map | `app/text_input.rs`: `edit_for_key(&KeyEvent, &mut TextField)` with the readline keys (Ctrl-A, E, H, D, W, U, K, Alt-B, F, the arrows, Home, End, Backspace, Delete) | `LineEdit::from_key` for the one-line inputs (the command line, the finder, the search): push, Backspace, Ctrl-U, Ctrl-W, no cursor move; the composer keys in the key handler |
+| The draw | `ui/text/input.rs`: `InputRow { prefix, field, style, suffix }` with `line(width) -> (Line, cursor column)`, `draw`, `set_cursor`; the viewport sync computes the same window before the draw | `ui/composer.rs`: `draw_typed` (one row, the end in view through `tail_width`), `draw_draft` (the text wrapped with `wrapped`, the scroll keeps the end in view unless the cursor row is above, `cursor_cell(before, after, width) -> (row, col)`, the prompt on the first row, dimmed while the composer is not typed in) |
+| Multi-line | the notes field is multi-line in the data and shows in one row with `⏎` | the draft is the multi-line case: Enter sends or breaks the line by mode, the rows wrap at the width |
+
+#### Step 2: the shared interface (proposal, for the review of schnattr-2b and agendr-a6)
+
+Three parts, all in the crate, `crossterm` is a plain dependency since step 1:
+
+```rust
+// tuilibr::text_field, the type grows; no field is removed, the cursor stays a character index
+impl TextField {
+    pub fn insert_text(&mut self, text: &str) -> bool;   // a paste: `\r\n` and `\r` become `\n`
+    pub fn insert_newline(&mut self) -> bool;           // the app decides when Enter breaks the line
+    pub fn clear(&mut self) -> bool;
+    pub fn move_up(&mut self) -> bool;                  // the same column one line up, in the hard lines
+    pub fn move_down(&mut self) -> bool;
+    pub fn move_line_start(&mut self) -> bool;          // Home and End in a multi-line text stay in the line
+    pub fn move_line_end(&mut self) -> bool;
+    pub fn text_before_cursor(&self) -> &str;
+    // `move_left`, `move_right`, `delete_before`, `delete_under` step over a grapheme cluster (a
+    // flag, a family emoji, ❤️) instead of one char; `visible` measures per grapheme too.
+    pub fn wrap(&self, width: usize) -> Wrapped;        // for a box of rows
+}
+pub struct Wrapped { pub rows: Vec<String>, pub cursor: (usize, usize) }   // the soft-wrapped rows at `width` with the hard breaks, and the cursor cell
+impl Wrapped { pub fn scroll(&self, height: usize) -> usize; }           // the first row to show: the cursor row in view, else the end in view
+
+// tuilibr::text_field::keys, the one readline map
+pub enum Edit { Insert(char), InsertText(String), Newline, Left, Right, WordLeft, WordRight, Up, Down, LineStart, LineEnd, Start, End, DeleteBefore, DeleteUnder, DeleteWordBefore, DeleteToStart, DeleteToEnd, Clear }
+pub fn edit_for_key(key: &KeyEvent) -> Option<Edit>;    // the readline keys; Enter, Esc and Tab stay with the app
+impl TextField { pub fn apply(&mut self, edit: Edit) -> bool; }
+
+// tuilibr::frame, the draw helper
+pub struct TextFieldView<'a> { pub field: &'a TextField, pub prefix: Span<'static>, pub suffix: Span<'static>, pub style: Style, pub cursor: bool, pub rows: Rows }
+pub enum Rows { One, Wrapped }                          // one row with the window of `visible`, or the wrapped rows of `wrap` in the height of the area
+pub fn draw_text_field(frame: &mut Frame<'_>, area: Rect, view: &TextFieldView<'_>) -> Option<Position>;  // draws, sets the terminal cursor when `cursor`, returns its cell
+pub fn text_field_width(area: Rect, prefix: &Span<'_>) -> usize;        // the columns of the field window, for a viewport sync before the draw
+```
+
+The decisions in it: the cursor stays a character index in the API, the moves step over grapheme
+clusters (the schnattr rule), so a char index inside a cluster never happens; `Edit::from_key`
+lives in the crate because crossterm is in the crate now, Enter, Esc and Tab stay app keys;
+`Wrapped::scroll` carries the schnattr rule (the end in view, unless the cursor is above); the
+prefix is the prompt of schnattr and the label of agendr, the dim of a composer without the focus
+is the `style` of the view. The one-line inputs of schnattr (`LineEdit`) can move to a `TextField`
+with the cursor at the end, or stay: app decision. Tests to move: the schnattr tests of
+`compose.rs` and `cursor_cell`, the agendr tests of `InputRow::line` and `edit_for_key`.
+
+agendr said yes (agendr-a6, 2026-11-19): the notes field of the event editor takes `Rows::Wrapped`
+in a box of three rows that scrolls inside, every other field `Rows::One` with `⏎` for a line
+break; `Edit::Up` and `Down` do nothing in a one-row field; a character with Alt is no edit except
+Alt-B and Alt-F (the other Alt letters fall through to the mode keys of the app); Ctrl-H is
+`delete_before`, Ctrl-D is `delete_under`. The tests of `InputRow::line` and of the key table move,
+the tests of the app behaviour stay in agendr.
 
 The omnibox of schnattr (`ui/composer.rs`: a question, a typed line, a status text or a draft
 under the bar) is a candidate when a second app wants the command line of vim.

@@ -194,15 +194,15 @@ impl Session {
 
     /// Takes the terminal back after `suspend`, with an empty screen. The app then calls
     /// `repaint_on_next_draw` on its terminal, so the next draw paints every cell. A second call
-    /// changes nothing.
+    /// changes nothing. When a write fails after raw mode went on, the session counts as active,
+    /// so `restore` or the drop gives raw mode back; the shell of the user never stays raw.
     pub fn resume(&mut self) -> io::Result<()> {
         if self.active {
             return Ok(());
         }
         enable_raw_mode()?;
-        enter_to(&mut io::stdout(), self.modes())?;
         self.active = true;
-        Ok(())
+        enter_to(&mut io::stdout(), self.modes())
     }
 
     /// Gives the terminal back at the end. The app deletes its pictures first. The same sequence
