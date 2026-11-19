@@ -237,7 +237,7 @@ fn unreadable_file_reports_sips_error() {
     let error = decode(&path, None).unwrap_err().to_string();
     assert!(error.contains("sips failed"), "{error}");
     assert!(error.contains("Cannot extract image"), "{error}");
-    assert!(decode(&path, Some((16, 16))).is_err());
+    decode(&path, Some((16, 16))).unwrap_err();
     assert_eq!(dimensions(&path), None);
 }
 

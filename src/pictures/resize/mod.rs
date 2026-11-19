@@ -192,14 +192,12 @@ mod tests {
         assert_eq!(fitted.dimensions(), (16, 8));
         let full = load_and_resize_px(&path, (0, 0), EmbeddedThumbnail::Deny).unwrap();
         assert_eq!(full.dimensions(), (64, 32));
-        assert!(
-            load_and_resize_px(
-                &dir.path().join("missing.png"),
-                (8, 8),
-                EmbeddedThumbnail::Deny
-            )
-            .is_err()
-        );
+        load_and_resize_px(
+            &dir.path().join("missing.png"),
+            (8, 8),
+            EmbeddedThumbnail::Deny,
+        )
+        .unwrap_err();
         let image = DynamicImage::new_rgba8(10, 0);
         assert_eq!(fit_decoded_within(&image, 4, 4).dimensions(), (10, 0));
     }

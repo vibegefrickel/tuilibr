@@ -97,6 +97,13 @@ pub struct ThumbnailCache<K = usize> {
     parked: LruCache<(PathBuf, ParkKey), (FileStamp, GridPicture)>,
 }
 
+impl<K> std::fmt::Debug for ThumbnailCache<K> {
+    /// The counts, not the pixels: a cache holds megabytes of them.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ThumbnailCache").finish_non_exhaustive()
+    }
+}
+
 struct CachedThumb {
     picture: GridPicture,
     image_id: u32,

@@ -281,6 +281,6 @@ mod tests {
             (32, 16),
             "the container wins"
         );
-        assert!(decode_jpeg_bytes(b"no image", None, None).is_err());
+        decode_jpeg_bytes(b"no image", None, None).unwrap_err();
     }
 }

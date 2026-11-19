@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `e38b3c2`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `d2f204a`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -91,7 +91,7 @@ the docs, not from a line-by-line comparison:
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
 | 4c | One highlight in every app: the white of the palette. | none | done: tuilibr `ff0396f`, agendr `94e9522`, phewr, youtr and schnattr pass `just apps-check` from `69bb2ae` |
 | 4 | The other shared parts move, one at a time. Order (maintainer, 2026-11-19): the terminal setup, the multi-line TextField with the schnattr composer, the confirm body. | phase 3 | started |
-| 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
+| 5 | The build for other people: a git dependency with a `rev`. | the maintainer (2026-11-19): when tuilibr is done and halfway stable, after phase 4 | open |
 
 ### Phase 0: the crate with the frame (done)
 
@@ -633,6 +633,10 @@ The decisions of the tuilibr session for agendr (2026-11-19):
 
 ### Phase 5: the build for other people
 
+The maintainer (2026-11-19): phase 5 comes when tuilibr is done and halfway stable, that is after
+phase 4. Until then the apps build against the main tree of tuilibr, and that tree compiles at
+every moment (see the rules for the work).
+
 A path dependency needs the sibling checkout. For a reader who clones one app, the apps switch to
 `tuilibr = { git = "ssh://git@codeberg.org/webgefrickel/tuilibr.git", rev = "<sha>" }`. The
 maintainer keeps the path form for local work through a `[patch]` entry with an absolute path in
@@ -658,6 +662,44 @@ tests, phewr `144252a` with 787 tests, agendr follows). schnattr does not add `u
 items, and the maintainer decided against it on 2026-11-11), `let_underscore_must_use` (126 hits:
 `let _ =` on a cleanup that cannot report) or `unsafe_code = "deny"` (its one `unsafe` block, the
 umask, carries an `expect`). The decision is with the maintainer.
+
+## The stricter checks of every repository (2026-11-19)
+
+The maintainer decided on the research report of the tuilibr session. tuilibr has them, green with
+454 tests. Each app session does its own tree, a worker fits, `just check` after it:
+
+- Cargo.toml: `[lints.cargo] unused_dependencies = "deny"` replaces `unused_crate_dependencies`.
+  The dead line `module_name_repetitions = "allow"` goes. New in `[lints.rust]`, all `"warn"`:
+  `missing_docs`, `missing_debug_implementations`, `ambiguous_negative_literals`,
+  `closure_returning_async_block`, `impl_trait_redundant_captures`. Not `let_underscore_drop`, it
+  fights the house style `let _ = result`. New in `[lints.clippy]`: `panic_in_result_fn`,
+  `assertions_on_result_states`, `lossy_float_literal`, `float_cmp_const`,
+  `self_named_module_files`, `empty_structs_with_brackets`, `unnecessary_self_imports`,
+  `pub_without_shorthand`, `redundant_type_annotations`, `unused_async`. New in
+  `[lints.rustdoc]`: `unescaped_backticks`, `missing_crate_level_docs`.
+- justfile: `CARGO_BUILD_WARNINGS=deny` in front of the clippy and the test commands instead of
+  `-- -D warnings`, so rust-analyzer and the gate do not rebuild each other and the test builds
+  get denied warnings too. A doctest step `cargo test --doc` after nextest, in the library crate
+  only: a binary crate answers "no library targets found". A recipe `audit` with
+  `taplo fmt --check`, `just --fmt --check --unstable`, `shellcheck` and `shfmt` on the shell
+  scripts, `typos`, `cargo shear`, and for schnattr and agendr
+  `cargo insta test --test-runner nextest --unreferenced=reject`. Tools:
+  `brew install taplo shellcheck shfmt typos-cli cargo-shear cargo-insta`. `audit` joins `check`
+  when every repository is clean.
+- `.config/nextest.toml`: `[profile.ci] fail-fast = false`, `[profile.ci.junit] path = "junit.xml"`,
+  for the PTY tests of agendr an override with `retries = 1`.
+- The hooks: the pre-commit hook of the dotfiles becomes the fast gate `just fmt-check lint` on the
+  working tree as it is. The full `just check` runs at the worker merge and in a new pre-push
+  hook. `.githooks/pre-commit` and the `hooks` recipe leave each app.
+- State (2026-11-19): youtr done in its tree (286 tests: ten `assertions_on_result_states` in tests,
+  five `self_named_module_files` moved to `name/mod.rs`, the rest found nothing; no shell script,
+  so no shellcheck and shfmt lines). schnattr runs a heavy worker (auto review). phewr runs a
+  worker after its current merge (11 self-named module files). agendr follows. None of the audit
+  tools is installed yet, so `audit` stays out of `check` until
+  `brew install taplo shellcheck shfmt typos-cli cargo-shear cargo-insta`.
+- Measured in tuilibr for later: `cast_possible_truncation` 54, `cast_sign_loss` 21,
+  `cast_possible_wrap` 5, `indexing_slicing` 193 (stays off), `too_long_first_doc_paragraph` 50,
+  `or_fun_call` 6, `missing_const_for_fn` 41.
 
 ## Rules for the code of the crate
 
@@ -685,6 +727,11 @@ umask, carries an `expect`). The decision is with the maintainer.
   so each app commit builds against a committed crate.
 - A session that works on an app and finds a defect in a shared part writes the fix into tuilibr,
   not into a local copy. There are no local copies.
+- The main tree of tuilibr compiles at every moment, because four apps and the shared pre-commit
+  hook build against it through the path dependency. A change of the crate that spans more than
+  one step runs in a herdr worktree of tuilibr and lands in the main tree in one compiling step.
+  On 2026-11-19 a restructure in the main tree broke the check and the commits of every app for
+  a while.
 - A herdr worktree lives in `~/.herdr/worktrees/<repo>/<branch>/`, so `../tuilibr` does not
   resolve there. Each repository that runs workers has one symlink
   `~/.herdr/worktrees/<repo>/tuilibr` to `~/Projects/dev/tuilibr`. schnattr has it since

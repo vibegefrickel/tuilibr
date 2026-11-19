@@ -27,6 +27,7 @@ pub fn square_columns(cell: CellSize, rows: u16) -> u16 {
 }
 
 /// What one entry shows, filled by the caller.
+#[derive(Debug)]
 pub struct EntryView {
     /// The name on the first row, on one line.
     pub name: String,

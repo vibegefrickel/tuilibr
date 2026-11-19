@@ -1,0 +1,21 @@
+# The spelling check of typos-cli. The words below are names and domain terms, not typos.
+[default]
+extend-ignore-re = ["\\\\x1b\\[[0-9;?<>]*[a-zA-Z]"]
+
+[default.extend-words]
+herdr = "herdr"
+schnattr = "schnattr"
+youtr = "youtr"
+phewr = "phewr"
+agendr = "agendr"
+tuilibr = "tuilibr"
+cendre = "cendre"
+ratatui = "ratatui"
+moxcms = "moxcms"
+turbojpeg = "turbojpeg"
+libheif = "libheif"
+sips = "sips"
+qlmanage = "qlmanage"
+
+[files]
+extend-exclude = ["tests/fixtures/**", "Cargo.lock", "target/**"]

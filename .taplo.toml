@@ -1,0 +1,6 @@
+# The TOML format of the manifests and the configs: 100 columns, as the Rust and the markdown.
+[formatting]
+column_width = 100
+align_comments = false
+allowed_blank_lines = 1
+reorder_keys = false

@@ -108,6 +108,7 @@ pub fn thumbnail_entry(cache_dir: &Path, path: &Path, target: (u32, u32)) -> Opt
 
 /// The cache entry of one job, computed at the first use. A job without a cache read, a save
 /// or a stamp computes no key.
+#[derive(Debug)]
 pub struct LazyEntry<'a> {
     cache_dir: &'a Path,
     path: &'a Path,
@@ -218,6 +219,7 @@ pub fn try_save_to_disk_cache(
 /// Each test uses its own temp paths. One `BTreeMap` entry per path keeps the cost fixed when all
 /// tests share one process.
 #[cfg(any(test, feature = "test-support"))]
+#[derive(Debug)]
 pub struct PathCounter(std::sync::Mutex<std::collections::BTreeMap<PathBuf, usize>>);
 
 #[cfg(any(test, feature = "test-support"))]

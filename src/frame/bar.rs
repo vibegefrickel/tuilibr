@@ -21,6 +21,7 @@ use super::{
 pub const SEPARATOR: &str = "  ";
 
 /// The mode block at the left edge.
+#[derive(Debug)]
 pub struct ModeView {
     /// The text on a wide screen.
     pub name: String,
@@ -31,6 +32,7 @@ pub struct ModeView {
 }
 
 /// One text of the middle: its parts, of which the last go first, in one style.
+#[derive(Debug)]
 pub struct BarText {
     /// The parts, set apart by the separator.
     pub parts: Vec<String>,
@@ -42,6 +44,7 @@ pub struct BarText {
 }
 
 /// What the bar shows, filled by the caller.
+#[derive(Debug)]
 pub struct BarView {
     /// The mode block.
     pub mode: ModeView,

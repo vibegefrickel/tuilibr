@@ -1,0 +1,12 @@
+# The nextest profiles. The default profile stops a hanging test; the `ci` profile runs every
+# test and writes a junit report: `cargo nextest run --profile ci`.
+nextest-version = { required = "0.9.115" }
+
+[profile.default]
+slow-timeout = { period = "30s", terminate-after = 4 }
+
+[profile.ci]
+fail-fast = false
+
+[profile.ci.junit]
+path = "junit.xml"

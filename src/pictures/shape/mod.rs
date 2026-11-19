@@ -151,9 +151,9 @@ mod tests {
             folder_aspect(&[&portrait, &landscape, &landscape]),
             4.0 / 3.0
         );
-        assert_eq!(folder_aspect(&[raw, missing]), DEFAULT_IMAGE_ASPECT);
+        assert!((folder_aspect(&[raw, missing]) - DEFAULT_IMAGE_ASPECT).abs() < f64::EPSILON);
         let none: [PathBuf; 0] = [];
-        assert_eq!(folder_aspect(&none), DEFAULT_IMAGE_ASPECT);
+        assert!((folder_aspect(&none) - DEFAULT_IMAGE_ASPECT).abs() < f64::EPSILON);
     }
 
     fn jpeg_with_orientation(path: &Path, width: u32, height: u32, orientation: u16) {

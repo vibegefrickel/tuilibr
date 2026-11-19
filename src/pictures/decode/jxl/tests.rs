@@ -125,7 +125,7 @@ fn failed_icc_uses_jxl_oxide() {
     let image = open_for_render(&path).unwrap();
     let mut icc = IccToTarget::for_image(&image, image.pixel_format(), ColorTarget::Srgb).unwrap();
     icc.input_channels = 4;
-    assert!(icc.decode(&image).is_err());
+    icc.decode(&image).unwrap_err();
     let decoded = decode_icc_or_enum(&path, &image, &icc, ColorTarget::Srgb).unwrap();
     let fallback = decode_enum(open_for_render(&path).unwrap(), ColorTarget::Srgb).unwrap();
     assert_eq!(decoded, fallback);
@@ -320,7 +320,7 @@ fn hdr_reserve_is_the_real_need() {
     assert_eq!(hdr_bytes_per_pixel(PixelFormat::Graya), 12);
     // 80 MP in RGB passes the limit of the `image` route.
     let bytes = 80_000_000 * hdr_bytes_per_pixel(PixelFormat::Rgb) as u64;
-    assert!(image::Limits::default().reserve(bytes).is_ok());
+    image::Limits::default().reserve(bytes).unwrap();
 }
 
 /// A ramp and a red patch, for the RGB files.
@@ -358,9 +358,9 @@ fn broken_file_reports_error() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("broken.jxl");
     std::fs::write(&path, b"this is not a JPEG XL file").unwrap();
-    assert!(decode(&path, ColorTarget::Srgb).is_err());
+    decode(&path, ColorTarget::Srgb).unwrap_err();
     assert!(dimensions(&path).is_none());
-    assert!(decode_image_with_hint(&path, None, EmbeddedThumbnail::Deny).is_err());
+    decode_image_with_hint(&path, None, EmbeddedThumbnail::Deny).unwrap_err();
 }
 
 #[test]

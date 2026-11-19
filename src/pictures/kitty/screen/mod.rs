@@ -147,6 +147,7 @@ impl Placements {
 /// bytes writes nothing. The cursor goes back to where ratatui left it. The update counts the
 /// pixel bytes of its transfers for the byte cap of a pass. A started update always ends: the
 /// drop ends it when an error returned before [`Update::finish`].
+#[derive(Debug)]
 pub struct Update<'w, W: Write + ?Sized> {
     out: &'w mut W,
     started: bool,

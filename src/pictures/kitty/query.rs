@@ -16,6 +16,7 @@ const PROBE_TIMEOUT: Duration = Duration::from_millis(300);
 const LATE_ANSWER_GRACE: Duration = Duration::from_millis(100);
 
 /// The answers at the start. `None` for an answer that did not come in time.
+#[derive(Debug)]
 pub struct StartAnswers {
     pub cell_px: Option<(u32, u32)>,
     /// The bytes up to the end of the last Kitty answer that came in time.

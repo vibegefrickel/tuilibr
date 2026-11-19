@@ -19,6 +19,7 @@ pub type Section<'a> = (&'a str, &'a [(&'a str, &'a str)]);
 pub const COLUMN_GAP: u16 = 2;
 
 /// What the help box with the keys shows, filled by the caller.
+#[derive(Debug)]
 pub struct HelpView<'a> {
     /// The title in the top border.
     pub title: &'a str,

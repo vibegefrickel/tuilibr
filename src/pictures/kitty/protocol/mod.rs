@@ -127,6 +127,13 @@ pub struct Keys<'a> {
     pub chunk: &'static str,
 }
 
+impl fmt::Debug for Keys<'_> {
+    /// The keys are closures, so the debug form names the type only.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Keys").finish_non_exhaustive()
+    }
+}
+
 pub fn write_pixels<W: Write + ?Sized>(
     out: &mut W,
     pixels: Pixels<'_>,

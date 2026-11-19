@@ -632,6 +632,7 @@ impl Walk {
 
 /// The times of one route: the render, the stream copy and the copy on all cores.
 #[cfg(any(test, feature = "test-support"))]
+#[derive(Debug)]
 pub struct CopyTimes {
     pub route: &'static str,
     /// False when the file takes the stream, for example with patches.

@@ -501,6 +501,6 @@ mod tests {
             height: 2,
             orientation: None,
         };
-        assert!(decode(&dir.path().join("a.dng"), &jpeg, None).is_err());
+        decode(&dir.path().join("a.dng"), &jpeg, None).unwrap_err();
     }
 }

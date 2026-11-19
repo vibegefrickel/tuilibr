@@ -5,6 +5,10 @@
 //!
 //! The module imports no app type. It refers to itself through `super::`, `self::` or
 //! `crate::pictures::`, and to no other module of the crate.
+#![expect(
+    missing_docs,
+    reason = "the module came from phewr with pub(crate) items; the docs of its public items are a step of their own"
+)]
 
 pub mod decode;
 pub mod jobs;

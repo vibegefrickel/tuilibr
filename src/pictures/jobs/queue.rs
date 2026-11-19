@@ -141,6 +141,7 @@ impl<K: PartialEq, const N: usize> PartialEq<[ThumbJob<K>; N]> for JobQueue<K> {
 
 /// The slots of one decode phase: at most `limit` running jobs, and the waiting jobs. The app
 /// sets the limit of each phase.
+#[derive(Debug)]
 pub struct JobSlots<K = usize> {
     pub running: HashSet<K>,
     pub waiting: JobQueue<K>,
