@@ -411,7 +411,25 @@ passes; the self check answers reach the screen. Tests to move: schnattr
 `tui/tests/late_answers.rs` (6), phewr `keys/mod.rs` (10 of the filter), phewr `terminal.rs` (the
 mouse modes), agendr `terminal_session.rs` (the failed start, the repaint after the resume).
 
-#### Step 1: the shared interface (proposal, for the review of schnattr-2b)
+#### Step 1: the shared interface (reviewed by schnattr-2b, in the crate since 2026-11-19)
+
+The review changed five things against the first proposal: the session owns no `Terminal` (an app
+builds its own, schnattr on its `WideCells` backend) and `restore` deletes no pictures (the app
+does, then calls `restore`); `Modes.keyboard_enhancement` names the flags as
+`Option<KeyboardEnhancementFlags>`; `Start` has `for_kitty(cell)` and `without_kitty()` behind
+`test-support` and the method `shows_pictures()`; `query` logs nothing, the app logs
+`protocol::describe(start.backend.transfer())`; two schnattr tests stay in schnattr (its reader
+thread). From phewr: the mouse modes are the raw sequences 1000, 1002 and 1006 without 1003,
+`enable_mouse` and `disable_mouse` stay public and `Session::set_mouse` toggles them at run time;
+`query_with(options, query_start)` takes the tty read as a closure for the tests. The plain Kitty
+query goes with the id 30 in the same write as the probes of the medium (31) and the loops (32),
+so one read answers `kitty`, the transfer and the loops. `Filtered.answers` come before the
+events of the same read. `crossterm` is a plain dependency now, so the session is in the
+frame-only build.
+
+The code is `src/terminal/mod.rs` (the session), `start.rs` and `answers.rs`, the tests in
+`src/terminal/tests.rs`: 24 tests, among them the four of schnattr and the ten of phewr. The
+interface as built:
 
 Module `tuilibr::terminal`, three parts. `crossterm` becomes a plain dependency (every app has
 it), so the session is in the frame-only build too; the queries and the late answers sit behind

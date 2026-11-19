@@ -57,6 +57,7 @@ src/lib.rs        the crate doc and the module list
 src/frame/        the screen frame: split, lines, style, entry, header, bar, help, text, clock,
                   pictures (the Pictures trait), tests/
 src/text_field.rs the one-line text input with a character cursor and the readline edits
+src/terminal/     the session of the terminal, the panic hook, the start queries, the late answers
 src/pictures/     the picture module: decode, resize, shape, jobs, kitty, names, test_support
 tests/fixtures/   the fixtures of the picture module tests, each folder with its make.sh
 docs/pictures.md  the rules of the picture module and of the Kitty layer

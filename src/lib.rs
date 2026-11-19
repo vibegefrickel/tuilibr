@@ -3,10 +3,13 @@
 //! bar, the dialog box, the clock and the text helpers. `pictures` holds the picture module behind
 //! the default feature `pictures`: the decode routes, the resize, the shapes, the decode pool with
 //! its caches and the Kitty layer. `text_field` holds the one-line text input with a character
-//! cursor and the readline edits. The crate knows no app type: an app fills plain view structs
-//! and places its pictures through the `frame::Pictures` trait.
+//! cursor and the readline edits. `terminal` holds the session of the terminal (raw mode, the
+//! alternate screen, the modes, the panic hook), the start queries and the filter of the late
+//! answers. The crate knows no app type: an app fills plain view structs and places its pictures
+//! through the `frame::Pictures` trait.
 
 pub mod frame;
+pub mod terminal;
 pub mod text_field;
 
 #[cfg(feature = "pictures")]

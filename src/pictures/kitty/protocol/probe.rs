@@ -53,7 +53,7 @@ fn write_animation_probe<W: Write + ?Sized>(out: &mut W) -> io::Result<()> {
 }
 
 /// `Some(true)` for an `OK` answer to `id`, `Some(false)` for an error, `None` without an answer.
-fn answer_for(response: &[u8], id: u32) -> Option<bool> {
+pub(crate) fn answer_for(response: &[u8], id: u32) -> Option<bool> {
     let text = String::from_utf8_lossy(response);
     let id = format!("i={id}");
     text.split("\x1b_G").skip(1).find_map(|answer| {

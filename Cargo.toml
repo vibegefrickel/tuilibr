@@ -117,16 +117,15 @@ large_futures = "allow"
 assert_is_empty = "allow"
 
 [dependencies]
-# The frame imports these three and std.
+# The frame and the terminal import these and std. crossterm: the session sets the modes of the
+# terminal, and the Kitty layer reads the answers of the terminal as the key events of crossterm.
+crossterm = "0.29"
 ratatui = "0.30"
 unicode-segmentation = "1"
 unicode-width = "0.2"
 
 # The picture module, behind the feature `pictures`. The versions are the versions of phewr.
 base64 = { version = "0.23", optional = true }
-# crossterm: the Kitty layer reads the answers of the terminal as the key events of crossterm, and
-# the cell size through `window_size`.
-crossterm = { version = "0.29", optional = true }
 fast_image_resize = { version = "6.1", optional = true }
 # Only the decoders for the formats that the apps list. AVIF goes through libheif.
 image = { version = "0.25.10", default-features = false, optional = true, features = ["bmp", "exr", "gif", "hdr", "ico", "jpeg", "png", "qoi", "tga", "tiff", "webp"] }
@@ -167,7 +166,6 @@ default = ["pictures"]
 # pool with its caches and the Kitty layer.
 pictures = [
     "dep:base64",
-    "dep:crossterm",
     "dep:fast_image_resize",
     "dep:image",
     "dep:kamadak-exif",

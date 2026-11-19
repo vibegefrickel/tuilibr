@@ -1,0 +1,253 @@
+//! The terminal of an app: the session (raw mode, the alternate screen, the modes and their
+//! restore), the panic hook, the start queries (`start`) and the filter of the late answers
+//! (`answers`). Each app had its own version with its own bugs in 2026-11. This one carries every
+//! fix and every test of the three.
+//!
+//! (one app wraps the crossterm backend for the wide cells). The session owns raw mode, the
+//! alternate screen, the cursor and the modes, and gives them back in the reverse order.
+
+use std::io::{self, Write};
+
+use crossterm::{
+    cursor,
+    event::{
+        DisableBracketedPaste, DisableFocusChange, EnableBracketedPaste, EnableFocusChange,
+        KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags,
+    },
+    execute,
+    terminal::{
+        Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
+        enable_raw_mode,
+    },
+};
+use ratatui::{Terminal, backend::Backend};
+
+#[cfg(feature = "pictures")]
+pub mod answers;
+#[cfg(feature = "pictures")]
+pub mod start;
+
+/// The modes of the terminal that an app turns on for its run. Each one is off by default. The
+/// same value goes into `Session::enter`, `install_panic_hook` and `release_terminal_to`, so the
+/// pop matches the push.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Modes {
+    /// Clicks, drags and the wheel (the modes 1000, 1002 and 1006), never a plain pointer move
+    /// (1003): a move must not wake the loop of the app.
+    pub mouse: bool,
+    /// The events for a focus gained or lost.
+    pub focus_reports: bool,
+    /// A paste as one event.
+    pub bracketed_paste: bool,
+    /// The flags of the Kitty keyboard protocol that the app pushes, for example
+    /// `DISAMBIGUATE_ESCAPE_CODES`. `None` pushes nothing.
+    pub keyboard_enhancement: Option<KeyboardEnhancementFlags>,
+}
+
+/// 1000 (press and release), 1002 (motion while a button is held) and 1006 (SGR coordinates).
+/// Without 1003 (any motion), a plain pointer move does not wake the run loop.
+const MOUSE_ON: &[u8] = b"\x1b[?1000h\x1b[?1002h\x1b[?1006h";
+
+/// The same modes off, in the reverse order.
+const MOUSE_OFF: &[u8] = b"\x1b[?1006l\x1b[?1002l\x1b[?1000l";
+
+/// Turns the mouse reports on: clicks, drags and the wheel, no plain move. An app that gives the
+/// mouse to a child window for a while turns it off and on at run time.
+pub fn enable_mouse(out: &mut impl Write) -> io::Result<()> {
+    out.write_all(MOUSE_ON)?;
+    out.flush()
+}
+
+/// Turns the mouse reports off, in the reverse order of `enable_mouse`.
+pub fn disable_mouse(out: &mut impl Write) -> io::Result<()> {
+    out.write_all(MOUSE_OFF)?;
+    out.flush()
+}
+
+/// The entry after raw mode: the alternate screen, cleared, the hidden cursor and the modes. The
+/// clear goes through crossterm, because `Terminal::clear` of ratatui asks the terminal for the
+/// cursor position, and a pseudo terminal without a reader never answers.
+pub fn enter_to(out: &mut impl Write, modes: Modes) -> io::Result<()> {
+    execute!(
+        out,
+        EnterAlternateScreen,
+        Clear(ClearType::All),
+        cursor::Hide
+    )?;
+    if let Some(flags) = modes.keyboard_enhancement {
+        execute!(out, PushKeyboardEnhancementFlags(flags))?;
+    }
+    if modes.mouse {
+        enable_mouse(out)?;
+    }
+    if modes.focus_reports {
+        execute!(out, EnableFocusChange)?;
+    }
+    if modes.bracketed_paste {
+        execute!(out, EnableBracketedPaste)?;
+    }
+    Ok(())
+}
+
+/// Gives the terminal back in the reverse order of `enter_to`: the modes off, raw mode off through
+/// `disable_raw`, the cursor shown, the alternate screen left. Every step runs, and the first
+/// error returns, so a failed step cannot leave the shell in raw mode. The app deletes its
+/// pictures before the call, because the pictures need the output of the app.
+pub fn release_terminal_to(
+    out: &mut impl Write,
+    modes: Modes,
+    disable_raw: impl FnOnce() -> io::Result<()>,
+) -> io::Result<()> {
+    let mut first_error = None;
+    let mut note = |result: io::Result<()>| {
+        if let Err(error) = result
+            && first_error.is_none()
+        {
+            first_error = Some(error);
+        }
+    };
+    if modes.bracketed_paste {
+        note(execute!(out, DisableBracketedPaste));
+    }
+    if modes.focus_reports {
+        note(execute!(out, DisableFocusChange));
+    }
+    if modes.mouse {
+        note(disable_mouse(out));
+    }
+    if modes.keyboard_enhancement.is_some() {
+        note(execute!(out, PopKeyboardEnhancementFlags));
+    }
+    note(disable_raw());
+    note(execute!(out, cursor::Show, LeaveAlternateScreen));
+    note(out.flush());
+    first_error.map_or(Ok(()), Err)
+}
+
+/// The terminal in raw mode on the alternate screen with the modes of the app. `restore` or the
+/// drop gives it back. `suspend` and `resume` lend it to a child process, such as an external
+/// editor or a file picker.
+#[derive(Debug)]
+pub struct Session {
+    modes: Modes,
+    /// The mouse reports are on right now. An app turns them off while a child window plays.
+    mouse: bool,
+    /// The terminal is in raw mode on the alternate screen right now.
+    active: bool,
+}
+
+impl Session {
+    /// Enters raw mode, the alternate screen and the modes. A failed step gives back the steps
+    /// before it and returns the error.
+    pub fn enter(modes: Modes) -> io::Result<Self> {
+        enable_raw_mode()?;
+        if let Err(error) = enter_to(&mut io::stdout(), modes) {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "the entry error matters more than a failed cleanup"
+            )]
+            let _ = release_terminal_to(&mut io::stdout(), modes, disable_raw_mode);
+            return Err(error);
+        }
+        Ok(Self {
+            modes,
+            mouse: modes.mouse,
+            active: true,
+        })
+    }
+
+    /// The modes of the session as they are right now.
+    pub const fn modes(&self) -> Modes {
+        Modes {
+            mouse: self.mouse,
+            ..self.modes
+        }
+    }
+
+    /// Turns the mouse reports off or on at run time, for example while a child window plays a
+    /// video. A second call with the same value writes nothing.
+    pub fn set_mouse(&mut self, on: bool) -> io::Result<()> {
+        if on == self.mouse {
+            return Ok(());
+        }
+        self.mouse = on;
+        if !self.active {
+            return Ok(());
+        }
+        if on {
+            enable_mouse(&mut io::stdout())
+        } else {
+            disable_mouse(&mut io::stdout())
+        }
+    }
+
+    /// Gives the terminal to a child process: the modes off, raw mode off, the cursor shown, the
+    /// screen left. `resume` takes it back. A second call changes nothing.
+    pub fn suspend(&mut self) -> io::Result<()> {
+        if !self.active {
+            return Ok(());
+        }
+        self.active = false;
+        release_terminal_to(&mut io::stdout(), self.modes(), disable_raw_mode)
+    }
+
+    /// Takes the terminal back after `suspend`, with an empty screen. The app then calls
+    /// `repaint_on_next_draw` on its terminal, so the next draw paints every cell. A second call
+    /// changes nothing.
+    pub fn resume(&mut self) -> io::Result<()> {
+        if self.active {
+            return Ok(());
+        }
+        enable_raw_mode()?;
+        enter_to(&mut io::stdout(), self.modes())?;
+        self.active = true;
+        Ok(())
+    }
+
+    /// Gives the terminal back at the end. The app deletes its pictures first. The same sequence
+    /// as `suspend`; a second call changes nothing.
+    pub fn restore(&mut self) -> io::Result<()> {
+        self.suspend()
+    }
+}
+
+impl Drop for Session {
+    #[expect(
+        clippy::let_underscore_must_use,
+        reason = "a drop cannot report an error, and the restore is best effort in a panic"
+    )]
+    fn drop(&mut self) {
+        let _ = self.restore();
+    }
+}
+
+/// Makes the next draw of `terminal` paint every cell, after `Session::resume` emptied the
+/// screen. The previous buffer still holds the last frame, and without the reset the next draw
+/// writes only the cells that differ from it. `Terminal::clear` asks the terminal for the cursor
+/// position, so it is no option here.
+pub fn repaint_on_next_draw<B: Backend>(terminal: &mut Terminal<B>) {
+    terminal.current_buffer_mut().reset();
+    terminal.swap_buffers();
+}
+
+/// A panic on the thread that installs the hook gives the terminal back before the message
+/// prints, else the alternate screen swallows the message. A panic on another thread (a decode
+/// worker) leaves the terminal to the UI, which goes on drawing. The hook exits nowhere: the app
+/// decides what happens after the message.
+pub fn install_panic_hook(modes: Modes) {
+    let ui_thread = std::thread::current().id();
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        if std::thread::current().id() == ui_thread {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "the terminal is in a panic, a failed release cannot be reported"
+            )]
+            let _ = release_terminal_to(&mut io::stdout(), modes, disable_raw_mode);
+        }
+        previous(info);
+    }));
+}
+
+#[cfg(test)]
+mod tests;

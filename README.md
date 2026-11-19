@@ -48,6 +48,19 @@ the Kitty layer are in `docs/pictures.md`.
 
 MIT, see `LICENSE`.
 
+## The terminal
+
+`terminal` holds what every app did on its own before: `Session` enters raw mode, the alternate
+screen and the modes of the app (`Modes`: the mouse without the plain move, the focus reports,
+the bracketed paste, the keyboard enhancement flags), lends the terminal to a child process with
+`suspend` and `resume`, and gives it back with `restore` or its drop. The session owns no
+`Terminal` of ratatui: the app builds its own, also on its own backend. `install_panic_hook` gives
+the terminal back before a panic message prints, on the installing thread only. With the feature
+`pictures`, `terminal::start::query` asks the terminal in one write for the cell size, the
+foreground colour, the Kitty protocol and the transfer medium, and `terminal::answers::
+LateAnswerFilter` drops the answers that come late as key presses. The rules are in
+`docs/pictures.md`, the interface and the facts of each app in `docs/plan.md`, phase 4, step 1.
+
 ## The accent
 
 Everything active in the frame takes one accent, `frame::accent()`: the ground of the selected row,

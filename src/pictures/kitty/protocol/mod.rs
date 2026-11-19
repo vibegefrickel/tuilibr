@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 mod probe;
 
+pub(crate) use probe::answer_for;
 #[cfg(any(test, feature = "test-support"))]
 pub use probe::detect_transfer;
 pub use probe::{chosen_loops, describe, describe_loops, detect_backend, is_herdr, is_ssh};
