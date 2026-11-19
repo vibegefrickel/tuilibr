@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `f00cbaf`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `e38b3c2`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -392,7 +392,13 @@ The order of the maintainer (2026-11-19):
    failed `Session::resume` marks the session active as soon as raw mode is on, so `restore`
    still turns raw mode off.
 2. The multi-line `TextField` with its draw helper, and the schnattr composer (`tui/compose.rs`,
-   the draft with its newline keys) on it.
+   the draft with its newline keys) on it. State (2026-11-19): the crate part is tuilibr
+   `e38b3c2`. schnattr switched its composer: `ComposerState::field` is the `TextField`,
+   `compose.rs` calls it, `ui/composer.rs` draws through `draw_text_field` (`Rows::Wrapped` for
+   the draft, `Rows::One` for a typed line), Ctrl+G opens the draft in the editor through
+   `text_field::editor::edit_text` with the terminal lent as for the picker. The two render tests
+   and every snapshot stayed unchanged, so the wrap of the crate agrees with the ratatui wrap.
+   1 387 tests, uncommitted. agendr follows with its entry box.
 3. The shared confirm body for the dialog boxes.
 
 One part per step, pure motion first, then the feature. Each step names the app that gives the
@@ -632,6 +638,19 @@ A path dependency needs the sibling checkout. For a reader who clones one app, t
 maintainer keeps the path form for local work through a `[patch]` entry with an absolute path in
 `~/.cargo/config.toml`. This phase needs the repository on codeberg. It also ends the symlink rule
 for the herdr worktrees below, because an absolute path resolves in every worktree.
+
+## The toolchain and the lint tables of the apps (2026-11-19)
+
+The stable toolchain is Rust 1.100 since 2026-11-19, 11:22. Its clippy flags
+`map(..).unwrap_or_default()` under `map_unwrap_or`, and the fix `map_or_default` needs 1.100. So
+every repository that took the fix sets `rust-version = "1.100"`, in the same step as the fix.
+
+The lint table of each app takes the union of tuilibr, where the app can bear it. youtr, phewr and
+agendr add `cognitive_complexity` and `tests_outside_test_module` (done in youtr, a worker in
+phewr). schnattr does not add `unreachable_pub` (775 hits: a binary crate has hundreds of `pub`
+items, and the maintainer decided against it on 2026-11-11), `let_underscore_must_use` (126 hits:
+`let _ =` on a cleanup that cannot report) or `unsafe_code = "deny"` (its one `unsafe` block, the
+umask, carries an `expect`). The decision is with the maintainer.
 
 ## Rules for the code of the crate
 
