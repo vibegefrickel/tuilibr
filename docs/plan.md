@@ -398,7 +398,7 @@ The order of the maintainer (2026-11-19):
    the draft, `Rows::One` for a typed line), Ctrl+G opens the draft in the editor through
    `text_field::editor::edit_text` with the terminal lent as for the picker. The two render tests
    and every snapshot stayed unchanged, so the wrap of the crate agrees with the ratatui wrap.
-   1 387 tests, uncommitted. agendr follows with its entry box.
+   1 387 tests, schnattr `a20b961`. agendr follows with its entry box.
 3. The shared confirm body for the dialog boxes.
 
 One part per step, pure motion first, then the feature. Each step names the app that gives the
@@ -642,12 +642,19 @@ for the herdr worktrees below, because an absolute path resolves in every worktr
 ## The toolchain and the lint tables of the apps (2026-11-19)
 
 The stable toolchain is Rust 1.100 since 2026-11-19, 11:22. Its clippy flags
-`map(..).unwrap_or_default()` under `map_unwrap_or`, and the fix `map_or_default` needs 1.100. So
-every repository that took the fix sets `rust-version = "1.100"`, in the same step as the fix.
+`map(..).unwrap_or_default()` under `map_unwrap_or`. The fix `map_or_default` is stable since 1.98,
+so it forces no `rust-version`. The rule of the dependency round of the morning stands: every
+repository names the current stable, so all five say `rust-version = "1.100"` (schnattr, youtr and
+phewr set it in their trees on 2026-11-19, tuilibr and agendr follow).
+
+The cargo deny warnings go in every repository: `[bans] skip` names the older version of each
+duplicate pair with the crate that pulls it, an unused license allowance leaves the allow list, and
+`allow-wildcard-paths = true` covers the path dependency. tuilibr and schnattr (40 pairs, through
+presage and grammers) are clean.
 
 The lint table of each app takes the union of tuilibr, where the app can bear it. youtr, phewr and
-agendr add `cognitive_complexity` and `tests_outside_test_module` (done in youtr, a worker in
-phewr). schnattr does not add `unreachable_pub` (775 hits: a binary crate has hundreds of `pub`
+agendr add `cognitive_complexity` and `tests_outside_test_module` (youtr done in its tree with 286
+tests, phewr `144252a` with 787 tests, agendr follows). schnattr does not add `unreachable_pub` (775 hits: a binary crate has hundreds of `pub`
 items, and the maintainer decided against it on 2026-11-11), `let_underscore_must_use` (126 hits:
 `let _ =` on a cleanup that cannot report) or `unsafe_code = "deny"` (its one `unsafe` block, the
 umask, carries an `expect`). The decision is with the maintainer.
