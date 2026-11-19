@@ -148,3 +148,40 @@ fn dialog_rect_is_the_inner_area_of_dialog_box() {
         );
     }
 }
+
+#[test]
+fn the_title_and_the_hint_mirror_each_other_with_one_line_cell() {
+    let buffer = drawn(40, 8, |frame| {
+        super::super::dialog_box(
+            frame,
+            frame.area(),
+            "window",
+            (30, 6),
+            Some("any key closes"),
+        );
+    });
+    let top = row(&buffer, 1);
+    let bottom = row(&buffer, 6);
+    assert!(top.contains("╭─ window ─"), "{top}");
+    assert!(bottom.contains("─ any key closes ─╯"), "{bottom}");
+}
+
+#[test]
+fn a_low_screen_drops_the_padding_rows_first_and_then_the_margin() {
+    let dialog_rect = super::super::dialog_rect;
+    // The size fits: one padding row on each side, two margin rows.
+    assert_eq!(
+        dialog_rect(Rect::new(0, 0, 40, 10), (30, 8)),
+        Rect::new(7, 3, 26, 4)
+    );
+    // One row too high for the margin: the padding rows go, the body keeps its rows.
+    assert_eq!(
+        dialog_rect(Rect::new(0, 0, 40, 10), (30, 9)),
+        Rect::new(7, 3, 26, 5)
+    );
+    // Higher than the area: the margin goes too, and the body gets the whole height.
+    assert_eq!(
+        dialog_rect(Rect::new(0, 0, 40, 10), (30, 14)),
+        Rect::new(7, 1, 26, 8)
+    );
+}

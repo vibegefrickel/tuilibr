@@ -33,24 +33,26 @@ pub struct HelpView<'a> {
 /// The one dialog box of every app: a help page, a confirm question, a form or a downloads window
 /// sits in it, so each app shows the same box. It is centered in `area`, with rounded corners like
 /// the panes of the maximal layout, its title after one line cell like a pane box, one cell of
-/// padding on every side, and an optional hint at the bottom right. It keeps a margin of 4 columns
-/// and 2 rows. The caller draws the body in the returned area inside the box.
+/// padding on every side, and an optional hint at the bottom right, before one line cell, as the
+/// mirror of the title. It keeps a margin of 4 columns and 2 rows. When `size` does not fit the
+/// height, the padding rows go first, then the margin rows, so a low screen gives the rows to the
+/// body. The caller draws the body in the returned area inside the box.
 pub fn dialog_box(
     frame: &mut Frame<'_>,
     area: Rect,
     title: &str,
-    (width, height): (u16, u16),
+    size: (u16, u16),
     hint: Option<&str>,
 ) -> Rect {
-    let rect = dialog_outer(area, (width, height));
+    let (rect, padding) = dialog_outer(area, size);
     frame.render_widget(Clear, rect);
     let mut block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .padding(Padding::uniform(1))
+        .padding(padding)
         .title(format!("─ {title} "));
     if let Some(hint) = hint {
-        block = block.title_bottom(Line::styled(format!(" {hint} "), dim()).right_aligned());
+        block = block.title_bottom(Line::styled(format!(" {hint} ─"), dim()).right_aligned());
     }
     let inner = block.inner(rect);
     frame.render_widget(block, rect);
@@ -60,19 +62,31 @@ pub fn dialog_box(
 /// The area inside the box that `dialog_box` draws for `size` in `area`, without a draw. An app
 /// that computes its scroll limits and its input widths before the draw gets the same rect.
 pub fn dialog_rect(area: Rect, size: (u16, u16)) -> Rect {
+    let (rect, padding) = dialog_outer(area, size);
     Block::default()
         .borders(Borders::ALL)
-        .padding(Padding::uniform(1))
-        .inner(dialog_outer(area, size))
+        .padding(padding)
+        .inner(rect)
 }
 
-/// The box with its border, centered in `area`, at most `size` and inside the margin of 4
-/// columns and 2 rows.
-fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> Rect {
-    area.centered(
+/// The box with its border, centered in `area`, and its padding. The box is at most `size` and
+/// sits inside the margin of 4 columns and 2 rows. A `size` higher than the room drops the two
+/// padding rows, and a `size` higher than the area drops the margin rows too.
+fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> (Rect, Padding) {
+    let room = area.height.saturating_sub(2);
+    let (height, padding) = if height <= room {
+        (height, Padding::uniform(1))
+    } else {
+        (
+            height.saturating_sub(2).min(area.height),
+            Padding::horizontal(1),
+        )
+    };
+    let rect = area.centered(
         Constraint::Length(width.min(area.width.saturating_sub(4))),
-        Constraint::Length(height.min(area.height.saturating_sub(2))),
-    )
+        Constraint::Length(height),
+    );
+    (rect, padding)
 }
 
 /// The keys in two columns of sections, in a box in the middle of `area`. When the screen is
