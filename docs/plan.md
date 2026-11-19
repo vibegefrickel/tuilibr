@@ -5,7 +5,7 @@ It replaces the copied modules and their sync recipes. This file is the master o
 schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
 Each app session reads this file before it touches a shared part.
 
-Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `ff0396f`, schnattr `b3c175c`, youtr
+Status (2026-11-19): phases 0, 1 and 3 are committed (tuilibr `69bb2ae`, schnattr `b3c175c`, youtr
 `c740bd3`, phewr `00d6fcb`, agendr `f25c1e1`, after the dependency round of 2026-11-19). The dialog hint cell and the padding-first rule are in these commits. Phase 4a is done in schnattr, youtr and phewr, and agendr runs it.
 The tuilibr session orchestrates the picture module since the phewr handover (`docs/pictures.md`). The tuilibr session (`tuilibr-82`) owns the crate
 code since 2026-11-19. Phase 3
@@ -89,8 +89,8 @@ the docs, not from a line-by-line comparison:
 | 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
-| 4c | One highlight in every app: the white of the palette. | none | tuilibr `ff0396f`. schnattr and youtr pass in their trees, uncommitted. phewr and agendr follow. |
-| 4 | The other shared parts move, one at a time. | phase 3 | open |
+| 4c | One highlight in every app: the white of the palette. | none | done: tuilibr `ff0396f`, agendr `94e9522`, phewr, youtr and schnattr pass `just apps-check` from `69bb2ae` |
+| 4 | The other shared parts move, one at a time. Order (maintainer, 2026-11-19): the terminal setup, the multi-line TextField with the schnattr composer, the confirm body. | phase 3 | started |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
 ### Phase 0: the crate with the frame (done)
@@ -337,8 +337,9 @@ The tuilibr session changes the crate after a day of notice and tells each app s
 notice went out on 2026-11-19, and the change came the same day on the request of the maintainer.
 `Section<'a>` makes a `const` `&[Section<'static>]`, and every `BarText` literal adds `keep_end`.
 `frame::truncate_start(text, max)` cuts from the start, the mirror of `truncate_width`. State
-(2026-11-19): done in the tuilibr tree. schnattr changed its two call sites with `keep_end: false`
-(the typed input lives in its omnibox), 1 398 tests pass. youtr, phewr and agendr follow. Each app
+(2026-11-19): tuilibr `69bb2ae`. schnattr changed its two call sites with `keep_end: false` (the
+typed input lives in its omnibox), 1 398 tests pass, uncommitted. youtr passes (288), phewr
+`df96d37`. agendr `94e9522` (1 258 tests, phases 4b and 4c in one commit). Each app
 session changes its own call sites within the same hour (schnattr: `ui/help.rs` and the bar fill in
 `ui/status.rs`) and runs `just check`. The maintainer commits tuilibr first, then the apps.
 
@@ -371,15 +372,105 @@ State (2026-11-19): schnattr has the turned pill in `ui/sidebar.rs`, three tests
 uses `selection()`). Its snapshots did not change, because they hold cells, not colours. `just check` passes against
 tuilibr `ff0396f` with 1 398 tests. youtr did the same in its tree
 (288 tests): the grid cursor takes `frame::accent()`, the downloads title used `selection()`
-already. phewr and agendr follow and check their status row, popups, footer and dialogs for a
-literal.
+already. agendr `94e9522`: the selected day, the rows, the form values, the prompts and the drag
+border go through `selection()` or `accent()`, the calendar colours stay. phewr follows.
 
 ### Phase 4: the other shared parts
+
+The order of the maintainer (2026-11-19):
+
+1. The terminal setup with the Kitty probe and the late answers. schnattr `tui/terminal.rs` and
+   `tui/answers.rs`, phewr `terminal.rs` and `LateAnswerFilter` in `run_loop.rs`, youtr
+   `thumbs/terminal.rs`. The tuilibr session compares the three versions first and writes the
+   shared interface into this file, then moves the code. Each app session switches its own app.
+2. The multi-line `TextField` with its draw helper, and the schnattr composer (`tui/compose.rs`,
+   the draft with its newline keys) on it.
+3. The shared confirm body for the dialog boxes.
 
 One part per step, pure motion first, then the feature. Each step names the app that gives the
 code and the apps that take it. The candidates are the duplicates above. The first step is the
 terminal setup with the Kitty probe and the late answers, because all three apps hold a version
 and each version had its own bugs in 2026-11.
+
+#### Step 1: the terminal, compared (tuilibr session, 2026-11-19)
+
+What the three apps hold, and agendr as the fourth:
+
+| Part | schnattr | phewr | youtr | agendr |
+|---|---|---|---|---|
+| The session (raw mode, alternate screen, modes, restore) | inline in `tui/mod.rs`: raw mode, the screen, bracketed paste, focus reports, mouse capture, keyboard enhancement flags; `ratatui::restore` | `terminal.rs`: `TerminalSession::enter(mouse)`, `restore` with the picture delete first, `Drop`; `release_terminal_to` as the pure sequence | inline in `tui/mod.rs`: raw mode, the screen | `terminal_session.rs`: `enter`, `suspend` and `resume` for the editor, a repaint after the resume, tests |
+| The panic hook | `install_panic_hook`: the UI thread restores, a worker leaves the terminal, then the old hook | `install_panic_hook(mouse)`: the main thread restores and exits after the message | `install_panic_hook` | none in the session |
+| The start queries | two in a row: `TerminalAnswers::query` (cell size, the Kitty probe `i=31`, DA1) and `probe_transfer` through `protocol::detect_backend`; `owed_start_answers` adds the owed answers of both | one: `probe_terminal` through `detect_backend`, with the OSC 10 colour for the icons and `cell_size_from_terminal` for a new cell size query after a resize | one: `TerminalAnswers::query`, `kitty: bool` and the cell | none |
+| The late answers | `answers::LateAnswers`: `AnswerKeys` (drops every Kitty answer, the pictures go with `q=2`) plus `OscAnswers` (the owed OSC 10 answer); `read`, `release_stale`, `release`, `wait`, on the reader thread | `LateAnswerFilter`: the owed Kitty answers and the owed OSC 10 answer counted apart, `kitty_answers_came`; the run loop reads `AnswerKeys` first for the self check, then the filter | `AnswerKeys` only. A late OSC 10 answer reaches the keys: the gap of youtr | none |
+
+The bugs that the shared version carries as tests: Ghostty 1.4 sends DA1 before OSC 10 and the
+Kitty answers (the grace in `query`, the OSC 10 answer stays owed after DA1); a held Alt+`_` comes
+back after `ANSWER_WAIT`; a key that fits no answer ends the swallow, so a real Alt+`]` works; a
+Kitty answer pays for no OSC 10 answer; a resize or a focus report between the keys of one answer
+passes; the self check answers reach the screen. Tests to move: schnattr
+`tui/tests/late_answers.rs` (6), phewr `keys/mod.rs` (10 of the filter), phewr `terminal.rs` (the
+mouse modes), agendr `terminal_session.rs` (the failed start, the repaint after the resume).
+
+#### Step 1: the shared interface (proposal, for the review of schnattr-2b)
+
+Module `tuilibr::terminal`, three parts. `crossterm` becomes a plain dependency (every app has
+it), so the session is in the frame-only build too; the queries and the late answers sit behind
+`pictures`, because they use `kitty::query` and `kitty::answers`.
+
+```rust
+// tuilibr::terminal, always built
+pub struct Modes { pub mouse: bool, pub focus_reports: bool, pub bracketed_paste: bool, pub keyboard_enhancement: bool }
+pub struct Session { .. }                      // raw mode, the alternate screen, the hidden cursor, the modes
+impl Session {
+    pub fn enter(modes: Modes) -> io::Result<Self>;   // undoes every step after a failed one
+    pub fn terminal_mut(&mut self) -> &mut Terminal<CrosstermBackend<Stdout>>;
+    pub fn suspend(&mut self) -> io::Result<()>;      // for an editor or a picker: the modes off, raw mode off, the screen left
+    pub fn resume(&mut self) -> io::Result<()>;       // back, with a full repaint on the next draw
+    pub fn restore(&mut self) -> io::Result<()>;      // the pictures deleted first, the modes, raw mode, the cursor, the screen; the first error returns; a second call changes nothing
+}
+impl Drop for Session {}                       // a best-effort restore
+pub fn release_terminal_to(out: &mut impl Write, modes: Modes, disable_raw: impl FnOnce() -> io::Result<()>) -> io::Result<()>;
+pub fn install_panic_hook(modes: Modes);       // the thread that installs it restores the terminal and runs the old hook; a worker runs the old hook only; no exit, the app decides
+
+// tuilibr::terminal::start, feature `pictures`
+pub struct StartOptions<'a> { pub transfer_override: Option<&'a str>, pub loops: Option<Loops>, pub ssh: bool }
+pub struct Start { pub cell: CellSize, pub cell_from_terminal: bool, pub backend: KittyBackend, pub foreground: Option<[u8; 3]>, pub owed: LateAnswers }
+pub fn query(options: StartOptions<'_>) -> Start;    // one write: the cell size, OSC 10, the probe through detect_backend, DA1; before the reader of the keys starts
+impl Start { pub fn kitty(&self) -> bool; }           // the backend has a transfer, so the pictures show
+
+// tuilibr::terminal::answers, feature `pictures`
+pub struct LateAnswerFilter { .. }             // AnswerKeys first, then the owed Kitty and OSC 10 answers, counted apart
+pub struct Filtered { pub events: Vec<Event>, pub answers: Vec<Answer> }   // the events for the keys, the Kitty answers for Screen::answer
+impl LateAnswerFilter {
+    pub fn new(owed: LateAnswers) -> Self;
+    pub fn read(&mut self, event: Event, now: Instant) -> Filtered;
+    pub fn release_stale(&mut self, now: Instant) -> Filtered;
+    pub fn release(&mut self) -> Filtered;     // before a picker takes the terminal
+    pub fn wait(&self, now: Instant) -> Option<Duration>;
+}
+```
+
+The decisions in it: one start query for every app (the phewr form), so schnattr drops its
+second query and `owed_start_answers`; youtr gets the OSC 10 filter that it lacks; the filter
+returns the self check answers, so phewr and youtr keep `Screen::answer` (youtr runs the self
+check by default, `YOUTR_KITTY_SELF_CHECK=0` turns it off) and schnattr ignores them; the panic
+hook exits nowhere, phewr adds its exit in `main`; `Session::suspend` and `resume` come from
+agendr, for the editor of agendr and the picker of schnattr. The app keeps: the thread or the
+async loop that calls `read`, the environment variable names (`SCHNATTR_KITTY_TRANSFER`), and the
+use of the foreground colour. `kitty::answers::ANSWER_WAIT` stays reachable for the app tests.
+
+Facts of youtr for the move (youtr-92, 2026-11-19): youtr sends its pictures with
+`KittyBackend::new(Transfer::Direct)`, a constant, with no transfer detection and no override
+variable. With `start::query` through `detect_backend`, youtr switches to the detected transfer, a
+temp file in a local Ghostty instead of direct data. That is a behaviour change for youtr; the
+maintainer decides whether youtr takes it or passes `transfer_override: Some("direct")` to keep
+the data route. youtr has no `ssh` detection and passes `ssh: false`. Ten youtr tests build a
+`ThumbCache` from a fake start without a terminal, so `Start` keeps `pub` fields and gets a
+constructor behind `test-support`: `Start::for_tests(cell: CellSize, kitty: bool)`, a direct
+transfer when `kitty`, `cell_from_terminal: true`, no owed answers. The youtr modes:
+`Modes { mouse: true, focus_reports: true, bracketed_paste: false, keyboard_enhancement: false }`;
+its panic hook is the schnattr form. `release` has no caller in youtr (mpv opens a window, youtr
+never leaves the terminal).
 
 The omnibox of schnattr (`ui/composer.rs`: a question, a typed line, a status text or a draft
 under the bar) is a candidate when a second app wants the command line of vim.
