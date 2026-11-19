@@ -67,7 +67,7 @@ audit:
     just --fmt --check --unstable
     typos
     cargo shear
-    scripts=$(git ls-files '*.sh'); if [ -n "$scripts" ]; then shellcheck -S warning ${=scripts}; shfmt -d -i 2 ${=scripts}; fi
+    scripts=$(git ls-files '*.sh' | while read -r f; do if [ -f "$f" ]; then print -r -- "$f"; fi; done); if [ -n "$scripts" ]; then shellcheck -S warning ${=scripts}; shfmt -d -i 2 ${=scripts}; fi
     if grep -q '^insta' Cargo.toml; then CARGO_BUILD_WARNINGS=deny cargo insta test {{ test_profile }} --test-runner nextest --all-targets --unreferenced=reject; fi
 
 # The apps that use this crate through a path dependency. `just apps-check` builds each one.
