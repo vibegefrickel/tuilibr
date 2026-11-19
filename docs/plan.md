@@ -85,9 +85,9 @@ the docs, not from a line-by-line comparison:
 |---|---|---|---|
 | 0 | The crate with the frame. schnattr uses it. The frame recipes of schnattr go. | none | done, tuilibr `901aa79`, schnattr `9758a73` |
 | 1 | youtr takes the frame from the crate. | the go of the youtr session | done, youtr `7a7499c` |
-| 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | open, in phewr |
-| 3 | The picture module moves from phewr into the crate. The three apps use it. | the herdr part and the loss limit test of phase 2 pass | open |
-| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | tuilibr `3fa749d` has `dialog_box`. schnattr and youtr done, uncommitted. phewr runs a worker. agendr starts. |
+| 2 | phewr finishes phase 7 of the picture module. | the maintainer runs the test matrix | moved to later (maintainer, 2026-11-19) |
+| 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | started |
+| 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | tuilibr `3fa749d` has `dialog_box`. schnattr and youtr done, uncommitted. phewr `ba8d0cd`. agendr runs. |
 | 4 | The other shared parts move, one at a time. | phase 3 | open |
 | 5 | The build for other people: a git dependency with a `rev`. | the repository on codeberg | open |
 
@@ -134,7 +134,45 @@ phase 7. The maintainer decides.
 
 ### Phase 3: the picture module moves
 
-The phewr session and the schnattr session do these steps together after the gate of phase 2.
+The maintainer started phase 3 on 2026-11-19 in the phewr session. The test run of phase 7 moves
+to later. The split: the tuilibr session copies the module from phewr main `fc6e7af`
+(`src/pictures/` unchanged since `00257e2`) into the crate and owns the decisions of the move.
+phewr froze `src/pictures/`. When tuilibr holds the module in a commit, each app switches, phewr
+through a worker. After the switch of phewr, the phewr session hands the orchestration of the
+module to the tuilibr session with a complete handover: the gotchas and design pages, the benches,
+the open module tests of the test run, the upstream issue drafts and the decisions. From then on
+the module work is tuilibr work, and phewr is one of its apps.
+
+The state of the move (tuilibr session, 2026-11-19): `src/pictures/` and the fixtures are in the
+tuilibr working tree, uncommitted. `just check` passes with every feature (369 tests, 8 real-file
+tests skip without `TUILIBR_TEST_*`). The decisions of the move:
+
+- `crossterm` is a plain dependency of the crate: `kitty/answers.rs` reads the Kitty answers as the
+  key events of crossterm, and `kitty/query.rs` reads the cell size through `window_size`. The
+  open question on crossterm below is answered.
+- The feature `test-support` builds `pictures::test_support` for the tests of an app. phewr app
+  tests use `test_dir`, `fixture`, `assert_close`, `RED`, `BLUE`, `key_events`, `options` and the
+  HEIF, TIFF and PSD writers. `fixture` finds the fixtures of the crate, not of the app. The
+  helpers inside `tests` modules (`decode::screen::tests::rgba_fullscreen`,
+  `decode::hdr::tests::{TARGETS, cicp, exact}`) stay `#[cfg(test)]`: an app copies them.
+  The test-only items that the phewr app tests use (`GraphicsOutput::Buffer`, `Screen::stored_count`,
+  `ThumbJob::new`, `JobQueue::len`, `ThumbnailCache::capacity`, `ScreenImage::put_pixel`,
+  `decode_image_with_hint`, `real_test_file`, `jxl::copy_times`, `temp_file_paths`,
+  `detect_transfer`, `hdr::{TARGETS, exact, cicp}`, `disk_cache::PathCounter` with
+  `KEY_COMPUTATIONS` and more, the full list is in `docs/pictures.md`) are behind `test-support`.
+- `set_app_name` and `app_name` in `pictures::names`, as proposed. `thumbnail_cache_version()`
+  hashes `<app>-thumbnail-v22`.
+- The `kitty-*` gates are gone. `#[cfg_attr(..., expect(dead_code))]` of the app days are gone: a
+  `pub` item is never dead in a library.
+- The lint union adds `#[must_use]` on the builder methods, `Default` on `TerminalImages` and
+  `PathCounter`, and one `expect(clippy::iter_without_into_iter)` on `JobQueue::iter`.
+- `[profile.dev.package."*"] opt-level = 2` lives in `.cargo/config.toml`, because cargo ignores
+  and warns about a profile in the manifest of a dependency.
+- The fixture script `tests/fixtures/make.sh` of phewr came along: it makes the `still.*` files.
+
+The fixtures that belong to the module (justfile `pictures_fixtures` of phewr): `tests/fixtures/color`,
+`hdr`, `jxl`, `png`, `still.avif`, `still.gif`, `still.png`, `still.webp`, each folder with its
+`make.sh`. The folders `animations` and `video` stay in phewr.
 
 1. Move phewr `src/pictures/` to tuilibr `src/pictures/` and `tests/fixtures/` of the module
    tests to tuilibr `tests/fixtures/`. Replace `pub(crate)` by `pub`. Fix the fixture paths.
@@ -199,6 +237,15 @@ set the environment of the build of a dependency. The proposal is one runtime se
 The alternative with no interface: the fixed name `tuilibr` in each place. It costs one cold
 thumbnail cache per app, and the temp files and the threads no longer name the app.
 
+The export list of phewr has 80 entries. The command in phewr:
+`grep -rhoE "pictures::[A-Za-z0-9_:]+" $(find src -name '*.rs' -not -path 'src/pictures/*') | sort -u`.
+The same command gives the list of schnattr: `decode::{Decoded, EmbeddedThumbnail, decode_image}`,
+`jobs::pool::{ThumbPhase, spawn_job}`, `jobs::queue::{JobSlots, Priority, ThumbJob}`,
+`kitty::{KittyBackend, Loops, Pixels, Transfer, protocol, query}`, `kitty::protocol::temp_file_paths`,
+`kitty::query::{query_cell_size_and_probe, window_cell_pixel_size, StartAnswers}`,
+`kitty::answers::{AnswerKeys, ANSWER_WAIT}`, `kitty::screen::{Placements, Screen, BEGIN_SYNC,
+END_SYNC}`, `shape::copies::{self, Bitmap, Kind}` and `test_support::write_heif`.
+
 The items that youtr calls from outside the module, so the crate must export them as `pub`
 (from the youtr session, 2026-11-19): `kitty::{KittyBackend, Pixels, Transfer}`,
 `kitty::answers::{Answer, AnswerKeys, KeyRead, ANSWER_WAIT}`, `kitty::screen::{Placements,
@@ -251,8 +298,9 @@ first, then the app.
 - phewr: the status row becomes `BarView` (the mode block, the folder path as the left group, the
   file info in the middle, the counts and the zoom at the right, the icons). The help popups and
   every other popup become `dialog_box`, the key help with `HelpView`.
-  A phewr worker (branch `frame-bar`, auto review) runs it since 2026-11-19 against tuilibr
-  `3fa749d`. The change is one module, `src/ui/status.rs`, plus `src/ui/help.rs`.
+  Done: phewr `ba8d0cd` (docs `f061259`), 1 128 tests. One `BarView` per view: the mode, the
+  folder path as `left`, the name and the position as `middle`, the facts and the counts as
+  `right`, no time, no icons. The help is a `HelpView` with five sections.
 - agendr: the footer becomes `BarView` (the mode block, NEXT at the left, the notice or the error
   in the middle, zoom and date at the right, the clock as `time`, the backend state as icons). The
   confirm box, the forms and the help become `dialog_box` with an own body, the key help with
@@ -313,8 +361,12 @@ for the herdr worktrees below, because an absolute path resolves in every worktr
 ## Rules for the code of the crate
 
 - The crate knows no app type and no app data. The inputs are plain view structs.
-- The crate imports `ratatui`, `unicode-width`, `unicode-segmentation` and `std` for the frame.
-  The picture module adds its decoders behind features. No `insta`, no time crate.
+- The frame imports `ratatui`, `unicode-width`, `unicode-segmentation` and `std`. The picture
+  module adds `crossterm` for the Kitty answers and its decoders behind features. No `insta`, no
+  time crate.
+- The crate builds with no feature and with every feature, with zero warnings. An app builds the
+  working tree as a path dependency with `-D warnings`, and cargo caps no lint of a path
+  dependency.
 - Every public item has a one-line doc comment that says why.
 - The tests use `TestBackend` and plain asserts. The snapshots of an app stay in the app.
 - No `#[cfg(test)]` export. The tests of an app cannot see it.

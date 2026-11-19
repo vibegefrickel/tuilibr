@@ -1,0 +1,5 @@
+# Image decoding is slow without optimizations, also in debug builds and tests. A profile in the
+# Cargo.toml of a library is ignored and warned about when an app builds it, so it lives here, for
+# the checks inside this checkout.
+[profile.dev.package."*"]
+opt-level = 2

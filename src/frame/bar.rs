@@ -69,7 +69,10 @@ pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize
     let block_cells = cells(std::slice::from_ref(&block));
     let time = padded(&view.time).width();
     let mut groups = view.right;
-    groups.push(view.time);
+    // An app without a clock has no time group, so the last right group ends at the icons.
+    if !view.time.is_empty() {
+        groups.push(view.time);
+    }
     // The left group gets what the mode block, the icons and the time leave, so the icons and
     // the time stay whole.
     let left_room = area

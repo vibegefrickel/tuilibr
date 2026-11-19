@@ -15,9 +15,11 @@ fmt:
 fmt-check:
     cargo fmt --check
 
-# Clippy over all targets and all features. Every warning is an error here.
+# Clippy over all targets, with every feature and with none. Every warning is an error here. An app
+# builds the crate with its own feature set and `-D warnings`, so both ends must be clean.
 lint:
     cargo clippy --all-targets --all-features -- -D warnings
+    cargo clippy --all-targets --no-default-features -- -D warnings
 
 # Apply the lint and formatting fixes that clippy and rustfmt can do on their own.
 fix:
@@ -27,6 +29,10 @@ fix:
 # Tests through nextest. Without nextest, `cargo test` runs.
 test *ARGS:
     if command -v cargo-nextest >/dev/null; then cargo nextest run --all-features {{ARGS}}; else cargo test --all-features {{ARGS}}; fi
+
+# The tests with no feature, as youtr builds the crate.
+test-lean *ARGS:
+    if command -v cargo-nextest >/dev/null; then cargo nextest run --no-default-features {{ARGS}}; else cargo test --no-default-features {{ARGS}}; fi
 
 # rustdoc over the crate, warnings fatal (broken links, bad code blocks).
 doc:
@@ -41,7 +47,7 @@ outdated:
     cargo update --dry-run --verbose 2>&1 | grep -E '^\s*(Updating|Unchanged)' || true
 
 # The full gate.
-check: fmt-check lint test doc deny
+check: fmt-check lint test test-lean doc deny
 
 # The apps that use this crate through a path dependency. `just apps-check` builds each one.
 apps := "../schnattr ../youtr ../phewr ../agendr"

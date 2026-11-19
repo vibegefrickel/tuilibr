@@ -404,3 +404,14 @@ fn a_bar_with_one_left_part_keeps_the_style_of_the_middle_and_the_time() {
     assert_eq!(row(&buffer, 0), " N    saved    14:02  SYNCING ");
     assert_eq!(places, vec![Rect::default()]);
 }
+
+#[test]
+fn a_bar_without_a_time_ends_its_right_groups_at_the_icons() {
+    let mut view = bar_without_tabs();
+    view.time = String::new();
+    let buffer = drawn(80, 1, |frame| {
+        draw_bar(frame, view, frame.area(), 0);
+    });
+    let text = row(&buffer, 0);
+    assert!(text.ends_with(" 7-DAY  Wed 19 Nov  SYNCING "), "{text}");
+}

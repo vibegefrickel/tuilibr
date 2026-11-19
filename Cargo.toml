@@ -117,6 +117,57 @@ large_futures = "allow"
 assert_is_empty = "allow"
 
 [dependencies]
+# The frame and the pictures share these. crossterm: the Kitty layer reads the answers of the
+# terminal as the key events of crossterm, and the cell size through `window_size`.
+crossterm = "0.29"
 ratatui = "0.30"
 unicode-segmentation = "1"
 unicode-width = "0.2"
+
+# The picture module. The versions are the versions of phewr.
+base64 = "0.23"
+fast_image_resize = "6.1"
+# Only the decoders for the formats that the apps list. AVIF goes through libheif.
+image = { version = "0.25.10", default-features = false, features = ["bmp", "exr", "gif", "hdr", "ico", "jpeg", "png", "qoi", "tga", "tiff", "webp"] }
+# JPEG XL in pure Rust. The default feature `rayon` decodes on the shared rayon pool. `moxcms`
+# converts an ICC profile to sRGB. `image` still uses moxcms 0.8.
+# Both JPEG XL pins are exact on purpose. The sample copy on all cores in `decode/jxl.rs` reads
+# the rendered grids of `jxl-render` (`ImageBuffer`) and depends on their private layout in these
+# versions: each grid starts at the image origin, where `ImageStream` of `jxl-oxide` starts too.
+# An update is a deliberate step: change `jxl-oxide` and set `jxl-render` to the version that
+# this `jxl-oxide` uses. Then run `parallel_copy_matches_stream` and the byte comparison of the
+# decode on the real files.
+jxl-oxide = { version = "=0.12.6", features = ["moxcms"], optional = true }
+jxl-render = { version = "=0.12.4", optional = true }
+kamadak-exif = "0.6"
+libheif-rs = { version = "3", optional = true }
+lru = "0.19"
+# The ICC profile of a JPEG XL file to sRGB (`decode/jxl.rs`). `image` and `jxl-oxide` still use
+# moxcms 0.8.
+moxcms = "0.9.2"
+rayon = "1.12"
+# `poll` on the tty for the answer of the Kitty probe. crossterm uses the same version.
+rustix = { version = "1", features = ["event"] }
+# The temp TIFF of the `sips` route, and the temp folders of the test support.
+tempfile = { version = "3.27", optional = true }
+# Without the default feature `cmake`, turbojpeg-sys finds the Homebrew libjpeg-turbo through
+# pkgconf and never builds it from source.
+turbojpeg = { version = "1.5", default-features = false, features = ["pkg-config", "require-simd"], optional = true }
+
+[dev-dependencies]
+tempfile = "3.27"
+
+# No default feature: each app turns on the decoders that it needs.
+[features]
+# Fast JPEG decoding with DCT downscaling (libjpeg-turbo).
+turbo = ["dep:turbojpeg"]
+# HEIC / HEIF and AVIF through the system libheif (>= 1.19).
+heic = ["dep:libheif-rs"]
+# JPEG XL in pure Rust (jxl-oxide).
+jxl = ["dep:jxl-oxide", "dep:jxl-render"]
+# Camera RAW, PSD, PDF, SVG and the other ImageIO formats through macOS `/usr/bin/sips`. The
+# feature has no effect on other systems.
+sips = ["dep:tempfile"]
+# `pictures::test_support` for the tests of an app: the fixture writers and the key events. An
+# app turns it on in its dev-dependency only.
+test-support = ["dep:tempfile"]

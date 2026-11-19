@@ -5,3 +5,5 @@
 //! pictures through the `frame::Pictures` trait.
 
 pub mod frame;
+
+pub mod pictures;
