@@ -21,6 +21,7 @@ src/pictures/
   kitty/     the probe, the transfer medium, the terminal store with its budget, the placements
              with ids and a z index, the per-pass byte cap, the synchronized update, the deletes,
              the resend after a clear, the cell size
+  motion/    the animated previews, see "The motion module"
   names.rs   the app name: `set_app_name` at start, `app_name` in the module
   test_support/  the fixture writers and the key events for the tests, feature `test-support`
 ```
@@ -108,6 +109,67 @@ These rules make the output fast and keep every picture on screen:
    whole cells, padded with transparent pixels.
 9. **Synchronized update.** One update around the cells of ratatui and the picture writes of a
    frame.
+
+## The motion module
+
+`pictures::motion` holds the animated previews: the loops of the videos, the GIFs, the Live
+Photos and the other animations. It came from phewr on 2026-11-19 (plan `docs/plan.md`, phase
+4d). The module links no `FFmpeg` library. It starts the `ffmpeg` and `ffprobe` programs.
+
+```text
+src/pictures/motion/
+  probe/        ffprobe and its JSON: `VideoInfo`, `Rate`, `Samples`, the probe cache
+  decoder/      the `Decoder` trait, `SystemDecoder`, `FrameStream`, `PooledFrame`, `Pipeline`
+                with the GPU run and the software run, the ffmpeg command lines
+  tone_map/     the cubes for HLG, PQ and SDR in the cache folder
+  animation.rs  the header check of GIF, WebP, APNG and AVIS
+  frame_box.rs  the size of a frame for a box of pixels or cells
+  first_frame/  the first frame of a video as the still of its cell, the video extensions
+  loop_frames.rs  the frames of a loop: `LoopFrames`, `decode_loop`, `loop_of`
+  loop_file.rs  the loop file of the disk cache
+  clock.rs      `CellLoop` and `TICKS_PER_SECOND`, the frame of a cell at a tick
+  loop_ids.rs   `LoopIds`, the Kitty ids of the loops inside a range of the app
+src/pictures/kitty/loops.rs  the write of the frames of one loop, and the frame at a tick
+```
+
+An app passes these inputs:
+
+- **The programs.** The app finds `ffmpeg` and `ffprobe` one time at start and passes them in
+  `motion::Tools`. The module does no PATH lookup. When one program is missing, the app passes
+  no `Tools`, and the cell keeps its still.
+- **The cache folder.** The loop files and the cubes go below the cache root of the app. The
+  module has no default folder. The key of a loop file holds `<app>-loop-v1`.
+- **The cell box and the colour target.** The box is the size of the grid picture in pixels
+  (`thumb_target_px`). The colour target comes from `decode::color::target`.
+- **The cancel flag.** A job polls its `&AtomicBool` every 20 ms. The module starts no thread
+  for a job: a job returns frames, and the app runs it on its pool.
+- **The id range.** The app owns the Kitty ids. `LoopIds` gives the loop ids inside the range of
+  the app, and a run skips the ids that the app still uses.
+- **The motion path.** For a Live Photo, the app pairs the still and the motion. The module
+  gets the path of the motion only.
+
+The rules of the loops:
+
+1. **herdr.** herdr gets the ticks without the animation probe. herdr 0.9.5 answers the probe
+   but plays no Kitty animation (2026-11-03). An override of the app wins.
+2. **The usage hint.** With `Loops::Animation`, every frame goes out with `N=1`. With
+   `Loops::Ticks`, no `N` key goes out, because the protocol does not say that a terminal keeps
+   an unplaced image.
+3. **The pixels.** The frames go out as RGBA. `Pixels::opaque_rgb` copies an opaque frame.
+4. **A lost frame.** A lost frame of a visible loop gives the still and a new transfer of the
+   loop. The trim of the terminal store keeps every frame of a visible loop.
+5. **A video loop.** The loop has 12 frames over the whole clip, 333 ms each, from one keyframe
+   run (`-skip_frame nokey`). A clip of at most 20 s with fewer than 12 keyframes decodes at a
+   constant rate. A clip above 60 s seeks to 12 points.
+6. **An animation.** The loop has at most 48 frames and 12 fps, and at least one frame per
+   minute. `merge_repeats` joins equal frames.
+7. **The software run.** When the GPU run of a file fails, the file decodes in software for the
+   rest of the session. A stream above 10 bits starts in software.
+8. **No loops.** When the app turns its loops off, the still keeps its play stamp.
+
+The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The tests that
+start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*`
+(the root `make.sh`) and `tests/fixtures/video/` (its own `make.sh`).
 
 ## The rules of the work
 

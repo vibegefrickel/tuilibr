@@ -2,8 +2,7 @@
 # Rebuilds the HDR fixtures of src/decode/hdr.rs and their references through the video cube.
 #
 # Needs avifenc, heif-enc (Homebrew libheif with x265), ImageMagick 7 (magick), sips, python3,
-# ffmpeg, just and the phewr checkout next to tuilibr (or PHEWR=<path>). Run it from any
-# directory: ./tests/fixtures/hdr/make.sh
+# ffmpeg and cargo. Run it from any directory: ./tests/fixtures/hdr/make.sh
 #
 # The JPEG XL fixtures (*.jxl) are not rebuilt: they stay as committed, and the script needs no
 # cjxl. cjxl 0.12 made them on 2026-11 with the commands that the comments below keep.
@@ -124,10 +123,10 @@ insert_cicp "$work/signal.png" pq-4000.png 16 4000
 insert_cicp "$work/pq-icc.png" pq-icc-4000.png 0 4000
 
 # The cubes of the player, then the references through them. The cube writer is the ignored
-# phewr test `write_the_player_hdr_cubes` (`src/player/tone_map/tests.rs`), player code, not
-# module code. PHEWR names the phewr checkout, by default the sibling of tuilibr.
-phewr=${PHEWR:-$(cd ../../../../phewr && pwd)}
-PHEWR_HDR_CUBE_DIR=$work just -f "$phewr/justfile" -d "$phewr" test-real write_the_player_hdr_cubes >/dev/null 2>&1
+# test `write_the_player_hdr_cubes` (`src/pictures/motion/tone_map/tests.rs`). Homebrew's rustup
+# is keg-only, so the script puts its shims on PATH like the justfile.
+TUILIBR_HDR_CUBE_DIR=$work PATH="/opt/homebrew/opt/rustup/bin:$PATH" \
+  cargo test --all-features --lib write_the_player_hdr_cubes -- --ignored >/dev/null 2>&1
 rm -rf ref
 mkdir ref
 for curve in pq pq4000 hlg; do

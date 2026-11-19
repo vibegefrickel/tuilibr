@@ -1,6 +1,7 @@
 //! The Kitty graphics output: the writer, the transfer medium, the loop path, the pixels and the
 //! frame engine ([`screen`]), and the answers of the terminal for its self check ([`answers`]).
 pub mod answers;
+pub mod loops;
 pub mod placement;
 pub mod protocol;
 pub mod query;

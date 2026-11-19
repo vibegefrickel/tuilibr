@@ -9,6 +9,7 @@
 mod files;
 #[cfg(feature = "heic")]
 mod heif;
+pub mod video;
 
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
 #[cfg(all(feature = "sips", target_os = "macos"))]

@@ -10,6 +10,7 @@
 pub mod decode;
 pub mod jobs;
 pub mod kitty;
+pub mod motion;
 pub mod names;
 pub mod resize;
 pub mod shape;
