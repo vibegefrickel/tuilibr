@@ -3,19 +3,17 @@
 ## Handoff
 
 - Date: 2026-11-19
-- Commit: 6624786
+- Commit: fbd2880
 - Done: phase 4 steps 1 to 4 in the crate: `terminal` (session, panic hooks, start query, late
   answers), the multi-line `TextField` with the key map and the editor, `draw_text_field`,
   `dialog_rect`, `pane_inner`, the question row, `frame::Layout` (maximal default), the omnibox.
 - Done: `time` on jiff (age, bar date and time, clock, media length, `MinuteClock`); phase 4d
   `pictures::motion` from phewr with `LoopClock`; the picture docs; the stricter lints and the
   shared audit text of the five repositories; rule 10 "one update per frame".
-- Open (agent): land the `tlottie` spike (worktree `agent-ae079fd3ff597b1d9`) under
-  `pictures::motion` after the real-sticker run; then tell schnattr-2b for the TGS stickers.
+- Later: the TGS stickers, the test run of the maintainer and the other waiting items, see
+  `## Later`.
 - Open (agent): follow the schnattr timeline workers of 4d (adapters, timeline, Live pairing) and
   the agendr omnibox; answer their crate requests.
-- Open (user): a folder of about 10 real `.tgs` stickers for
-  `TUILIBR_TEST_TGS_DIR=<dir> cargo test --lib lottie -- --ignored` (blocks TGS).
 - Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
   `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`.
 - Open (user): the codeberg repository and `rev` versus `branch` for phase 5.
@@ -32,6 +30,33 @@ Each app session reads this file before it touches a shared part.
 Status: see `## Handoff` above and the table of phases below. The tuilibr session (`tuilibr-82`)
 owns the crate code and the picture module; the schnattr session orchestrates the phases across
 the apps.
+
+## Later
+
+The work that waits, by the decision of the maintainer (2026-11-19). Each item names what it
+waits for.
+
+- **TGS stickers (Telegram animated stickers).** The `tlottie` spike passed on test animations
+  (worktree `agent-ae079fd3ff597b1d9`, module `pictures::lottie`, git `rev` `92df98dc…`, 2.7 ms
+  per sticker, +0.63 MB). Waits for a folder of about 10 real `.tgs` stickers and the run
+  `TUILIBR_TEST_TGS_DIR=<dir> cargo test --lib lottie -- --ignored`; then the module lands under
+  `pictures::motion` and schnattr shows the stickers.
+- **The test run of the maintainer.** Six checks in a real terminal: the start in herdr, the grid
+  icons in herdr, the late OSC 10 answer, the loss limit, the phase 7 scenarios of phewr and
+  schnattr, the RGBA fast path (measure first). The checklist is in `docs/pictures.md`, "The test
+  run of the maintainer". Waits for the maintainer at the terminal.
+- **Phase 2, the test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm,
+  Terminal.app, SSH). Moved to later on 2026-11-19; `docs/pictures.md`, "The test matrix".
+- **Phase 5, the build for other people.** Waits for the codeberg repository and the choice of
+  `rev` or `branch`; the recipe is under phase 5.
+- **The measured lints in the apps.** The cast lints, `missing_const_for_fn`, `or_fun_call` and
+  `too_long_first_doc_paragraph` are on in the crate only (`lints-allow.toml`). An app takes them
+  when its session wants to.
+- **`unreachable_pub` and `let_underscore_must_use` in schnattr.** Off by the decision of
+  2026-11-11 (775 and 126 hits); a new decision of the maintainer turns them on.
+- **The landed agent worktrees.** `agent-a5be42f24bf332ef7`, `agent-a7746d970e208b2c6`,
+  `agent-aa9151f5671745d4e` and `stateful-shimmying-tulip` hold landed work and can go; keep
+  `agent-ae079fd3ff597b1d9` for the TGS item.
 
 ## Decisions of the maintainer (2026-11-19)
 
