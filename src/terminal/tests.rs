@@ -67,8 +67,10 @@ fn the_entry_and_the_release_mirror_each_other() {
     })
     .unwrap();
     let release = String::from_utf8(release).unwrap();
-    // The modes off in the reverse order, then the cursor and the screen.
+    // The end of an open update, the modes off in the reverse order, then the cursor and the
+    // screen.
     let order = [
+        "\x1b[?2026l",
         "\x1b[?2004l",
         "\x1b[?1004l",
         "\x1b[?1006l",
@@ -94,7 +96,7 @@ fn modes_that_are_off_write_nothing_of_their_own() {
     let mut release = Vec::new();
     release_terminal_to(&mut release, Modes::default(), || Ok(())).unwrap();
     let release = String::from_utf8(release).unwrap();
-    assert_eq!(release, "\x1b[?25h\x1b[?1049l");
+    assert_eq!(release, "\x1b[?2026l\x1b[?25h\x1b[?1049l");
 }
 
 #[test]

@@ -42,15 +42,8 @@ fn write_cache_file_with(
     }
 
     let sequence = temp_sequence.fetch_add(1, Ordering::Relaxed);
-    let cache_name = cache_path
-        .file_name()
-        .ok_or_else(no_name)?
-        .to_string_lossy();
-    let temp_path = parent.join(format!(
-        ".{cache_name}.{}.{}.tmp",
-        std::process::id(),
-        sequence
-    ));
+    // The name of `files`, so `remove_stale_temp_file` and the sweep of `files` know it.
+    let temp_path = crate::files::temp_path(cache_path)?;
     if let Err(error) = write(&temp_path) {
         #[expect(
             clippy::let_underscore_must_use,

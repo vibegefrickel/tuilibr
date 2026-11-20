@@ -115,3 +115,15 @@ fn a_text_that_keeps_its_end_drops_the_first_parts_and_cuts_at_the_start() {
     assert_eq!(truncate_start("abc", 1), "…");
     assert_eq!(truncate_start("abc", 0), "");
 }
+
+#[test]
+fn a_byte_size_scales_its_unit() {
+    use super::super::byte_size;
+    assert_eq!(byte_size(0), "0 B");
+    assert_eq!(byte_size(512), "512 B");
+    assert_eq!(byte_size(1023), "1023 B");
+    assert_eq!(byte_size(2048), "2.0 KB");
+    assert_eq!(byte_size(5 * 1024 * 1024), "5.0 MB");
+    assert_eq!(byte_size(3 * 1024 * 1024 * 1024), "3.0 GB");
+    assert_eq!(byte_size(2048 * 1024 * 1024 * 1024 * 1024), "2048.0 TB");
+}

@@ -4,12 +4,14 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::{Color, Modifier, Style},
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Padding, Paragraph},
 };
 
-use super::style::dim;
+use unicode_width::UnicodeWidthStr as _;
+
+use super::style::{dim, heading};
 use crate::cells::to_u16;
 
 /// A heading and its keys with what they do. The lifetime lets an app build rows at run time, on
@@ -39,6 +41,63 @@ pub struct HelpView<'a> {
     pub key_width: u16,
     /// The cells of the description column.
     pub text_width: u16,
+}
+
+impl<'a> HelpView<'a> {
+    /// The width of the box with two columns, so that a const assert of the app can hold it
+    /// against the screen width that the app promises.
+    pub const fn width(&self) -> u16 {
+        help_width(self.key_width, self.text_width)
+    }
+
+    /// The first heading, key or description that does not fit its column, or `None`. The draw
+    /// cuts a longer text without a sign, so the test of an app asserts `None`.
+    pub fn first_misfit(&self) -> Option<&'a str> {
+        let [left, right] = self.columns;
+        first_misfit(left, self.key_width, self.text_width)
+            .or_else(|| first_misfit(right, self.key_width, self.text_width))
+    }
+
+    /// Whether every text fits its column and the box shows every row on a screen of `area`, so
+    /// that the test of an app checks its smallest screen in one assert.
+    pub fn fits(&self, area: Rect) -> bool {
+        let (width, height) = help_size(area, self);
+        self.first_misfit().is_none()
+            && width <= area.width.saturating_sub(4)
+            && height <= area.height.saturating_sub(2)
+    }
+}
+
+/// The width of the help box with two columns of `key_width` + `text_width` cells: the columns,
+/// the gap, the padding and the border. A const assert of an app holds it against a screen.
+pub const fn help_width(key_width: u16, text_width: u16) -> u16 {
+    2 * (key_width + text_width) + COLUMN_GAP + DIALOG_FRAME_COLUMNS
+}
+
+/// The first text of `sections` that does not fit, or `None`, so that a test finds a cut text.
+///
+/// A heading fits in `key_width + text_width` cells. A key needs one free cell after it, so it
+/// fits in fewer than `key_width` cells. A description fits in `text_width` cells.
+pub fn first_misfit<'a>(
+    sections: &[Section<'a>],
+    key_width: u16,
+    text_width: u16,
+) -> Option<&'a str> {
+    let (key_width, text_width) = (usize::from(key_width), usize::from(text_width));
+    sections.iter().find_map(|(title, keys)| {
+        if title.width() > key_width + text_width {
+            return Some(*title);
+        }
+        keys.iter().find_map(|(key, text)| {
+            if key.width() >= key_width {
+                Some(*key)
+            } else if text.width() > text_width {
+                Some(*text)
+            } else {
+                None
+            }
+        })
+    })
 }
 
 /// The one dialog box of every app: a help page, a confirm question, a form or a downloads window
@@ -147,7 +206,7 @@ const HINT: &str = "any key closes";
 /// then keeps its margin of 4 columns and 2 rows.
 pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
     let column = view.key_width + view.text_width;
-    let width = 2 * column + COLUMN_GAP + DIALOG_FRAME_COLUMNS;
+    let width = view.width();
     let one_column_height = column_rows(&view.columns.concat()) + DIALOG_FRAME_ROWS;
     if area.width < width + 4 && one_column_height <= area.height.saturating_sub(2) {
         return (column + DIALOG_FRAME_COLUMNS, one_column_height);
@@ -166,16 +225,13 @@ pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
 /// its own help body renders these lines through `dialog_box`, so the keys look the same in each
 /// app.
 pub fn section_lines<'a>(sections: &[Section<'a>], key_width: u16) -> Vec<Line<'a>> {
-    let heading = Style::default()
-        .fg(Color::Yellow)
-        .add_modifier(Modifier::BOLD);
-    let key = Style::default().add_modifier(Modifier::BOLD);
+    let key = Style::new().add_modifier(Modifier::BOLD);
     let mut out = Vec::new();
     for (index, (title, keys)) in sections.iter().enumerate() {
         if index > 0 {
             out.push(Line::default());
         }
-        out.push(Line::styled(*title, heading));
+        out.push(Line::styled(*title, heading()));
         out.extend(keys.iter().map(|(name, text)| {
             Line::from(vec![
                 Span::styled(

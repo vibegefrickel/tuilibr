@@ -10,7 +10,7 @@ use ratatui::{
 
 use super::{
     split::Split,
-    style::{accent, dim},
+    style::{accent, dim, dim_color},
 };
 
 /// The one line between the list and the main pane: vertical beside it, horizontal above it,
@@ -69,10 +69,12 @@ pub fn join_rule(buffer: &mut Buffer, area: Rect, y: u16, active: bool) {
     }
 }
 
-/// The accent for the box of the pane with the focus, the same accent as the selected row and the
+/// The colour of a box, so that an app that draws its own frame around a cell matches the panes.
+///
+/// It is the accent for the pane with the focus, the same accent as the selected row and the
 /// active tab of the multiplexer, else the dark gray of the lines.
-const fn box_color(active: bool) -> Color {
-    if active { accent() } else { Color::DarkGray }
+pub const fn box_color(active: bool) -> Color {
+    if active { accent() } else { dim_color() }
 }
 
 /// The line under a header, across its `row`. It stops at the divider.

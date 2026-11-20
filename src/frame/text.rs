@@ -1,5 +1,5 @@
-//! Text that fits a number of terminal cells: the measure, the cut with `…`, and a row with a
-//! left and a right side.
+//! Text that fits a number of terminal cells: the measure, the cut with `…`, a row with a left
+//! and a right side, and the short text of a byte count.
 
 use ratatui::text::{Line, Span};
 
@@ -98,4 +98,20 @@ fn cut(spans: Vec<Span<'static>>, room: usize) -> Vec<Span<'static>> {
 /// The columns that `spans` take.
 pub fn spans_width(spans: &[Span<'_>]) -> usize {
     spans.iter().map(|span| display_width(&span.content)).sum()
+}
+
+/// A byte count as a short text for a detail row: `512 B`, `2.0 KB`, `5.0 MB`. A unit is 1024 of
+/// the unit before it, and TB is the largest unit.
+pub fn byte_size(bytes: u64) -> String {
+    const UNITS: [&str; 5] = ["B", "KB", "MB", "GB", "TB"];
+    let mut value = bytes as f64;
+    let mut unit = 0;
+    while value >= 1024.0 && unit < UNITS.len() - 1 {
+        value /= 1024.0;
+        unit += 1;
+    }
+    match UNITS.get(unit) {
+        Some(name) if unit > 0 => format!("{value:.1} {name}"),
+        _ => format!("{bytes} B"),
+    }
 }

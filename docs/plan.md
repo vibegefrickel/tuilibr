@@ -42,8 +42,14 @@
     switch (`/tmp/<app>-brief-loop-player.md`);
   - batch A (switches to existing exports): agendr, phewr, schnattr, youtr
     (`/tmp/<app>-brief-crate-switch-a.md`);
-  - batches B and C (new UI helpers and std-only plumbing: atomic write, capped log, XDG dirs)
-    build in a tuilibr worktree; then one brief per app.
+  - batches B and C are in the main tree: `frame::{buffer, DoubleClick, scroll_to_show,
+    byte_size, heading, accent_bold, box_color, *_color}`, `text_field::{line_edit_for_key,
+    TextField::edit_text}`, `terminal::{spawn_reader, spawn_filtered_reader, ReaderPause,
+    Session::lend, synchronized, draw_synchronized}`, `cells::{round_to_*, trunc_to_*,
+    clamp_to_u16}`, and the std-only modules `programs`, `files`, `log_file`, `dirs`. The apps
+    adopt them (`/tmp/<app>-brief-crate-bc.md`, with the one-time XDG folder moves).
+  - the loop player got three fixes from phewr: `clear()` empties the boxes, a failure lasts
+    one visit, the budget counts every stored loop first.
 - Open (agent): answer the crate requests of the five apps. Every other open item needs the
   maintainer at a terminal (the test run, the test matrix, the RGBA measure).
 - Open (user): push `main` (8 commits ahead of `origin`). No worktree is left.

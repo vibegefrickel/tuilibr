@@ -28,7 +28,7 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 pub mod editor;
 pub mod keys;
 
-pub use keys::{Edit, edit_for_key};
+pub use keys::{Edit, edit_for_key, line_edit_for_key};
 
 /// The name in the temporary file of the editor: the app name of the pictures when the app set
 /// one, else the crate name.
@@ -235,6 +235,18 @@ impl TextField {
     /// Deletes the text from the cursor to the end, like readline `C-k`.
     pub fn delete_to_end(&mut self) -> bool {
         self.delete_range(self.cursor, self.character_count())
+    }
+
+    /// Runs one edit of the key map and returns `true` only when the text changed, so that a
+    /// caller runs its filter or marks its form as changed only then. A cursor move gives `false`.
+    pub fn edit_text(&mut self, edit: Edit) -> bool {
+        if edit.moves_only() {
+            self.apply(edit);
+            return false;
+        }
+        // Each text edit reports `true` only for a changed text: an insert always changes it, a
+        // delete and a clear change it when they remove a character.
+        self.apply(edit)
     }
 
     /// Runs one edit of the key map. Returns `true` when the text or the cursor changed.

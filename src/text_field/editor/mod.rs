@@ -23,11 +23,13 @@ use std::{
     fmt,
     fs::{self, OpenOptions},
     io::{self, Write},
-    os::unix::fs::{OpenOptionsExt, PermissionsExt},
+    os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
     process::{Command, ExitStatus, Stdio},
     sync::atomic::{AtomicU64, Ordering},
 };
+
+use crate::programs::find_on_path;
 
 /// The editor when `$VISUAL` and `$EDITOR` are empty.
 const FALLBACK_EDITOR: &str = "nvim";
@@ -86,7 +88,7 @@ pub fn editor_command(variable: impl Fn(&str) -> Option<OsString>) -> Option<Str
         .find(|command| !command.trim().is_empty())
         .or_else(|| {
             variable("PATH")
-                .filter(|path| program_in_path(FALLBACK_EDITOR, path))
+                .filter(|path| find_on_path(FALLBACK_EDITOR, Some(path)).is_some())
                 .map(|_| FALLBACK_EDITOR.to_owned())
         })
 }
@@ -143,17 +145,6 @@ pub fn finish_text(edited: &str, multi_line: bool) -> String {
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join(" ")
-}
-
-/// Reports whether `PATH` holds an executable file `program`, before the app writes a file.
-fn program_in_path(program: &str, path: &OsStr) -> bool {
-    env::split_paths(path).any(|directory| is_executable(&directory.join(program)))
-}
-
-/// Reports whether `path` is a file that a user can execute.
-fn is_executable(path: &Path) -> bool {
-    fs::metadata(path)
-        .is_ok_and(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
 }
 
 /// A file only for the owner. Its drop erases it, so that no path out of an edit leaves it.

@@ -483,13 +483,34 @@ mod keys {
     }
 
     #[test]
-    fn ctrl_w_u_and_k_delete_a_word_the_start_and_the_end() {
+    fn ctrl_w_and_k_delete_a_word_and_the_end() {
         assert_eq!(
             after(control('w'), "one two three", 8),
             ("one three".into(), 4)
         );
-        assert_eq!(after(control('u'), "one two", 4), ("two".into(), 0));
         assert_eq!(after(control('k'), "one two", 3), ("one".into(), 3));
+    }
+
+    #[test]
+    fn ctrl_u_clears_the_whole_text_wherever_the_cursor_is() {
+        assert_eq!(edit_for_key(&control('u')), Some(Edit::Clear));
+        assert_eq!(after(control('u'), "one two", 4), (String::new(), 0));
+        assert_eq!(after(control('u'), "one two", 0), (String::new(), 0));
+    }
+
+    #[test]
+    fn a_character_with_alt_types_the_character() {
+        assert_eq!(after(alt(KeyCode::Char('x')), "ab", 1), ("axb".into(), 2));
+        assert_eq!(after(alt(KeyCode::Char('@')), "", 0), ("@".into(), 1));
+        assert_eq!(
+            after(
+                with(KeyCode::Char('B'), KeyModifiers::ALT | KeyModifiers::SHIFT),
+                "",
+                0
+            ),
+            ("B".into(), 1),
+            "only a small b moves one word"
+        );
     }
 
     #[test]
@@ -499,7 +520,7 @@ mod keys {
             plain(KeyCode::Esc),
             plain(KeyCode::Tab),
             control('x'),
-            alt(KeyCode::Char('x')),
+            alt(KeyCode::Enter),
             with(
                 KeyCode::Char('a'),
                 KeyModifiers::CONTROL | KeyModifiers::ALT,
@@ -543,5 +564,57 @@ mod keys {
         assert!(!field.apply(Edit::InsertText(String::new())));
         assert!(field.apply(Edit::InsertText("xy".to_owned())));
         assert_eq!(field.text(), "abxyc");
+    }
+}
+
+mod text_edits {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    use super::super::{Edit, TextField, line_edit_for_key};
+    use super::field_at;
+
+    #[test]
+    fn a_cursor_move_is_no_text_edit() {
+        let mut field = field_at("abc", 1);
+        for edit in [Edit::Left, Edit::End, Edit::WordLeft, Edit::OpenEditor] {
+            assert!(!field.edit_text(edit.clone()), "{edit:?}");
+        }
+        assert_eq!(field.text(), "abc");
+        assert_eq!(field.cursor(), 0, "the moves still run");
+    }
+
+    #[test]
+    fn a_changed_text_is_a_text_edit_and_a_delete_of_nothing_is_not() {
+        let mut field = TextField::from("ab");
+        assert!(field.edit_text(Edit::Insert('c')));
+        assert!(
+            !field.edit_text(Edit::DeleteUnder),
+            "nothing under the cursor"
+        );
+        assert!(field.edit_text(Edit::DeleteBefore));
+        assert!(!field.edit_text(Edit::InsertText(String::new())));
+        assert!(field.edit_text(Edit::Clear));
+        assert!(!field.edit_text(Edit::Clear), "the text is empty already");
+        assert!(!field.edit_text(Edit::DeleteToStart));
+    }
+
+    #[test]
+    fn the_line_map_leaves_up_down_and_the_editor_to_the_app() {
+        let key = |code, modifiers| KeyEvent::new(code, modifiers);
+        for other in [
+            key(KeyCode::Up, KeyModifiers::NONE),
+            key(KeyCode::Down, KeyModifiers::NONE),
+            key(KeyCode::Char('g'), KeyModifiers::CONTROL),
+        ] {
+            assert_eq!(line_edit_for_key(&other), None, "{other:?}");
+        }
+        assert_eq!(
+            line_edit_for_key(&key(KeyCode::Char('u'), KeyModifiers::CONTROL)),
+            Some(Edit::Clear)
+        );
+        assert_eq!(
+            line_edit_for_key(&key(KeyCode::Char('x'), KeyModifiers::NONE)),
+            Some(Edit::Insert('x'))
+        );
     }
 }

@@ -204,8 +204,10 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         place_loop_frame(cell, screen, frame, play, self.tick, cells)
     }
 
-    /// The loops and the jobs of the boxes that this frame does not show go. Their ids leave
-    /// the terminal at the next flush. The cost is one hash lookup per loop and per job.
+    /// The loops, the jobs and the marks of the boxes that this frame does not show go. Their ids
+    /// leave the terminal at the next flush. A failure lasts one visit: a key can name another
+    /// file later (a grid index), and a missing program can come. The cost is one hash lookup per
+    /// loop, job and mark.
     pub fn drop_hidden(&mut self) {
         let (play, stale) = (&self.play, &mut self.stale);
         self.loops.retain(|key, cell| {
@@ -223,6 +225,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             keep
         });
         self.over_budget.retain(|key| play.contains_key(key));
+        self.failed.retain(|key| play.contains_key(key));
     }
 
     /// Starts the jobs of the playing boxes without a loop in the order of the screen, within
@@ -292,7 +295,14 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         kept_bytes: usize,
     ) -> io::Result<()> {
         let stills_wait = !screen.waiting().is_empty();
-        let mut kept = kept_bytes;
+        // Every stored loop of the frame counts before the first send, so a loop that waits in
+        // front of a stored one cannot push the terminal above its budget.
+        let mut kept = self
+            .shown
+            .iter()
+            .filter_map(|key| self.loops.get(key))
+            .filter(|cell| is_stored(cell, screen))
+            .fold(kept_bytes, |sum, cell| sum.saturating_add(cell.bytes()));
         for key in &self.shown {
             let Some(cell) = self.loops.get(key) else {
                 continue;
@@ -300,11 +310,10 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             for &id in &cell.ids {
                 frame.keep(id);
             }
-            let bytes = cell.bytes();
-            if cell.placed.is_some() || cell.ids.iter().all(|&id| screen.stores(id)) {
-                kept = kept.saturating_add(bytes);
+            if is_stored(cell, screen) {
                 continue;
             }
+            let bytes = cell.bytes();
             let play = self.play.get(key).copied().unwrap_or(false);
             if !play || stills_wait || update.pixel_bytes() >= EMIT_PASS_BYTES {
                 continue;
@@ -393,8 +402,9 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             .for_each(|job| job.cancel.store(true, Ordering::Relaxed));
     }
 
-    /// Drops every loop, job, failure and budget mark, for a new list or a new box size. The
-    /// ids of the loops go to the stale list, and the results of the old jobs go away.
+    /// Drops every loop, job, failure and budget mark, and the boxes of the last frame, for a
+    /// new list or a new box size. The ids of the loops go to the stale list, and the results of
+    /// the old jobs go away. A `start_jobs` before the next frame starts no job.
     pub fn clear(&mut self) {
         self.cancel_jobs();
         self.running.clear();
@@ -404,6 +414,8 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             .for_each(|(_, cell)| stale.extend(cell.ids));
         self.failed.clear();
         self.over_budget.clear();
+        self.shown.clear();
+        self.play.clear();
         self.generation = self.generation.wrapping_add(1);
     }
 
@@ -513,4 +525,9 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             self.stale.extend(old.ids);
         }
     }
+}
+
+/// True when the terminal holds every frame of `cell`: it is placed, or the screen stores each id.
+fn is_stored(cell: &CellLoop, screen: &Screen) -> bool {
+    cell.placed.is_some() || cell.ids.iter().all(|&id| screen.stores(id))
 }

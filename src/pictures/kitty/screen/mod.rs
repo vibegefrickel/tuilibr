@@ -35,14 +35,9 @@ const MAX_LOSSES: usize = 3;
 /// The time within which `MAX_LOSSES` losses of one picture stop its new transfers.
 const LOSS_WINDOW: Duration = Duration::from_secs(10);
 
-/// The start and the end of a synchronized update: the terminal shows the bytes between them in one
-/// step.
-///
-/// The mode is not a counter, so an app can put one update around the cells of a frame and the
-/// flush: the end of the flush ends that update, and a second end does nothing.
-pub const BEGIN_SYNC: &[u8] = b"\x1b[?2026h";
-/// The end of a synchronized update. A second end does nothing.
-pub const END_SYNC: &[u8] = b"\x1b[?2026l";
+/// The marks of a synchronized update live in `terminal`. These paths stay for the apps that
+/// import them from here.
+pub use crate::terminal::{BEGIN_SYNC, END_SYNC};
 
 /// Which placements a flush writes.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

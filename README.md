@@ -3,11 +3,23 @@
 tuilibr is a Rust library crate with the terminal UI parts that schnattr, youtr, phewr, agendr and
 wettr share. `frame` holds the screen frame: the split into a list pane and a main pane, the lines
 and the boxes, the two-row list entry, the header, the status bar, the dialog box, the clock and the
-text helpers, the question row, the omnibox and the layout toggle. `text_field` holds the text
-input with its key map and the external editor, `terminal` the session of the terminal and its
-start queries, and `time` the texts of time on jiff. `pictures` holds the picture module: the
-decode routes, the resize, the shapes, the decode pool with its caches, the Kitty layer and the
-animated previews of `motion`. `docs/plan.md` holds the plan.
+text helpers, the question row, the omnibox, the layout toggle, the double click, the scroll that
+keeps a line in view and the text of a drawn buffer for tests. `text_field` holds the text input
+with its key map and the external editor. `terminal` holds the session of the terminal and its
+loan to a child process, the synchronized update, the reader thread and the start queries. `time`
+holds the texts of time on jiff, and `cells` the saturating number conversions. `pictures` holds
+the picture module: the decode routes, the resize, the shapes, the decode pool with its caches,
+the Kitty layer and the animated previews of `motion`.
+
+Four modules hold the app plumbing outside the UI. They use std only and need no feature:
+
+- `dirs`: the XDG folders of an app (config, cache, state, data).
+- `files`: the atomic write and the sweep of the stale temp files.
+- `log_file`: the log file with a cap on its size, safe for several processes.
+- `programs`: the PATH lookup, the open of a link, the copy to the clipboard and the detached
+  launch.
+
+`docs/plan.md` holds the plan.
 
 The crate is not on crates.io. An app uses it as a path dependency:
 

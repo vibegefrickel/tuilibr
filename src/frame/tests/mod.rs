@@ -1,5 +1,7 @@
 //! The tests of the frame: plain asserts on the text helpers and on a `TestBackend` buffer.
 
+mod buffer;
+mod click;
 mod clock;
 mod help;
 mod layout;
@@ -9,8 +11,9 @@ mod text;
 mod text_input;
 mod widgets;
 
-use ratatui::{Frame, Terminal, backend::TestBackend, buffer::Buffer, layout::Rect};
+use ratatui::layout::Rect;
 
+use super::buffer::{drawn, row};
 use super::{CellSize, Pictures, Shade};
 
 /// A picture engine that keeps a log of its calls. It has a picture of `size` cells, or none.
@@ -59,18 +62,4 @@ impl Pictures for FakePictures {
     fn shows_pictures(&self) -> bool {
         !self.no_pictures
     }
-}
-
-/// The buffer after `draw` ran on a terminal of `width` x `height`.
-fn drawn(width: u16, height: u16, draw: impl FnOnce(&mut Frame<'_>)) -> Buffer {
-    let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
-    terminal.draw(draw).unwrap();
-    terminal.backend().buffer().clone()
-}
-
-/// The text of row `y` of `buffer`.
-fn row(buffer: &Buffer, y: u16) -> String {
-    (0..buffer.area.width)
-        .map(|x| buffer[(x, y)].symbol())
-        .collect()
 }

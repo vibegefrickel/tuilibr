@@ -6,9 +6,11 @@ first. Then read the status section of `docs/plan.md`.
 ## What this is
 
 tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr and
-wettr share. Each app uses it as a path dependency on `../tuilibr`. The crate knows no app type and
-no app data. An app fills plain view structs, and the crate draws them. `docs/plan.md` holds the
-decisions, the phases and the rules. The schnattr session orchestrates the plan.
+wettr share. Each app uses it as a path dependency on `../tuilibr`. The crate also holds the app
+plumbing that the apps share outside the UI: the XDG folders, the atomic write, the capped log and
+the external programs. The crate knows no app type and no app data. An app fills plain view
+structs, and the crate draws them. `docs/plan.md` holds the decisions, the phases and the rules.
+The schnattr session orchestrates the plan.
 
 ## Build, test, run
 
@@ -36,6 +38,10 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
   stickers behind `lottie`. An app that uses the frame only sets `default-features = false`. A
   feature gates a native library, a git source or a measured build cost, nothing else.
   `test-support` is the one exception: it builds the test helpers for the tests of an app.
+- **The plumbing modules `dirs`, `files`, `log_file` and `programs` import `std` only.** They
+  build without a feature, so agendr gets them with `default-features = false`. They take each
+  app name and each program name as an argument. They use no async runtime and no log crate: a
+  callback or a `Write` impl connects them to the app.
 - **The lint tables of the apps follow this one.** `just lints-diff` compares each app table with
   the table of this crate; an intended difference has a line with its reason in
   `lints-allow.toml`, every other difference is drift. Run it on demand, not in `check`.
@@ -57,10 +63,17 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 
 ```
 src/lib.rs        the crate doc and the module list
+src/cells.rs      the saturating conversions of usize, u16 and f64
 src/frame/        the screen frame: split, lines, style, entry, header, bar, help, text, clock,
+                  click, scroll, buffer (the text of a drawn buffer for tests),
                   pictures (the Pictures trait), tests/
 src/text_field/   the text input with a character cursor, the readline key map, the wrap, the editor
-src/terminal/     the session of the terminal, the panic hook, the start queries, the late answers
+src/terminal/     the session of the terminal and its loan, the panic hook, the synchronized
+                  update, the reader thread, the start queries, the late answers
+src/dirs/         the XDG folders of an app: config, cache, state, data
+src/files/        the atomic write and the sweep of the stale temp files
+src/log_file/     the log file with a cap, safe for several processes
+src/programs/     the PATH lookup, open, copy to the clipboard, the detached launch
 src/time/         the relative age, the bar date and time, the media length, the minute clock
 src/pictures/     the picture module: decode, resize, shape, jobs, kitty, names, test_support
 tests/fixtures/   the fixtures of the picture module tests, static files

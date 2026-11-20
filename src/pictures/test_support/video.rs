@@ -7,11 +7,11 @@
 use crate::pictures::motion::decoder::{Decoder, FrameStream};
 use crate::pictures::motion::probe::{Rate, Samples, VideoInfo};
 use crate::pictures::motion::tone_map::Primaries;
+use crate::programs::find_on_path;
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsString;
 use std::io;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::sync::mpsc;
@@ -240,19 +240,6 @@ pub const fn animation_info() -> VideoInfo {
 /// The header of a 640x480 clip at 10 frames per second.
 pub const fn clip_info() -> VideoInfo {
     info_of(640, 480, 10.0)
-}
-
-/// The first executable `program` in the PATH value `path`, like a shell lookup. Only the
-/// real-program tests look up PATH. The module itself takes the programs from the app.
-fn find_on_path(program: &str, path: Option<&OsStr>) -> Option<PathBuf> {
-    std::env::split_paths(path?)
-        .filter(|directory| !directory.as_os_str().is_empty())
-        .map(|directory| directory.join(program))
-        .find(|candidate| {
-            candidate.metadata().is_ok_and(|metadata| {
-                metadata.is_file() && metadata.permissions().mode() & 0o111 != 0
-            })
-        })
 }
 
 /// The real `program` on PATH, or `None` with a note: the test skips.

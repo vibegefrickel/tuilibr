@@ -76,15 +76,20 @@ impl Start {
         }
     }
 
-    /// A terminal without the Kitty graphics protocol, for a test without a terminal.
-    #[cfg(any(test, feature = "test-support"))]
+    /// A terminal without the Kitty graphics protocol, for an app that asks the terminal nothing
+    /// (its pictures are off) and for a test without a terminal. The cell is 10 x 20 pixels, the
+    /// shape of a common cell, so a square box keeps its columns.
     pub fn without_kitty() -> Self {
         Self {
-            kitty: false,
-            ..Self::for_kitty(CellSize {
+            cell: CellSize {
                 width: 10,
                 height: 20,
-            })
+            },
+            cell_from_terminal: false,
+            kitty: false,
+            backend: KittyBackend::default(),
+            foreground: None,
+            owed: LateAnswers::default(),
         }
     }
 }

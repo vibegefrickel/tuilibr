@@ -227,9 +227,14 @@ The rules of the player:
    it runs every frame.
 3. **The results.** A loop needs at least 2 frames. A loop with fewer frames fails, and its box
    keeps the still. A result of a job that no longer runs goes away. `clear` starts a new
-   generation, and a result of an older generation goes away.
-4. **The budget.** A loop above the budget of the terminal moves its ids to the stale list. Its
-   box keeps the still until it leaves the screen.
+   generation, and a result of an older generation goes away. A failure lasts one visit: a key
+   can name another file later (a grid index), and a missing program can come. So a corrupt or
+   hostile video runs ffmpeg again at each visit of its box, within the job cap and the cancel
+   of a hidden box (accepted by phewr and schnattr, 2026-11-20). `clear` also forgets the boxes
+   of the last frame, so a `start_jobs` before the next frame starts no job.
+4. **The budget.** Every stored loop of the frame counts before the first send. A loop above
+   the budget of the terminal moves its ids to the stale list. Its box keeps the still until it
+   leaves the screen.
 5. **The wake.** `next_wake` gives the exact time of the next frame change through
    `LoopClock::instant_of`. It gives zero when a loop waits for its transfer or shows an old
    frame. The player has no fixed poll.

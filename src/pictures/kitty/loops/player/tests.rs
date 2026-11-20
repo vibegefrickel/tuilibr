@@ -200,6 +200,7 @@ fn a_result_of_an_old_job_goes_away() {
     let before = start(&mut player).pop().unwrap();
     player.clear();
     assert!(before.cancel().load(Ordering::Relaxed));
+    show(&mut player, &[2], epoch);
     let after = start(&mut player).pop().unwrap();
     player.ready(loop_of(before, 2), Loops::Ticks);
     assert!(player.ids_of(&2).is_empty());
@@ -483,4 +484,70 @@ fn the_debug_output_holds_counts() {
     let text = format!("{player:?}");
     assert!(text.contains("loops: 1"), "{text}");
     assert!(!text.contains("frames"), "{text}");
+}
+
+#[test]
+fn clear_forgets_the_boxes_of_the_last_frame() {
+    let (mut player, epoch) = player(LoopLimits::default());
+    show(&mut player, &[1, 2], epoch);
+    player.clear();
+    assert!(
+        start(&mut player).is_empty(),
+        "no job before the next frame"
+    );
+    show(&mut player, &[3], epoch);
+    assert_eq!(keys(&start(&mut player)), vec![3]);
+}
+
+#[test]
+fn a_failure_lasts_one_visit() {
+    let (mut player, epoch) = player(LoopLimits::default());
+    show(&mut player, &[1], epoch);
+    player.start_jobs(|_| false);
+    assert!(
+        start(&mut player).is_empty(),
+        "no second try on the same visit"
+    );
+    show(&mut player, &[], epoch);
+    player.drop_hidden();
+    show(&mut player, &[1], epoch);
+    assert_eq!(
+        keys(&start(&mut player)),
+        vec![1],
+        "a new visit tries again"
+    );
+}
+
+#[test]
+fn the_budget_counts_every_stored_loop_before_a_send() {
+    let (mut player, epoch) = player(LoopLimits::default());
+    // Each loop holds 3 frames of 16 bytes; 60 bytes hold one loop, not two.
+    let mut screen = Screen::with_budget(60);
+    show(&mut player, &[1, 2], epoch);
+    let mut tickets = start(&mut player);
+    let second = tickets.pop().unwrap();
+    let first = tickets.pop().unwrap();
+    // The job of the lower box ends first, and its loop goes out.
+    player.ready(loop_of(second, 3), Loops::Ticks);
+    flush(&mut player, &mut screen, Loops::Ticks, &[1, 2]);
+    assert!(player.ids_of(&2).iter().all(|&id| screen.stores(id)));
+    // The upper box comes later. Its loop does not fit beside the stored one.
+    show(&mut player, &[1, 2], epoch);
+    player.ready(loop_of(first, 3), Loops::Ticks);
+    let ids = player.ids_of(&1).to_vec();
+    let mut out = Vec::new();
+    let mut update = Update::new(&mut out);
+    let mut frame = Placements::default();
+    player
+        .send_frames(
+            &mut update,
+            &mut screen,
+            backend(Loops::Ticks),
+            &mut frame,
+            0,
+        )
+        .unwrap();
+    drop(update);
+    assert!(out.is_empty(), "the upper loop stays out");
+    assert_eq!(player.take_stale(), ids);
 }

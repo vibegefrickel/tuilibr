@@ -1,6 +1,6 @@
 //! The help box in two columns, and in one column on a narrow screen with room for the rows.
 
-use super::super::{HelpView, Section, draw_help};
+use super::super::{HelpView, Section, draw_help, first_misfit, help_width};
 use super::{drawn, row};
 use ratatui::layout::Rect;
 
@@ -194,5 +194,46 @@ fn a_low_screen_drops_the_padding_rows_first_and_then_the_margin() {
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 14)),
         Rect::new(8, 1, 24, 8)
+    );
+}
+
+#[test]
+fn the_width_holds_the_two_columns_the_gap_the_padding_and_the_border() {
+    const WIDTH: u16 = help_width(6, 18);
+    assert_eq!(WIDTH, TWO_COLUMNS - 4);
+    assert_eq!(view().width(), WIDTH);
+}
+
+#[test]
+fn the_fit_check_names_the_first_text_that_the_draw_cuts() {
+    assert_eq!(view().first_misfit(), None);
+    let long_key: &[Section<'static>] = &[("Move", &[("ctrl+j", "down")])];
+    assert_eq!(
+        first_misfit(long_key, 6, 18),
+        Some("ctrl+j"),
+        "no free cell"
+    );
+    let long_text: &[Section<'static>] = &[("Move", &[("j", "one row down the list")])];
+    assert_eq!(
+        first_misfit(long_text, 6, 18),
+        Some("one row down the list")
+    );
+    let long_title: &[Section<'static>] = &[("The keys of the list and the panes", &[])];
+    assert_eq!(
+        first_misfit(long_title, 6, 18),
+        Some("The keys of the list and the panes")
+    );
+}
+
+#[test]
+fn the_box_fits_a_screen_with_room_for_its_margin() {
+    assert!(view().fits(Rect::new(0, 0, TWO_COLUMNS, 9)));
+    assert!(
+        !view().fits(Rect::new(0, 0, 20, 30)),
+        "one column is still too wide"
+    );
+    assert!(
+        !view().fits(Rect::new(0, 0, TWO_COLUMNS, 6)),
+        "the rows do not fit"
     );
 }

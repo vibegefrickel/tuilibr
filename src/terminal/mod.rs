@@ -1,6 +1,8 @@
-//! The terminal of an app: the session (raw mode, the alternate screen, the modes and their
-//! restore), the panic hook, the start queries (`start`) and the filter of the late answers
-//! (`answers`).
+//! The terminal of an app: the session, the panic hook, the update, the reader and the start.
+//!
+//! The session holds raw mode, the alternate screen, the modes and their restore, and the loan
+//! to a child process. The synchronized update holds a frame together. The reader thread reads
+//! the events. `start` holds the start queries and `answers` the filter of the late answers.
 //!
 //! Each app had its own version with its own bugs in 2026-11. This one carries every fix and every
 //! test of the three.
@@ -27,8 +29,15 @@ use ratatui::{Terminal, backend::Backend};
 
 #[cfg(feature = "pictures")]
 pub mod answers;
+mod reader;
 #[cfg(feature = "pictures")]
 pub mod start;
+mod sync;
+
+#[cfg(feature = "pictures")]
+pub use reader::spawn_filtered_reader;
+pub use reader::{ReaderPause, spawn_pausable_reader, spawn_reader};
+pub use sync::{BEGIN_SYNC, END_SYNC, draw_synchronized, synchronized};
 
 /// The modes of the terminal that an app turns on for its run.
 ///
@@ -94,12 +103,14 @@ pub fn enter_to(out: &mut impl Write, modes: Modes) -> io::Result<()> {
     Ok(())
 }
 
-/// Gives the terminal back in the reverse order of `enter_to`: the modes off, raw mode off through
-/// `disable_raw`, the cursor shown, the alternate screen left.
+/// Gives the terminal back in the reverse order of `enter_to`: the end of an open synchronized
+/// update, the modes off, raw mode off through `disable_raw`, the cursor shown, the alternate
+/// screen left.
 ///
 /// Every step runs, and the first error returns, so a failed step cannot leave the shell in raw
-/// mode. The app deletes its pictures before the call, because the pictures need the output of the
-/// app.
+/// mode. The end of the update comes first: a panic inside a frame leaves the update open, and the
+/// terminal shows nothing new until it ends. The app deletes its pictures before the call, because
+/// the pictures need the output of the app.
 pub fn release_terminal_to(
     out: &mut impl Write,
     modes: Modes,
@@ -113,6 +124,7 @@ pub fn release_terminal_to(
             first_error = Some(error);
         }
     };
+    note(out.write_all(END_SYNC));
     if modes.bracketed_paste {
         note(execute!(out, DisableBracketedPaste));
     }
@@ -216,6 +228,50 @@ impl Session {
     /// as `suspend`; a second call changes nothing.
     pub fn restore(&mut self) -> io::Result<()> {
         self.suspend()
+    }
+
+    /// Lends the terminal to a child process, such as the editor of the user or a file picker, and
+    /// takes it back for the next frame.
+    ///
+    /// The reader of `pause` stops first, so a keystroke of the child never reaches the app. Then
+    /// the session lets go of the terminal, `run` runs, the session takes the terminal back, and
+    /// `terminal` paints every cell on its next draw. A failed release takes the terminal back and
+    /// returns before `run`. A failed take-back returns its error after `run`; `restore` or the
+    /// drop still gives raw mode back.
+    pub fn lend<B: Backend, T>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        pause: Option<&ReaderPause>,
+        run: impl FnOnce() -> T,
+    ) -> io::Result<T> {
+        if let Some(pause) = pause {
+            pause.pause();
+        }
+        let result = self.lend_unpaused(terminal, run);
+        if let Some(pause) = pause {
+            pause.resume();
+        }
+        result
+    }
+
+    /// `lend` without the pause of the reader.
+    fn lend_unpaused<B: Backend, T>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        run: impl FnOnce() -> T,
+    ) -> io::Result<T> {
+        if let Err(error) = self.suspend() {
+            #[expect(
+                clippy::let_underscore_must_use,
+                reason = "the release error matters more than a failed take-back"
+            )]
+            let _ = self.resume();
+            return Err(error);
+        }
+        let value = run();
+        self.resume()?;
+        repaint_on_next_draw(terminal);
+        Ok(value)
     }
 }
 
