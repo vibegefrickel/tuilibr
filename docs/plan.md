@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 0e158d0
+- Commit: 01766ec
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -26,7 +26,9 @@
   exceptions", brief `/tmp/tuilibr-brief-lints.md`): schnattr, youtr, agendr and wettr take the
   six lints, schnattr also `unreachable_pub` and `let_underscore_must_use`. Done: phewr
   (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`), youtr (21 hits, 20 fixes, 1
-  `expect`), wettr (58 hits, 59 fixes, 2 `expect`s in its new `numbers.rs`). `lints-allow.toml` lists the
+  `expect`), wettr (58 hits, 59 fixes, 2 `expect`s in its new `numbers.rs`), schnattr (`69b15f4`,
+  `d470760`: the six lints, `let_underscore_must_use` 127, `unreachable_pub` 788). All six repos
+  share one table; only `unsafe_code` of schnattr differs. `lints-diff` fails on a stale entry. `lints-allow.toml` lists the
   open lines per app; drop each app's lines when its worker merges (`unsafe_code` stays). Collect the
   PictureStore reports: wettr done (435 tests, 104 lines less), youtr done (292 tests, 148
   lines less, no `lru`, `e0a5a79`), tuilibr `0e158d0`; schnattr: no adoption (2026-11-20). The parts that

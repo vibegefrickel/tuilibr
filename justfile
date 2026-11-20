@@ -79,8 +79,9 @@ apps-check:
     for app in {{ apps }}; do if [ -d "$app" ] && grep -q '^tuilibr' "$app/Cargo.toml"; then echo "== $app"; (cd "$app" && just check); fi; done
 
 # The lint tables of the apps against the table of this crate. Each app keeps its own table; a
-# difference that `lints-allow.toml` does not list is drift and fails the recipe. Run it on demand,
-# not in `check`: it reads the sibling checkouts.
+# difference that `lints-allow.toml` does not list is drift, and so is a listed entry without a
+# difference; both fail the recipe. Run it on demand, not in `check`: it reads the sibling
+# checkouts.
 lints-diff:
     #!/usr/bin/env -S python3 -I
     import pathlib, sys, tomllib
@@ -94,6 +95,7 @@ lints-diff:
     allow = tomllib.loads(pathlib.Path("lints-allow.toml").read_text())
     base = lints("Cargo.toml")
     drift = 0
+    same_all = []
     for app in "{{ apps }}".split():
         manifest = pathlib.Path(app, "Cargo.toml")
         if not manifest.exists():
@@ -106,7 +108,18 @@ lints-diff:
             for key in sorted(set(base) | set(found))
             if base.get(key) != found.get(key) and key not in known
         ]
-        print(f"== {name}: " + ("no drift" if not lines else f"{len(lines)} not listed"))
-        print("\n".join(lines)) if lines else None
-        drift += len(lines)
+        stale = [
+            f"  {key}: listed for {name}, but {name} has the level of tuilibr"
+            for key in sorted(allow.get("app", {}).get(name, {}))
+            if base.get(key) == found.get(key)
+        ]
+        same_all.append({key for key in allow.get("all", {}) if base.get(key) == found.get(key)})
+        state = [f"{len(lines)} not listed"] if lines else []
+        state += [f"{len(stale)} stale"] if stale else []
+        print(f"== {name}: " + (", ".join(state) or "no drift"))
+        print("\n".join(lines + stale)) if lines or stale else None
+        drift += len(lines) + len(stale)
+    for key in sorted(set.intersection(*same_all)) if same_all else []:
+        print(f"  {key}: listed in [all], but every app has the level of tuilibr")
+        drift += 1
     sys.exit(1 if drift else 0)
