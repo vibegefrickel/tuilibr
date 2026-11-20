@@ -71,7 +71,7 @@ audit:
     if grep -q '^insta' Cargo.toml; then CARGO_BUILD_WARNINGS=deny cargo insta test {{ test_profile }} --test-runner nextest --all-targets --unreferenced=reject; fi
 
 # The apps that use this crate through a path dependency. `just apps-check` builds each one.
-apps := "../schnattr ../youtr ../phewr ../agendr"
+apps := "../schnattr ../youtr ../phewr ../agendr ../wettr"
 
 # Run `just check` in each app that uses the crate and exists next to it. A failing app fails
 # the recipe.

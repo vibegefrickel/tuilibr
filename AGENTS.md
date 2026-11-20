@@ -5,9 +5,9 @@ first. Then read the status section of `docs/plan.md`.
 
 ## What this is
 
-tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr and agendr
-share. Each app uses it as a path dependency on `../tuilibr`. The crate knows no app type and no
-app data. An app fills plain view structs, and the crate draws them. `docs/plan.md` holds the
+tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr and
+wettr share. Each app uses it as a path dependency on `../tuilibr`. The crate knows no app type and
+no app data. An app fills plain view structs, and the crate draws them. `docs/plan.md` holds the
 decisions, the phases and the rules. The schnattr session orchestrates the plan.
 
 ## Build, test, run

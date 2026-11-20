@@ -331,6 +331,11 @@ away, no key is lost, and the start takes no longer than in plain Ghostty.
    ~/Projects/dev/kitty-frames-ack.py grid 24`, `grid 32`, `frames 24`, `frames 32`, in plain
    Ghostty and in a herdr pane. When `grid 32` is not faster than `grid 24` in herdr, the idea is
    dead and the item closes.
+7. **The loops after the move to `pictures::motion`** (phase 4d), in Ghostty and in herdr. In
+   phewr, repeat steps 9, 10 and 14 of `~/Pictures/phewr-test/TESTS.md`: every video, animated
+   and Live cell must loop after its still. In schnattr, open a chat with a GIF, a video and a
+   sticker: each preview must loop, and `l` or `o` must open the file in phewr. herdr can run
+   the loops slower than plain Ghostty, but no loop may stop or leave a picture away.
 
 ### Decisions of the maintainer about the module
 

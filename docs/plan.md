@@ -22,10 +22,10 @@
 - Rules of today: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
-tuilibr is one library crate for the terminal UI parts that schnattr, youtr, phewr and agendr share.
-It replaces the copied modules and their sync recipes. This file is the master of the plan. The
-schnattr session is the orchestrator: it drives the phases, and it keeps the status here current.
-Each app session reads this file before it touches a shared part.
+tuilibr is one library crate for the terminal UI parts that schnattr, youtr, phewr, agendr and wettr
+share. It replaces the copied modules and their sync recipes. This file is the master of the plan.
+The schnattr session is the orchestrator: it drives the phases, and it keeps the status here
+current. Each app session reads this file before it touches a shared part.
 
 Status: see `## Handoff` above and the table of phases below. The tuilibr session (`tuilibr-82`)
 owns the crate code and the picture module; the schnattr session orchestrates the phases across
@@ -41,10 +41,10 @@ waits for.
   per sticker, +0.63 MB). Waits for a folder of about 10 real `.tgs` stickers and the run
   `TUILIBR_TEST_TGS_DIR=<dir> cargo test --lib lottie -- --ignored`; then the module lands under
   `pictures::motion` and schnattr shows the stickers.
-- **The test run of the maintainer.** Six checks in a real terminal: the start in herdr, the grid
+- **The test run of the maintainer.** Seven checks in a real terminal: the start in herdr, the grid
   icons in herdr, the late OSC 10 answer, the loss limit, the phase 7 scenarios of phewr and
-  schnattr, the RGBA fast path (measure first). The checklist is in `docs/pictures.md`, "The test
-  run of the maintainer". Waits for the maintainer at the terminal.
+  schnattr, the RGBA fast path (measure first), the loops after phase 4d. The checklist is in
+  `docs/pictures.md`, "The test run of the maintainer". Waits for the maintainer at the terminal.
 - **Phase 2, the test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm,
   Terminal.app, SSH). Moved to later on 2026-11-19; `docs/pictures.md`, "The test matrix".
 - **Phase 5, the build for other people.** Waits for the codeberg repository and the choice of
@@ -826,7 +826,7 @@ The decisions of the tuilibr session for agendr (2026-11-19):
 
 #### Step 5: one time crate and a shared `time` module (the maintainer, 2026-11-19)
 
-All four apps use jiff 1. schnattr moves from the `time` crate to jiff in a worker (`time-to-jiff`,
+All five apps use jiff 1. schnattr moves from the `time` crate to jiff in a worker (`time-to-jiff`,
 auto review, started 2026-11-19). It needs no crate change. jiff 0.2 stays in schnattr under a
 renamed dependency for the dates of grammers, until grammers moves to jiff 1.
 
@@ -1196,7 +1196,7 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
   so each app commit builds against a committed crate.
 - A session that works on an app and finds a defect in a shared part writes the fix into tuilibr,
   not into a local copy. There are no local copies.
-- The main tree of tuilibr compiles at every moment, because four apps and the shared pre-commit
+- The main tree of tuilibr compiles at every moment, because the apps and the shared pre-commit
   hook build against it through the path dependency. A change of the crate that spans more than
   one step runs in a herdr worktree of tuilibr and lands in the main tree in one compiling step.
   On 2026-11-19 a restructure in the main tree broke the check and the commits of every app for
