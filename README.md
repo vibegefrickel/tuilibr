@@ -1,7 +1,7 @@
 # tuilibr
 
-tuilibr is a Rust library crate with the terminal UI parts that schnattr, youtr, phewr, agendr and
-wettr share:
+tuilibr is a Rust library crate with the terminal UI parts that schnattr, youtr, phewr, agendr,
+wettr and glisr share:
 
 - `frame`: the screen frame. It holds the split into two panes, the lines, the boxes, the two-row
   list entry, the header and the status bar. It also holds the dialog box, the clock, the text

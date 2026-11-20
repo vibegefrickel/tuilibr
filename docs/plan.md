@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 04e8215
+- Commit: 64e0aa4
 - Done: one lint table in all six repos; the duplication review in all five apps (the picture
   store, the loop player, batches A, B and C, the plumbing on std, the gap fixes); the XDG
   folders in every app.
@@ -13,7 +13,7 @@
   86 changed files follow STE and name no app.
 - Open (agent): agendr and schnattr switch to `move_once` in their next sessions, from
   `docs/briefs/` (delete each brief when it merges).
-- Open (user): commit tuilibr, then phewr; decide the code notes below.
+- Open (user): push tuilibr and phewr; `just install` in each app; decide the code notes below.
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
 - Health: `just check` green (723, 210 and 613 tests); `just lints-diff` clean; no worker and no
   extra worktree in any repo.
@@ -41,8 +41,8 @@ Findings of the comment cleanup, not fixed. The maintainer decides which to fix.
   next to `frame::SEPARATOR`, test helpers (`patch_means` three times, `red_left_blue_right`).
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
-phewr, agendr and wettr share. It replaces the copied modules and their sync recipes. This file is
-the master of the plan. Each app session reads it before it changes a shared part.
+phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
+file is the master of the plan. Each app session reads it before it changes a shared part.
 
 The tuilibr session (`tuilibr-82`) owns the crate code and the picture module. The schnattr session
 orchestrates the work across the apps.

@@ -5,11 +5,11 @@ first. Then read the `## Handoff` section of `docs/plan.md`.
 
 ## What this is
 
-tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr and
-wettr share. Each app uses it as a path dependency on `../tuilibr`. The crate also holds the shared
-app plumbing outside the UI: the XDG folders, the atomic write, the capped log and the external
-programs. The crate knows no app type and no app data. An app fills plain view structs, and the
-crate draws them. `docs/plan.md` holds the open work, the decisions and the rules. The schnattr
+tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr, wettr
+and glisr share. Each app uses it as a path dependency on `../tuilibr`. The crate also holds the
+shared app plumbing outside the UI: the XDG folders, the atomic write, the capped log and the
+external programs. The crate knows no app type and no app data. An app fills plain view structs, and
+the crate draws them. `docs/plan.md` holds the open work, the decisions and the rules. The schnattr
 session orchestrates the plan.
 
 ## Build, test, run
@@ -62,7 +62,7 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
   or in a worker worktree: it holds the cargo lock of each app and blocks the commit hooks. If a
   change breaks the interface, change each app in the same step and tell the other sessions.
 - **A public text is interface too.** The text of a public error or of any string that an app can
-  read or parse is part of the API. Before it changes, search all five apps and their tests for
+  read or parse is part of the API. Before it changes, search all the apps and their tests for
   the old text. Fix each hit in the same step. Tell every app session.
 
 ## Layout

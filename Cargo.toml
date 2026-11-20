@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.100"
 # Not on crates.io: each app builds it from the git repository through a path or git dependency.
 publish = false
-description = "The shared terminal UI parts of schnattr, youtr, phewr, agendr and wettr: the screen frame, the text field, the terminal session, the time texts and the pictures"
+description = "The shared terminal UI parts of schnattr, youtr, phewr, agendr, wettr and glisr: the screen frame, the text field, the terminal session, the time texts and the pictures"
 license = "MIT"
 
 [lib]
