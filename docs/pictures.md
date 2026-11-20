@@ -184,7 +184,10 @@ The rules of the loops:
     with `tlottie` (pure Rust, a git pin of version 1.0.6) under the caps of rule 6, with
     straight alpha, at half the grid picture size. `lottie_still` gives the first frame at the
     full size. A sticker needs no `Tools`, so an app shows it also without ffmpeg. 11 real
-    stickers of the schnattr cache take 0.09 s in total in a release build (2026-11-20).
+    stickers of the schnattr cache take 0.09 s in total in a release build (2026-11-20). Any
+    contact can send a sticker, so the module takes a TGS file of at most 64 KiB and at most
+    4 MiB of JSON, keeps the limits of `tlottie`, and gives up a loop after 500 ms (the cell
+    keeps its still). The worst hostile sticker of the tests took 0.34 s for the still.
 
 The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The tests that
 start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*`

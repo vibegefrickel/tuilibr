@@ -19,10 +19,10 @@
 - Done (2026-11-20): the five apps follow the dialog padding (`c28a41b`): youtr (293 tests),
   phewr (706), schnattr (1 411, the command page shows its last two lines again), wettr
   (`4729a24`, 430), agendr (`f3c31c1`, 1 303). Each `just check` passed against the crate.
-- Done (2026-11-20): the TGS stickers: `pictures::motion::lottie` (`lottie_still`, `lottie_loop`)
-  with `tlottie`; the 11 real stickers of the schnattr cache pass.
-- Open (agent): schnattr-2b shows the TGS stickers through `motion::lottie`; answer the crate
-  requests of the five apps.
+- Done (2026-11-20): the TGS stickers: `pictures::motion::lottie` behind the feature `lottie`
+  (a git source, youtr stays on crates.io), with limits against hostile stickers (64 KiB TGS,
+  4 MiB JSON, a 500 ms loop budget); schnattr shows them (`4ad2048`, `21b6d9c`).
+- Open (agent): answer the crate requests of the five apps. No crate work waits.
 - Open (user): push `main` to `origin` after each commit.
 - Health: `just check` green (588, 124 and 489 tests, audit clean); `just apps-check` (4 min 14 s)
   and `just lints-diff` green in the five apps; no live herdr worker in tuilibr.

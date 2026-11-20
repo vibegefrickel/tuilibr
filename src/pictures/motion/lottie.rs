@@ -5,6 +5,11 @@
 //! rules of an animated image: its own rate within [`MAX_LOOP_FPS`], at most
 //! [`MAX_ANIMATION_FRAMES`] frames spread evenly over the whole animation, at half the grid
 //! picture size. The still is the first frame at the full size.
+//!
+//! Any contact can send a sticker, so the module limits the work: a TGS file of at most 64 KiB
+//! (the limit of Telegram), at most 4 MiB of JSON, the limits of `tlottie` on layers, shapes and
+//! precomps, and a time budget for a loop. The worst sticker of the tests of 2026-11-20 (2 700
+//! layers with a gradient each) took 0.3 s for the still and 1 s for the loop at 80 MB.
 
 use super::frame_box::frame_box;
 use super::loop_frames::{LoopFrames, MAX_ANIMATION_FRAMES, MAX_LOOP_FPS, loop_box, merge_repeats};
@@ -13,11 +18,18 @@ use image::RgbaImage;
 use std::borrow::Cow;
 use std::io::{self, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tlottie::{CPURenderer, Composition, Limits, RenderOptions};
 
-/// The largest JSON that the gzip can give. A TGS file holds at most 64 KiB of gzip.
-const MAX_JSON_BYTES: u64 = 16 << 20;
+/// The largest TGS file: the limit of Telegram for a sticker.
+const MAX_TGS_BYTES: usize = 64 << 10;
+
+/// The largest JSON, from a TGS file or plain. The largest real sticker of the tests holds 324 KB.
+const MAX_JSON_BYTES: u64 = 4 << 20;
+
+/// The time that one loop can take. The largest real sticker of the tests takes 8 ms. A slower
+/// sticker keeps its still.
+const LOOP_BUDGET: Duration = Duration::from_millis(500);
 
 /// The first two bytes of a gzip stream.
 const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
@@ -37,13 +49,25 @@ pub fn lottie_still(tgs_or_json: &[u8], target: (u32, u32)) -> io::Result<RgbaIm
 /// The loop of a TGS sticker or Lottie JSON for a grid picture of `target` pixels, in the form of
 /// the video and animation loops, so the disk cache and the Kitty layer take it as they are.
 ///
-/// Without two different frames, the cell keeps its still: the error is `InvalidData`. When
-/// `cancel` turns true, the render stops before the next frame with `Interrupted`.
+/// Without two different frames, the cell keeps its still: the error is `InvalidData`, also when
+/// the loop takes longer than [`LOOP_BUDGET`]. When `cancel` turns true, the render stops before
+/// the next frame with `Interrupted`.
 pub fn lottie_loop(
     tgs_or_json: &[u8],
     target: (u32, u32),
     cancel: &AtomicBool,
 ) -> io::Result<LoopFrames> {
+    loop_within(tgs_or_json, target, cancel, LOOP_BUDGET)
+}
+
+/// [`lottie_loop`] with the time budget `budget`.
+fn loop_within(
+    tgs_or_json: &[u8],
+    target: (u32, u32),
+    cancel: &AtomicBool,
+    budget: Duration,
+) -> io::Result<LoopFrames> {
+    let start = Instant::now();
     let composition = parse(tgs_or_json)?;
     let source = (composition.width, composition.height);
     let size = frame_box(source, loop_box(target));
@@ -59,6 +83,12 @@ pub fn lottie_loop(
             ));
         }
         frames.push(render(&mut renderer, point, &mut pixels, size)?);
+        if start.elapsed() > budget {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "the loop takes longer than its budget",
+            ));
+        }
     }
     let (frames, delays) = merge_repeats(frames, delay);
     if frames.len() < 2 {
@@ -77,13 +107,23 @@ pub fn lottie_loop(
 /// The composition of a TGS sticker or of plain Lottie JSON.
 fn parse(tgs_or_json: &[u8]) -> io::Result<Composition> {
     let json = unpack(tgs_or_json)?;
-    Composition::parse(&json, &Limits::default()).map_err(invalid)
+    let limits = Limits {
+        max_input_bytes: usize::try_from(MAX_JSON_BYTES).unwrap_or(usize::MAX),
+        ..Limits::default()
+    };
+    Composition::parse(&json, &limits).map_err(invalid)
 }
 
 /// The JSON: the gzip of a TGS file unpacked, plain JSON as it is.
 fn unpack(data: &[u8]) -> io::Result<Cow<'_, [u8]>> {
     if !data.starts_with(&GZIP_MAGIC) {
         return Ok(Cow::Borrowed(data));
+    }
+    if data.len() > MAX_TGS_BYTES {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "the TGS file is larger than 64 KiB",
+        ));
     }
     let mut json = Vec::new();
     GzDecoder::new(data)
@@ -197,7 +237,7 @@ fn invalid(error: tlottie::Error) -> io::Error {
 
 #[cfg(test)]
 mod tests {
-    use super::{lottie_loop, lottie_still, parse, plan, straight};
+    use super::{MAX_TGS_BYTES, loop_within, lottie_loop, lottie_still, parse, plan, straight};
     use flate2::Compression;
     use flate2::write::GzEncoder;
     use std::io::{ErrorKind, Write};
@@ -303,6 +343,39 @@ mod tests {
         let error = lottie_loop(still.as_bytes(), (128, 128), &AtomicBool::new(false))
             .expect_err("one frame");
         assert_eq!(error.kind(), ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn a_loop_over_its_budget_keeps_the_still() {
+        let error = loop_within(
+            MOVING_SQUARE.as_bytes(),
+            (128, 128),
+            &AtomicBool::new(false),
+            Duration::ZERO,
+        )
+        .expect_err("over the budget");
+        assert_eq!(error.kind(), ErrorKind::InvalidData);
+    }
+
+    #[test]
+    fn large_input_gives_an_error() {
+        let mut tgs = vec![0x1f, 0x8b];
+        tgs.resize(MAX_TGS_BYTES + 1, 0);
+        assert_eq!(
+            lottie_still(&tgs, (64, 64)).unwrap_err().kind(),
+            ErrorKind::InvalidData
+        );
+        // 5 MiB of JSON compress into a few KiB of gzip.
+        let padded =
+            MOVING_SQUARE.replacen('{', &format!("{{\"pad\":\"{}\",", "x".repeat(5 << 20)), 1);
+        let mut encoder = GzEncoder::new(Vec::new(), Compression::best());
+        encoder.write_all(padded.as_bytes()).expect("gzip");
+        let bomb = encoder.finish().expect("gzip");
+        assert!(bomb.len() < MAX_TGS_BYTES);
+        assert_eq!(
+            lottie_still(&bomb, (64, 64)).unwrap_err().kind(),
+            ErrorKind::InvalidData
+        );
     }
 
     #[test]
