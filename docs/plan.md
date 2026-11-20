@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: c0a482b
+- Commit: c28a41b
 - Done: phase 4 steps 1 to 4 and phase 4d in the crate (`terminal`, `TextField` with the editor,
   the question row, `Layout`, the omnibox, `time` on jiff, `pictures::motion`); the stricter lints
   and the shared audit of the repositories; rule 10 "one update per frame".
@@ -16,10 +16,10 @@
   items, see `## Later`.
 - Done (2026-11-20): phewr starts maximal (info screen only), its README names no tuilibr URL;
   the dialog box pads its body by two columns, so the body starts under the title.
-- Open (agent): the five apps change their dialog sizes from `+ 4` to `DIALOG_FRAME_COLUMNS`;
-  done: youtr (293 tests, `TEXT_WIDTH` 26 to 25), phewr (706 tests, no code change), schnattr
-  (1 411 tests, `TEXT_WIDTH` 24 to 23, the command page shows its last two lines again), wettr
-  (`4729a24`, 430 tests, `TEXT_WIDTH` 26 to 25); wait for agendr.
+- Done (2026-11-20): the five apps follow the dialog padding (`c28a41b`): youtr (293 tests),
+  phewr (706), schnattr (1 411, the command page shows its last two lines again), wettr
+  (`4729a24`, 430), agendr (`f3c31c1`, 1 303). Each `just check` passed against the crate.
+- Open (agent): answer the crate requests of the five apps. No crate work waits.
 - Open (user): push `main` to `origin` after each commit.
 - Health: `just check` green (588, 124 and 489 tests, audit clean); `just apps-check` (4 min 14 s)
   and `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
