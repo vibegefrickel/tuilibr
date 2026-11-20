@@ -20,7 +20,10 @@ src/pictures/
              the memory LRU with frame pins, an optional disk cache of thumbnails
   kitty/     the probe, the transfer medium, the terminal store with its budget, the placements
              with ids and a z index, the per-pass byte cap, the synchronized update, the deletes,
-             the resend after a clear, the cell size
+             the resend after a clear, the cell size, and `store::PictureStore`: the decoded
+             pictures of an app by key with their Kitty ids, the loads, the eviction and the
+             frame (wettr and youtr, 2026-11-20; schnattr keeps its own cache with loops,
+             box copies and frame pins)
   motion/    the animated previews, see "The motion module"
   names.rs   the app name: `set_app_name` at start, `app_name` in the module
   test_support/  the fixture writers and the key events for the tests, feature `test-support`
@@ -343,7 +346,9 @@ away, no key is lost, and the start takes no longer than in plain Ghostty.
    and Live cell must loop after its still. In schnattr, open a chat with a GIF, a video, an
    animated WebP sticker and a TGS sticker: each preview must loop, and `l` or `o` must open the
    file in phewr. herdr can run the loops slower than plain Ghostty, but no loop may stop or
-   leave a picture away.
+   leave a picture away. Partly seen on 2026-11-20: MP4s, GIFs and TGS stickers loop in
+   schnattr (schnattr handoff). Still open: the tile grid with a scroll that stops the loops,
+   herdr, a Live Photo, and phewr.
 
 ### Decisions of the maintainer about the module
 

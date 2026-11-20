@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 79391e4
+- Commit: 803c249
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -17,8 +17,24 @@
   fixtures are static files, and nothing needs jpeg-xl.
 - Later: the test run of the maintainer (seven checks) and the other waiting items, see
   `## Later`.
-- Open (agent): answer the crate requests of the five apps. No crate work waits.
-- Open (user): push `main` (7 commits ahead of `origin`). No worktree is left.
+- Done (2026-11-20): the stale texts are current: the crate description, the crate doc, the
+  README and the phase rows 4, 4d and 5.
+- Done (2026-11-20): `pictures::kitty::store::PictureStore<K>` for the picture caches of wettr
+  and youtr (the request of wettr-ec); the briefs are `/tmp/wettr-brief-picture-store.md` and
+  `/tmp/youtr-brief-picture-store.md`, for the next session of each app.
+- Open (agent): the lint match (the maintainer, 2026-11-20, "full match in all 6 + schnattr
+  exceptions", brief `/tmp/tuilibr-brief-lints.md`): schnattr, youtr, agendr and wettr take the
+  six lints, schnattr also `unreachable_pub` and `let_underscore_must_use`. Done: phewr
+  (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`). `lints-allow.toml` lists the
+  open lines per app; drop each app's lines when its worker merges (`unsafe_code` stays). Collect the
+  PictureStore reports: wettr done (435 tests, 104 lines less), youtr done (292 tests, 148
+  lines less, no `lru`), both uncommitted; schnattr: no adoption (2026-11-20). The parts that
+  match are one-line forwards in schnattr already. The rest needs an id range, frame pins, box
+  copy groups, load generations, the loop `Update` and more: a medium refactor for no gain,
+  unless a second app grows loops and box copies.
+- Open (agent): answer the crate requests of the five apps. Every other open item needs the
+  maintainer at a terminal (the test run, the test matrix, the RGBA measure).
+- Open (user): push `main` (8 commits ahead of `origin`). No worktree is left.
 - Health: `just check` green (600, 125 and 490 tests, audit clean); `just lints-diff` shows no
   drift in the five apps; no live herdr worker in tuilibr.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
@@ -129,9 +145,9 @@ the docs, not from a line-by-line comparison:
 | 3 | The picture module moves from phewr into the crate. The three apps use it. | none, the maintainer started it on 2026-11-19 | done, tuilibr `39ba87d`, schnattr `4879d62`, youtr `4ef19f3`, phewr `62a1fb9` |
 | 4a | One bar and one dialog box in every app, as schnattr has them. | none, parallel to phases 2 and 3 | done: schnattr `4879d62`, youtr `4ef19f3`, phewr `ba8d0cd`, agendr `f3c512d` and `9758a96` |
 | 4c | One highlight in every app: the white of the palette. | none | done: tuilibr `ff0396f`, agendr `94e9522`, phewr, youtr and schnattr pass `just apps-check` from `69bb2ae` |
-| 4 | The other shared parts move, one at a time: the terminal setup, the multi-line TextField with the composer, the question row, the layout and the omnibox, the time module. | phase 3 | crate done (steps 1 to 5, tuilibr up to `6624786`); the apps switch in their sessions |
-| 4d | The animated previews: the loops move from phewr into `pictures::motion`; schnattr shows them. | phase 4 | done: tuilibr `fd9b703`, `f79438c`; phewr `82428d8`; schnattr `12fc732`, `f7f66d1`, `c67eb7d`; TGS waits for real stickers (`## Later`) |
-| 5 | The build for other people: a git dependency with a `rev`. | the maintainer (2026-11-19): when tuilibr is done and halfway stable, after phase 4 | open |
+| 4 | The other shared parts move, one at a time: the terminal setup, the multi-line TextField with the composer, the question row, the layout and the omnibox, the time module. | phase 3 | done: the crate (steps 1 to 5, tuilibr up to `6624786`) and the switch of the five apps |
+| 4d | The animated previews: the loops move from phewr into `pictures::motion`; schnattr shows them. | phase 4 | done: tuilibr `fd9b703`, `f79438c`; phewr `82428d8`; schnattr `12fc732`, `f7f66d1`, `c67eb7d`; the TGS stickers: tuilibr `24bb3ac`, schnattr `4ad2048` |
+| 5 | The build for other people: a git dependency with a `rev`. | the maintainer (2026-11-19): when tuilibr is done and halfway stable, after phase 4 | dropped (maintainer, 2026-11-20): the repository is a private backup, the apps keep the path |
 
 ### Phase 0: the crate with the frame (done)
 
@@ -1007,8 +1023,8 @@ ffmpeg on PATH, a cell keeps its still and its play stamp, and the loop job ends
 State (2026-11-19): done in schnattr. The adapters keep the moving media (`12fc732`), the timeline
 shows stills and loops (`f7f66d1`), the Live Photo motion loops and received SVG files are safe
 for `sips` (`c67eb7d`). A received video decodes only when its card is on screen (the
-maintainer). Open: TGS stickers wait for the `tlottie` spike; no real Live Photo and no real video
-loop has run in a terminal yet.
+maintainer). The TGS stickers followed on 2026-11-20 (`4ad2048`). Open: no real Live Photo and no
+real video loop has run in a terminal yet (check 7 of the test run of the maintainer).
 
 What arrives today. `Attachment.mime` is the mime of the network, unchanged. `is_image()` is
 `image/*` without svg, `is_video()` is `video/*` (`schnattr/src/model/message.rs:109-115`).

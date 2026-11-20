@@ -6,6 +6,7 @@ pub mod placement;
 pub mod protocol;
 pub mod query;
 pub mod screen;
+pub mod store;
 pub mod terminal_images;
 
 use image::{RgbImage, RgbaImage};

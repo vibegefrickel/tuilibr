@@ -1,27 +1,40 @@
 # The intended differences between the lint table of tuilibr and the table of each app, for
 # `just lints-diff`. A key is `<group>.<lint>`, the value is the reason. A difference that is not
 # listed here is drift: the recipe lists it and fails.
+#
+# The maintainer decided on 2026-11-20 that every app takes the table of the crate. phewr and
+# agendr have it. The lines of schnattr, youtr and wettr go when their lint workers merge; only
+# `unsafe_code` of schnattr stays.
 
-# The lints that tuilibr turned on for the crate only (2026-11-19): the apps keep their allows.
 [all]
-"clippy.cast_possible_truncation" = "the crate checks its casts, the apps allow them"
-"clippy.cast_possible_wrap" = "the crate checks its casts; the apps allow them"
-"clippy.cast_sign_loss" = "the crate checks its casts; the apps allow them"
-"clippy.missing_const_for_fn" = "a crate-only lint (measured 2026-11-19)"
-"clippy.or_fun_call" = "a crate-only lint (measured 2026-11-19)"
-"clippy.too_long_first_doc_paragraph" = "a crate-only lint for the one-line doc rule of the crate"
 
-# schnattr is a binary crate: the maintainer decided against unreachable_pub on 2026-11-11 (775
-# hits), let_underscore_must_use has 126 hits, and unsafe_code warns there.
 [app.schnattr]
-"rust.unreachable_pub" = "a binary crate, the decision of the maintainer of 2026-11-11"
-"clippy.let_underscore_must_use" = "126 hits, measured 2026-11-19, a decision of the maintainer"
-"rust.unsafe_code" = "schnattr warns, the crate denies"
+"clippy.cast_possible_truncation" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_possible_wrap" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_sign_loss" = "until the lint worker of 2026-11-20 merges"
+"clippy.missing_const_for_fn" = "until the lint worker of 2026-11-20 merges"
+"clippy.or_fun_call" = "until the lint worker of 2026-11-20 merges"
+"clippy.too_long_first_doc_paragraph" = "until the lint worker of 2026-11-20 merges"
+"rust.unreachable_pub" = "until the second lint worker of 2026-11-20 merges"
+"clippy.let_underscore_must_use" = "until the lint worker of 2026-11-20 merges"
+"rust.unsafe_code" = "schnattr warns, because it calls libc; the crate denies"
 
 [app.youtr]
+"clippy.cast_possible_truncation" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_possible_wrap" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_sign_loss" = "until the lint worker of 2026-11-20 merges"
+"clippy.missing_const_for_fn" = "until the lint worker of 2026-11-20 merges"
+"clippy.or_fun_call" = "until the lint worker of 2026-11-20 merges"
+"clippy.too_long_first_doc_paragraph" = "until the lint worker of 2026-11-20 merges"
 
 [app.phewr]
 
 [app.agendr]
 
 [app.wettr]
+"clippy.cast_possible_truncation" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_possible_wrap" = "until the lint worker of 2026-11-20 merges"
+"clippy.cast_sign_loss" = "until the lint worker of 2026-11-20 merges"
+"clippy.missing_const_for_fn" = "until the lint worker of 2026-11-20 merges"
+"clippy.or_fun_call" = "until the lint worker of 2026-11-20 merges"
+"clippy.too_long_first_doc_paragraph" = "until the lint worker of 2026-11-20 merges"
