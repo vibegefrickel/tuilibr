@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 01766ec
+- Commit: 219dc37
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
