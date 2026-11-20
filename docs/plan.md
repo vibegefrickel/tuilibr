@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: cbbfed3
+- Commit: 08bd7ba
 - Done: phases 4 and 4d; the dialog padding of two columns; wettr is the fifth app; no phase 5
   (codeberg is a private backup, the apps keep the path dependency).
 - Done: one lint table in all six repos (only `unsafe_code` of schnattr differs), and
@@ -21,7 +21,7 @@
 - Open (agent): answer the crate requests of the five apps. Candidates: `dirs::move_once` if a
   third app needs a folder move (agendr and schnattr hold the core); `AppDirs::from_vars` fails
   on an empty HOME (phewr falls back to a temp folder itself).
-- Open (user): push `main` (16 commits ahead of `origin`).
+- Open (user): push `main` to `origin`.
 - Health: `just check` green; `just lints-diff` clean in the five apps; no worker and no extra
   worktree in any repo.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
@@ -47,11 +47,10 @@ waits for.
   `docs/pictures.md`, "The test run of the maintainer". Waits for the maintainer at the terminal.
 - **Phase 2, the test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm,
   Terminal.app, SSH). Moved to later on 2026-11-19; `docs/pictures.md`, "The test matrix".
-- **The measured lints in the apps.** The cast lints, `missing_const_for_fn`, `or_fun_call` and
-  `too_long_first_doc_paragraph` are on in the crate only (`lints-allow.toml`). An app takes them
-  when its session wants to.
-- **`unreachable_pub` and `let_underscore_must_use` in schnattr.** Off by the decision of
-  2026-11-11 (775 and 126 hits); a new decision of the maintainer turns them on.
+- Done (2026-11-20): the measured lints are on in the five apps (phewr `e1e8ea2`, agendr
+  `b2bf0ad`, youtr, wettr and schnattr `69b15f4`), and schnattr has `unreachable_pub` and
+  `let_underscore_must_use` (`d470760`, `69b15f4`). `lints-allow.toml` holds only the
+  `unsafe_code` line of schnattr.
 
 ## Decisions of the maintainer (2026-11-19)
 
