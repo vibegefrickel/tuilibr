@@ -2,24 +2,24 @@
 
 ## Handoff
 
-- Date: 2026-11-19
-- Commit: 648f0f2
-- Done: phase 4 steps 1 to 4 in the crate: `terminal` (session, panic hooks, start query, late
-  answers), the multi-line `TextField` with the key map and the editor, `draw_text_field`,
-  `dialog_rect`, `pane_inner`, the question row, `frame::Layout` (maximal default), the omnibox.
-- Done: `time` on jiff (age, bar date and time, clock, media length, `MinuteClock`); phase 4d
-  `pictures::motion` from phewr with `LoopClock`; the picture docs; the stricter lints and the
-  shared audit text of the five repositories; rule 10 "one update per frame".
-- Later: the TGS stickers, the test run of the maintainer and the other waiting items, see
-  `## Later`.
-- Open (agent): follow the schnattr timeline workers of 4d (adapters, timeline, Live pairing) and
-  the agendr omnibox; answer their crate requests.
+- Date: 2026-11-20
+- Commit: 96e85d9
+- Done: phase 4 steps 1 to 4 and phase 4d in the crate (`terminal`, `TextField` with the editor,
+  the question row, `Layout`, the omnibox, `time` on jiff, `pictures::motion`); the stricter lints
+  and the shared audit of the repositories; rule 10 "one update per frame".
+- Done (2026-11-20): wettr is the fifth app (`apps` in the justfile, `[app.wettr]`, the docs);
+  check 7 of the maintainer test run (the loops after phase 4d); no phase 5: the codeberg
+  repository is a private backup, and the apps keep the path dependency.
+- Later: the TGS stickers, the test run of the maintainer (seven checks) and the other waiting
+  items, see `## Later`.
+- Open (agent): follow the schnattr timeline workers of 4d and the agendr omnibox; answer the
+  crate requests of the five apps; ask ListAgents for the name of the wettr session.
 - Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
-  `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`.
-- Open (user): the codeberg repository and `rev` versus `branch` for phase 5.
-- Health: `just check` green (588, 124 and 489 tests, audit clean); `just lints-diff` shows no
-  drift in the four apps; no live herdr worker in tuilibr.
-- Rules of today: a multi-step crate change runs in a worktree and lands in one compiling step;
+  `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`. Push `main` to
+  `origin` after each commit.
+- Health: `just check` green (489 tests in the main set, audit clean); `just lints-diff` shows
+  no drift in the five apps; no live herdr worker in tuilibr.
+- Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
 tuilibr is one library crate for the terminal UI parts that schnattr, youtr, phewr, agendr and wettr
@@ -47,8 +47,6 @@ waits for.
   `docs/pictures.md`, "The test run of the maintainer". Waits for the maintainer at the terminal.
 - **Phase 2, the test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm,
   Terminal.app, SSH). Moved to later on 2026-11-19; `docs/pictures.md`, "The test matrix".
-- **Phase 5, the build for other people.** Waits for the codeberg repository and the choice of
-  `rev` or `branch`; the recipe is under phase 5.
 - **The measured lints in the apps.** The cast lints, `missing_const_for_fn`, `or_fun_call` and
   `too_long_first_doc_paragraph` are on in the crate only (`lints-allow.toml`). An app takes them
   when its session wants to.
@@ -1062,6 +1060,11 @@ The steps for schnattr, after the module lands and phewr switched:
 
 ### Phase 5: the build for other people
 
+Decided (the maintainer, 2026-11-20): no phase 5. The repository
+`ssh://git@codeberg.org/webgefrickel/tuilibr.git` is private and stays private. It is a remote
+backup only. The apps keep `path = "../tuilibr"`, and the herdr worktrees keep the symlink. The
+recipe below stays for the case that the decision changes.
+
 The recipe, ready for the day the repository exists on codeberg (tuilibr session, 2026-11-19):
 
 1. The maintainer creates `ssh://git@codeberg.org/webgefrickel/tuilibr.git` and pushes `main`.
@@ -1207,15 +1210,14 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
 - A herdr worktree lives in `~/.herdr/worktrees/<repo>/<branch>/`, so `../tuilibr` does not
   resolve there. Each repository that runs workers has one symlink
   `~/.herdr/worktrees/<repo>/tuilibr` to `~/Projects/dev/tuilibr`. schnattr has it since
-  2026-11-19. Phase 5 makes the symlink unnecessary.
+  2026-11-19. The symlink stays, because the apps keep the path dependency (phase 5).
 
 ## Steps for the maintainer
 
-1. Create the repository on codeberg when phase 5 comes.
+1. Push `main` to `origin` (codeberg, the private backup since 2026-11-20) after each commit.
 
 ## Open questions for the maintainer
 
-- The dependency form of phase 5: a git dependency with a `rev`, or a path dependency only.
 - A shared `age`: on plain numbers only, because the crate takes no time crate. Nobody needs it
   today.
 - crossterm in the crate: a shared key map for `TextField` needs the `KeyEvent` type. All four
