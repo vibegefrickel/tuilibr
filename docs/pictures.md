@@ -67,8 +67,7 @@ fixture writers, the key events or the temp folder turns on `test-support` in it
 The helpers inside the `tests` modules of the module (`decode::screen::tests::rgba_fullscreen`,
 `decode::hdr::tests::{TARGETS, cicp, exact}`) stay test code. An app that used them copies them
 into its own tests. The fixtures of the module are in `tests/fixtures/`: `color`, `hdr`, `jxl`,
-`png`, `still.avif`, `still.gif`, `still.png`, `still.webp`, each folder with its `make.sh`. The
-helper `test_support::fixture` finds them through `CARGO_MANIFEST_DIR`, so it finds the fixtures
+`png`, `still.avif`, `still.gif`, `still.png` and `still.webp`. The helper `test_support::fixture` finds them through `CARGO_MANIFEST_DIR`, so it finds the fixtures
 of the crate, not the fixtures of an app.
 `test-support` also builds the test-only items of the module that the app tests of phewr use:
 `GraphicsOutput::Buffer` with `buffer` and `take_bytes`, `Screen::stored_count` and
@@ -81,10 +80,9 @@ jobs, `From<RgbaImage> for GridPicture`, `ThumbnailCache::capacity` and `parked_
 `disk_cache::PathCounter` with `KEY_COMPUTATIONS` and the three disk cache test helpers. The
 counting of the key computations runs under the feature, so an app counts them in its tests.
 
-The fixtures are committed as they are, and nobody rebuilds them (the maintainer, 2026-11-19).
-The `make.sh` scripts are the record of how each file was made, not a step of the work. The hdr
-script needs no `cjxl`: the apps decode JPEG XL with jxl-oxide, and no libjxl tool is on the
-machine.
+The fixtures are static files, committed as they are, and nobody rebuilds them. The `make.sh`
+scripts that made them are gone, so no step of the work needs jpeg-xl, ffmpeg or ImageMagick
+(the maintainer, 2026-11-20). The git history keeps the scripts.
 
 ## The rules of the Kitty layer
 
@@ -190,10 +188,9 @@ The rules of the loops:
     keeps its still). The worst hostile sticker of the tests took 0.34 s for the still.
 
 The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The tests that
-start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*`
-(the root `make.sh`) and `tests/fixtures/video/` (its own `make.sh`). The Lottie tests build
-their animation in the test. `<APP>_TEST_TGS_DIR=<folder>` with `-- --ignored` renders each
-`.tgs` file of a folder.
+start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*` and
+`tests/fixtures/video/`. The Lottie tests build their animation in the test.
+`<APP>_TEST_TGS_DIR=<folder>` with `-- --ignored` renders each `.tgs` file of a folder.
 
 ## The rules of the work
 
@@ -205,9 +202,6 @@ their animation in the test. `<APP>_TEST_TGS_DIR=<folder>` with `-- --ignored` r
   numbers were six times slower on one branch and said nothing (phewr session, 2026-11-19). The
   crate split showed no regression: 24 MP sRGB to Display P3 5.6 ms against 5.9 to 8.2 ms,
   lanczos3 to 2688x2016 51 ms against 54 ms.
-- `tests/fixtures/hdr/make.sh` is a record only. If anyone runs it, it needs the phewr checkout
-  next to tuilibr, or `PHEWR=<path>`, because the references come from the HDR cube of the phewr
-  player (the ignored phewr test `write_the_player_hdr_cubes`).
 
 ## The handover from phewr (2026-11-19)
 

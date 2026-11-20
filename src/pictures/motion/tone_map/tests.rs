@@ -431,32 +431,6 @@ fn map_matches_player_cube() {
     }
 }
 
-/// Write the player's HDR cubes into `TUILIBR_HDR_CUBE_DIR` for `tests/fixtures/hdr/make.sh`:
-/// `pq` and `hlg`, and `pq<nits>` for each PQ bucket.
-#[test]
-#[ignore = "writes the cubes for tests/fixtures/hdr/make.sh of tuilibr"]
-fn write_the_player_hdr_cubes() {
-    use crate::pictures::motion::tone_map::{Cube, CubeSource};
-    let Some(dir) = crate::pictures::decode::real_test_file("TUILIBR_HDR_CUBE_DIR") else {
-        return;
-    };
-    let buckets = Peak::BUCKETS.map(|peak| (CubeSource::Pq(peak), format!("pq{}", peak.nits())));
-    let sources = [
-        (CubeSource::Pq(Peak::DEFAULT), "pq".to_owned()),
-        (CubeSource::Hlg, "hlg".to_owned()),
-    ];
-    for target in TARGETS {
-        for (source, name) in buckets.iter().chain(&sources).cloned() {
-            let suffix = match target {
-                ColorTarget::DisplayP3 => "p3",
-                ColorTarget::Srgb => "srgb",
-            };
-            let cube = Cube { source, target };
-            std::fs::write(dir.join(format!("{name}-{suffix}.cube")), cube.text()).unwrap();
-        }
-    }
-}
-
 /// Each cube source maps back to its primaries. An ICC profile maps by its colorants, and a
 /// source without a cube maps to `None`.
 #[test]

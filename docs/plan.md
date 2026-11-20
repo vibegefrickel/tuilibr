@@ -3,29 +3,25 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: c28a41b
-- Done: phase 4 steps 1 to 4 and phase 4d in the crate (`terminal`, `TextField` with the editor,
-  the question row, `Layout`, the omnibox, `time` on jiff, `pictures::motion`); the stricter lints
-  and the shared audit of the repositories; rule 10 "one update per frame".
-- Done: schnattr 4d (`c67eb7d`) and the agendr omnibox (`fad65c9`) landed in the apps.
-- Done (2026-11-20): wettr is the fifth app (`apps` in the justfile, `[app.wettr]`, the docs;
-  wettr-fc knows the crate rules); check 7 of the maintainer test run (the loops after phase
-  4d); no phase 5: the codeberg repository is a private backup, the apps keep the path
-  dependency; the four landed worktrees are gone, `agent-ae079fd3ff597b1d9` (TGS) stays.
-- Later: the TGS stickers, the test run of the maintainer (seven checks) and the other waiting
-  items, see `## Later`.
-- Done (2026-11-20): phewr starts maximal (info screen only), its README names no tuilibr URL;
-  the dialog box pads its body by two columns, so the body starts under the title.
-- Done (2026-11-20): the five apps follow the dialog padding (`c28a41b`): youtr (293 tests),
-  phewr (706), schnattr (1 411, the command page shows its last two lines again), wettr
-  (`4729a24`, 430), agendr (`f3c31c1`, 1 303). Each `just check` passed against the crate.
-- Done (2026-11-20): the TGS stickers: `pictures::motion::lottie` behind the feature `lottie`
-  (a git source, youtr stays on crates.io), with limits against hostile stickers (64 KiB TGS,
-  4 MiB JSON, a 500 ms loop budget); schnattr shows them (`4ad2048`, `21b6d9c`).
+- Commit: 78ea187
+- Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
+  omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
+- Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
+  keep the path dependency); phewr starts maximal on the info screen only.
+- Done (2026-11-20): the dialog box pads its body by two columns (`DIALOG_FRAME_COLUMNS`,
+  `DIALOG_FRAME_ROWS`), and the five apps follow it.
+- Done (2026-11-20): the TGS stickers in `pictures::motion::lottie` behind the feature `lottie`
+  (a git source), with limits against hostile stickers (64 KiB TGS, 4 MiB JSON, a 500 ms loop
+  budget); schnattr shows them (`4ad2048`, `21b6d9c`).
+- Done (2026-11-20): the fixture `make.sh` scripts and the cube writer test are gone; the
+  fixtures are static files, and nothing needs jpeg-xl.
+- Later: the test run of the maintainer (seven checks) and the other waiting items, see
+  `## Later`.
 - Open (agent): answer the crate requests of the five apps. No crate work waits.
-- Open (user): push `main` to `origin` after each commit.
-- Health: `just check` green (588, 124 and 489 tests, audit clean); `just apps-check` (4 min 14 s)
-  and `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
+- Open (user): push `main` (6 commits ahead of `origin`); remove the worktrees `tgs-lottie` and
+  `agent-ae079fd3ff597b1d9`, both landed.
+- Health: `just check` green (600, 125 and 490 tests, audit clean); `just lints-diff` shows no
+  drift in the five apps; no live herdr worker in tuilibr.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
