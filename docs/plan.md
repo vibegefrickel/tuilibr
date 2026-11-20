@@ -3,24 +3,26 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 7d92cee
+- Commit: c0a482b
 - Done: phase 4 steps 1 to 4 and phase 4d in the crate (`terminal`, `TextField` with the editor,
   the question row, `Layout`, the omnibox, `time` on jiff, `pictures::motion`); the stricter lints
   and the shared audit of the repositories; rule 10 "one update per frame".
-- Done (2026-11-20): wettr is the fifth app (`apps` in the justfile, `[app.wettr]`, the docs);
-  check 7 of the maintainer test run (the loops after phase 4d); no phase 5: the codeberg
-  repository is a private backup, and the apps keep the path dependency.
+- Done: schnattr 4d (`c67eb7d`) and the agendr omnibox (`fad65c9`) landed in the apps.
+- Done (2026-11-20): wettr is the fifth app (`apps` in the justfile, `[app.wettr]`, the docs;
+  wettr-fc knows the crate rules); check 7 of the maintainer test run (the loops after phase
+  4d); no phase 5: the codeberg repository is a private backup, the apps keep the path
+  dependency; the four landed worktrees are gone, `agent-ae079fd3ff597b1d9` (TGS) stays.
 - Later: the TGS stickers, the test run of the maintainer (seven checks) and the other waiting
   items, see `## Later`.
-- Done (2026-11-20): schnattr 4d (`c67eb7d`, the Live Photo loops) and the agendr omnibox
-  (`fad65c9`) landed; `just apps-check` passed in the five apps (4 min 14 s); wettr-fc knows the
-  crate rules.
-- Open (agent): answer the crate requests of the five apps. No crate work waits.
-- Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
-  `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`. Push `main` to
-  `origin` after each commit.
-- Health: `just check` green (489 tests in the main set, audit clean); `just apps-check` and
-  `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
+- Done (2026-11-20): phewr starts maximal (info screen only), its README names no tuilibr URL;
+  the dialog box pads its body by two columns, so the body starts under the title.
+- Open (agent): the five apps change their dialog sizes from `+ 4` to `DIALOG_FRAME_COLUMNS`;
+  done: youtr (293 tests, `TEXT_WIDTH` 26 to 25), phewr (706 tests, no code change), schnattr
+  (1 411 tests, `TEXT_WIDTH` 24 to 23, the command page shows its last two lines again), wettr
+  (`4729a24`, 430 tests, `TEXT_WIDTH` 26 to 25); wait for agendr.
+- Open (user): push `main` to `origin` after each commit.
+- Health: `just check` green (588, 124 and 489 tests, audit clean); `just apps-check` (4 min 14 s)
+  and `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
@@ -317,8 +319,10 @@ commit that each app builds against.
 The maintainer (2026-11-19): every app gets the status look of schnattr, as the status line of
 nvim. From left to right: the mode block, the tabs or another left group, the middle text centered
 in the free room, the right groups with the time last, and the icons at the right edge. The
-dialogs are the boxes of schnattr: rounded corners, the title after one line cell, one cell of
-padding on every side, an optional hint at the bottom right, centered on the screen. The help is
+dialogs are the boxes of schnattr: rounded corners, the title after one line cell, two columns
+of padding at the sides and one row at the top and the bottom (the maintainer, 2026-11-20: the
+body starts in the column of the title; `DIALOG_FRAME_COLUMNS` and `DIALOG_FRAME_ROWS`), an
+optional hint at the bottom right, centered on the screen. The help is
 one such box with two columns of key sections. Both parts live in the crate, and each app consumes
 them.
 
@@ -712,7 +716,9 @@ The bar, the omnibox and the two-pane layout of schnattr are the one layout of e
 - The layout toggle (the maintainer, 2026-11-19): `frame::Layout` with `Maximal` as the default.
   schnattr, youtr and phewr read `layout` from their config and toggle it with `B`; the dotfiles
   set `layout = "maximal"` for the three. agendr gets no `layout` key and no toggle: it uses only
-  the maximal split, in the Calendar Manager.
+  the maximal split, in the Calendar Manager. phewr (the maintainer, 2026-11-20): the default is
+  `Maximal` too, but the layout applies to the info screen only. The grid, the fullscreen view
+  and the slideshow have no box.
 
 The inventory of phewr for step 4 (phewr-89, 2026-11-19), so the interface fits a viewer:
 

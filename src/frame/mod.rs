@@ -33,7 +33,8 @@ pub use clock::until_next_minute;
 pub use entry::{ENTRY_ROWS, EntryView, draw_entry, square_columns};
 pub use header::{HEADER_ROWS, HeaderAreas, draw_dimmed_header, draw_header};
 pub use help::{
-    COLUMN_GAP, HelpView, Section, column_rows, dialog_box, dialog_rect, draw_help, section_lines,
+    COLUMN_GAP, DIALOG_FRAME_COLUMNS, DIALOG_FRAME_ROWS, HelpView, Section, column_rows,
+    dialog_box, dialog_rect, draw_help, section_lines,
 };
 pub use layout::{Layout, UnknownLayout};
 pub use lines::{dim_pane, divider, join_rule, pane_box, pane_inner};

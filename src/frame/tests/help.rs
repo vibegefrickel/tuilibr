@@ -19,7 +19,7 @@ fn view() -> HelpView<'static> {
 
 /// The two columns, the gap, padding, border and the margin of the box: below this width, the
 /// help is narrow.
-const TWO_COLUMNS: u16 = 2 * (6 + 18) + 2 + 4 + 4;
+const TWO_COLUMNS: u16 = 2 * (6 + 18) + 2 + 6 + 4;
 
 /// The rows of the help box on a screen of `width` x `height` cells, without the spaces at the
 /// ends.
@@ -36,13 +36,13 @@ fn help_rows(width: u16, height: u16) -> Vec<String> {
 #[test]
 fn a_wide_screen_gets_two_columns_and_a_narrow_screen_one() {
     let wide = help_rows(TWO_COLUMNS, 12);
-    assert_eq!(
-        wide[2],
-        "│ Move                      Write                    │"
-    );
+    assert_eq!(wide[2], format!("│  {:<24}  {:<24}  │", "Move", "Write"));
     assert_eq!(
         wide[3],
-        "│ j k   down / up           enter send the message   │"
+        format!(
+            "│  {:<24}  {:<24}  │",
+            "j k   down / up", "enter send the message"
+        )
     );
     assert_eq!(wide.len(), 6, "{wide:#?}");
     assert_eq!(wide[1].trim_matches('│').trim(), "", "a padding row");
@@ -62,7 +62,7 @@ fn a_wide_screen_gets_two_columns_and_a_narrow_screen_one() {
             "enter send the message"
         ]
     );
-    assert_eq!(narrow[0].chars().count(), 6 + 18 + 4, "one column wide");
+    assert_eq!(narrow[0].chars().count(), 6 + 18 + 6, "one column wide");
 }
 
 #[test]
@@ -90,17 +90,17 @@ fn the_size_rule_gives_one_column_on_a_narrow_screen_and_two_on_a_wide_one() {
         |width, height| super::super::help::help_size(Rect::new(0, 0, width, height), &view());
     assert_eq!(
         size(TWO_COLUMNS, 12),
-        (2 * (6 + 18) + 2 + 4, 6),
+        (2 * (6 + 18) + 2 + 6, 6),
         "two columns"
     );
     assert_eq!(
         size(TWO_COLUMNS - 1, 12),
-        (6 + 18 + 4, 9),
+        (6 + 18 + 6, 9),
         "one column below the width"
     );
     assert_eq!(
         size(TWO_COLUMNS - 1, 10),
-        (2 * (6 + 18) + 2 + 4, 6),
+        (2 * (6 + 18) + 2 + 6, 6),
         "too low for one column"
     );
 }
@@ -167,21 +167,32 @@ fn the_title_and_the_hint_mirror_each_other_with_one_line_cell() {
 }
 
 #[test]
+fn the_body_starts_in_the_column_of_the_title() {
+    let mut inner = Rect::default();
+    let buffer = drawn(40, 8, |frame| {
+        inner = super::super::dialog_box(frame, frame.area(), "window", (30, 6), None);
+    });
+    let top = row(&buffer, 1);
+    let title = top.chars().position(|symbol| symbol == 'w');
+    assert_eq!(title, Some(usize::from(inner.x)), "{top}");
+}
+
+#[test]
 fn a_low_screen_drops_the_padding_rows_first_and_then_the_margin() {
     let dialog_rect = super::super::dialog_rect;
     // The size fits: one padding row on each side, two margin rows.
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 8)),
-        Rect::new(7, 3, 26, 4)
+        Rect::new(8, 3, 24, 4)
     );
     // One row too high for the margin: the padding rows go, the body keeps its rows.
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 9)),
-        Rect::new(7, 3, 26, 5)
+        Rect::new(8, 3, 24, 5)
     );
     // Higher than the area: the margin goes too, and the body gets the whole height.
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 14)),
-        Rect::new(7, 1, 26, 8)
+        Rect::new(8, 1, 24, 8)
     );
 }

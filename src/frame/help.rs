@@ -19,6 +19,14 @@ pub type Section<'a> = (&'a str, &'a [(&'a str, &'a str)]);
 /// The columns between two columns of sections.
 pub const COLUMN_GAP: u16 = 2;
 
+/// The columns that the border and the padding of `dialog_box` take. Add them to the width of the
+/// body to get the size of the box.
+pub const DIALOG_FRAME_COLUMNS: u16 = 6;
+
+/// The rows that the border and the padding of `dialog_box` take. Add them to the rows of the
+/// body to get the size of the box.
+pub const DIALOG_FRAME_ROWS: u16 = 4;
+
 /// What the help box with the keys shows, filled by the caller.
 #[derive(Debug)]
 pub struct HelpView<'a> {
@@ -37,8 +45,10 @@ pub struct HelpView<'a> {
 /// sits in it, so each app shows the same box.
 ///
 /// It is centered in `area`, with rounded corners like the panes of the maximal layout, its title
-/// after one line cell like a pane box, one cell of padding on every side, and an optional hint at
-/// the bottom right, before one line cell, as the mirror of the title. It keeps a margin of 4
+/// after one line cell like a pane box, and an optional hint at the bottom right, before one line
+/// cell, as the mirror of the title. The padding is two columns at the sides, so the body starts
+/// in the column of the first letter of the title, and one row at the top and the bottom
+/// (`DIALOG_FRAME_COLUMNS` and `DIALOG_FRAME_ROWS` with the border). It keeps a margin of 4
 /// columns and 2 rows. When `size` does not fit the height, the padding rows go first, then the
 /// margin rows, so a low screen gives the rows to the body. The caller draws the body in the
 /// returned area inside the box.
@@ -80,11 +90,11 @@ pub fn dialog_rect(area: Rect, size: (u16, u16)) -> Rect {
 fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> (Rect, Padding) {
     let room = area.height.saturating_sub(2);
     let (height, padding) = if height <= room {
-        (height, Padding::uniform(1))
+        (height, Padding::symmetric(2, 1))
     } else {
         (
             height.saturating_sub(2).min(area.height),
-            Padding::horizontal(1),
+            Padding::horizontal(2),
         )
     };
     let rect = area.centered(
@@ -102,7 +112,7 @@ fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> (Rect, Padding) {
 pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
     let column = view.key_width + view.text_width;
     let size = help_size(area, view);
-    if size.0 == column + 4 {
+    if size.0 == column + DIALOG_FRAME_COLUMNS {
         let inner = dialog_box(frame, area, view.title, size, Some(HINT));
         let sections = view.columns.concat();
         frame.render_widget(
@@ -137,10 +147,10 @@ const HINT: &str = "any key closes";
 /// then keeps its margin of 4 columns and 2 rows.
 pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
     let column = view.key_width + view.text_width;
-    let width = 2 * column + COLUMN_GAP + 4;
-    let one_column_height = column_rows(&view.columns.concat()) + 4;
+    let width = 2 * column + COLUMN_GAP + DIALOG_FRAME_COLUMNS;
+    let one_column_height = column_rows(&view.columns.concat()) + DIALOG_FRAME_ROWS;
     if area.width < width + 4 && one_column_height <= area.height.saturating_sub(2) {
-        return (column + 4, one_column_height);
+        return (column + DIALOG_FRAME_COLUMNS, one_column_height);
     }
     let height = view
         .columns
@@ -148,7 +158,7 @@ pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
         .map(|sections| column_rows(sections))
         .max()
         .unwrap_or_default()
-        + 4;
+        + DIALOG_FRAME_ROWS;
     (width, height)
 }
 
