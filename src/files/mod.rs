@@ -4,7 +4,8 @@
 //! create and the rename leaves a temp file. Each temp file has a name of its own,
 //! `.<name>.<pid>.<sequence>.tmp`, so two writers of one path never write into each other, and the
 //! leading dot and the fixed end keep the name apart from every file of the app.
-//! `remove_stale_temps` removes the temp files that a crash left.
+//! `remove_stale_temps` removes the temp files that a crash left, and `remove_stale_temps_of`
+//! only those of one file. `write_atomic_unsynced` skips the `fsync`, for a cache file.
 
 use std::ffi::OsString;
 use std::fs::{self, OpenOptions};
@@ -27,7 +28,38 @@ const TEMP_SUFFIX: &str = ".tmp";
 /// `0o600` for a file with a token, from the first byte on) or the default mode of the process.
 /// After the write, `fsync` puts the bytes on the disk, and the rename replaces `path` in one step.
 /// A failed step removes the temp file and leaves the old file as it was.
+///
+/// A crash between the create and the rename leaves one temp file beside `path`. Call
+/// `remove_stale_temps` on the folder at the start of the app, so these files do not collect.
 pub fn write_atomic(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
+    write_atomic_with(path, bytes, mode, DiskSync::Full)
+}
+
+/// `write_atomic` without the `fsync`, for a cache file that the app can make again.
+///
+/// On macOS, `fsync` of the standard library is `F_FULLFSYNC` and waits for the disk, which costs
+/// milliseconds per file. Without it, a reader still sees the old file or the new file. Only a
+/// crash of the system, not of the app, can leave a short or empty file at `path`.
+pub fn write_atomic_unsynced(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
+    write_atomic_with(path, bytes, mode, DiskSync::None)
+}
+
+/// Whether the bytes of a temp file go to the disk before the rename.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DiskSync {
+    /// `sync_all` before the rename.
+    Full,
+    /// No sync: the system writes the bytes later.
+    None,
+}
+
+/// The steps of `write_atomic` with the `sync` of the caller.
+fn write_atomic_with(
+    path: &Path,
+    bytes: &[u8],
+    mode: Option<u32>,
+    sync: DiskSync,
+) -> io::Result<()> {
     if let Some(parent) = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
@@ -35,7 +67,7 @@ pub fn write_atomic(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<
         fs::create_dir_all(parent)?;
     }
     let temp = temp_path(path)?;
-    let written = write_and_rename(&temp, path, bytes, mode);
+    let written = write_and_rename(&temp, path, bytes, mode, sync);
     if written.is_err() {
         #[expect(
             clippy::let_underscore_must_use,
@@ -47,7 +79,13 @@ pub fn write_atomic(path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<
 }
 
 /// The create, the write, the `fsync` and the rename of `write_atomic`.
-fn write_and_rename(temp: &Path, path: &Path, bytes: &[u8], mode: Option<u32>) -> io::Result<()> {
+fn write_and_rename(
+    temp: &Path,
+    path: &Path,
+    bytes: &[u8],
+    mode: Option<u32>,
+    sync: DiskSync,
+) -> io::Result<()> {
     let mut options = OpenOptions::new();
     options.write(true).create_new(true);
     if let Some(mode) = mode {
@@ -55,7 +93,9 @@ fn write_and_rename(temp: &Path, path: &Path, bytes: &[u8], mode: Option<u32>) -
     }
     let mut file = options.open(temp)?;
     file.write_all(bytes)?;
-    file.sync_all()?;
+    if sync == DiskSync::Full {
+        file.sync_all()?;
+    }
     drop(file);
     fs::rename(temp, path)
 }
@@ -99,12 +139,28 @@ pub fn temp_target(file_name: &str) -> Option<&str> {
 /// that is still at work, for example in a second process. A file that the sweep cannot read or
 /// remove stays for the next sweep. Only a folder that the sweep cannot list is an error.
 pub fn remove_stale_temps(dir: &Path, max_age: Duration) -> io::Result<usize> {
+    remove_stale_temps_where(dir, max_age, |_| true)
+}
+
+/// `remove_stale_temps` for the temp files of `file_name` only, so that a module removes its own
+/// temp files and leaves those of another module in the same folder.
+pub fn remove_stale_temps_of(dir: &Path, file_name: &str, max_age: Duration) -> io::Result<usize> {
+    remove_stale_temps_where(dir, max_age, |target| target == file_name)
+}
+
+/// The sweep of `remove_stale_temps` for the temp files whose final name passes `wanted`.
+fn remove_stale_temps_where(
+    dir: &Path,
+    max_age: Duration,
+    wanted: impl Fn(&str) -> bool,
+) -> io::Result<usize> {
     let mut removed = 0;
     for entry in fs::read_dir(dir)?.flatten() {
         let is_temp = entry
             .file_name()
             .to_str()
-            .is_some_and(|name| temp_target(name).is_some());
+            .and_then(temp_target)
+            .is_some_and(&wanted);
         let is_stale = || {
             entry
                 .metadata()

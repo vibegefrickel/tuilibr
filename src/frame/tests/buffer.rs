@@ -2,7 +2,7 @@
 
 use ratatui::{buffer::Buffer, layout::Rect, text::Line};
 
-use super::super::buffer::{drawn, find, row, rows, text};
+use super::super::buffer::{drawn, find, joined, row, rows, text};
 
 /// A buffer of 6 x 2 cells with `top` and `bottom` drawn as lines.
 fn two_rows(top: &'static str, bottom: &'static str) -> Buffer {
@@ -18,6 +18,7 @@ fn the_rows_and_the_text_hold_every_cell() {
     assert_eq!(row(&buffer, 1), "cd    ");
     assert_eq!(rows(&buffer), ["ab    ", "cd    "]);
     assert_eq!(text(&buffer), "ab    \ncd    ");
+    assert_eq!(joined(&buffer), "ab    cd    ");
 }
 
 #[test]

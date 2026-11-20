@@ -35,6 +35,12 @@ pub fn text(buffer: &Buffer) -> String {
     rows(buffer).join("\n")
 }
 
+/// The rows joined with no separator, so that a test finds a text that a wrap breaks over two
+/// rows, or matches a text with `contains` and no line break in the needle.
+pub fn joined(buffer: &Buffer) -> String {
+    rows(buffer).concat()
+}
+
 /// The top left cell of the first match of `needle`, row by row.
 ///
 /// The column counts cells, so that a wide glyph before the match does not move it. A needle

@@ -4,6 +4,7 @@
 use crate::pictures::jobs::thumbnail_cache::GridPicture;
 use crate::pictures::motion::loop_frames::LoopFrames;
 use image::RgbaImage;
+use std::any::Any;
 use std::fmt;
 use std::io;
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -66,7 +67,32 @@ impl fmt::Debug for LoopOutcome {
 /// The panic hook of the app still runs. The job drops its state on the panic, so nothing that
 /// it touched stays in use.
 pub fn run_caught(job: impl FnOnce() -> LoopOutcome) -> LoopOutcome {
-    catch_unwind(AssertUnwindSafe(job)).unwrap_or(LoopOutcome::Failed)
+    run_caught_with(job, |_| {})
+}
+
+/// [`run_caught`] that gives the text of a panic to `on_panic`, so the app can log it with the
+/// level and the fields of its choice.
+///
+/// A panic with a `&str` or a `String` gives that text. Any other payload gives
+/// `a panic without a text`.
+pub fn run_caught_with(
+    job: impl FnOnce() -> LoopOutcome,
+    on_panic: impl FnOnce(&str),
+) -> LoopOutcome {
+    catch_unwind(AssertUnwindSafe(job)).unwrap_or_else(|payload| {
+        on_panic(panic_text(payload.as_ref()));
+        LoopOutcome::Failed
+    })
+}
+
+/// The text of a panic payload: `panic!` gives a `&str` for a fixed text and a `String` for a
+/// formatted one.
+fn panic_text(payload: &(dyn Any + Send)) -> &str {
+    payload
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("a panic without a text")
 }
 
 /// The start of one loop job: the box, the number of the job and its cancel flag.

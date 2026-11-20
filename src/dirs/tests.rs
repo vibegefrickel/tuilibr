@@ -103,3 +103,38 @@ fn a_leading_tilde_becomes_the_home_folder() {
         assert_eq!(dirs.expand_home(Path::new(kept)), Path::new(kept));
     }
 }
+
+#[test]
+fn one_folder_holds_the_cache_the_state_and_the_data() {
+    let vars = lookup(&[("HOME", "/home/me")]);
+    let dirs = AppDirs::from_vars("agendr", None, &vars)
+        .unwrap()
+        .in_one_folder(Path::new("/srv/agendr"));
+    assert_eq!(
+        dirs,
+        AppDirs {
+            home: PathBuf::from("/home/me"),
+            config: PathBuf::from("/home/me/.config/agendr"),
+            cache: PathBuf::from("/srv/agendr"),
+            state: PathBuf::from("/srv/agendr"),
+            data: PathBuf::from("/srv/agendr"),
+        }
+    );
+    let rooted = AppDirs::from_vars(
+        "agendr",
+        Some("AGENDR_HOME"),
+        lookup(&[("HOME", "/home/me"), ("AGENDR_HOME", "/tmp/profile")]),
+    )
+    .unwrap()
+    .in_one_folder(Path::new("/srv/agendr"));
+    assert_eq!(
+        rooted.config,
+        Path::new("/tmp/profile/config"),
+        "the root keeps the config"
+    );
+    assert_eq!(
+        rooted.state,
+        Path::new("/srv/agendr"),
+        "the one folder wins"
+    );
+}

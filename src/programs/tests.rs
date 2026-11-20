@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::time::Duration;
 
-use super::{copy, find_on_path, is_openable_link, launch, open};
+use super::{Reaper, copy, find_on_path, is_openable_link, launch, open};
 
 /// An executable shell script `name` in `dir` with `body`.
 fn script(dir: &Path, name: &str, body: &str) -> PathBuf {
@@ -61,22 +61,39 @@ fn open_passes_the_option_end_and_then_the_target() {
 }
 
 #[test]
-fn a_failing_or_missing_program_is_an_error() {
+fn a_failing_or_missing_program_is_an_error_with_its_name() {
     let dir = tempfile::tempdir().unwrap();
     let failing = script(dir.path(), "open", "exit 1");
     let error = open(&failing, "https://example.com").unwrap_err();
-    assert!(error.to_string().contains("failed"), "{error}");
-    let missing = dir.path().join("none");
     assert_eq!(
-        open(&missing, "https://example.com").unwrap_err().kind(),
-        std::io::ErrorKind::NotFound
+        error.to_string(),
+        format!("{} exited with status 1", failing.display())
+    );
+    let missing = dir.path().join("none");
+    let error = open(&missing, "https://example.com").unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    let text = error.to_string();
+    assert!(
+        text.starts_with(&format!("start {}: ", missing.display())),
+        "{text}"
     );
     let failing_copy = script(dir.path(), "pbcopy", "cat > /dev/null; exit 1");
     let error = copy(&failing_copy, "text").unwrap_err();
-    assert!(error.to_string().contains("failed"), "{error}");
-    assert!(
-        copy(&missing, "text").is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+    assert_eq!(
+        error.to_string(),
+        format!("{} exited with status 1", failing_copy.display())
     );
+    let error = copy(&missing, "text").unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert!(error.to_string().contains("start "), "{error}");
+}
+
+#[test]
+fn a_program_that_a_signal_stops_is_an_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let killed = script(dir.path(), "open", "kill -9 $$");
+    let error = open(&killed, "https://example.com").unwrap_err();
+    assert!(error.to_string().contains(" stopped: "), "{error}");
 }
 
 #[test]
@@ -100,7 +117,26 @@ fn launch_returns_at_once_and_reports_the_exit_later() {
     let exit = exits.recv_timeout(Duration::from_secs(10)).unwrap();
     assert_eq!(exit.unwrap(), Some(3));
     let missing = dir.path().join("none");
-    assert!(launch(&missing, [""; 0], |_| {}).is_err());
+    let error = launch(&missing, [""; 0], |_| {}).unwrap_err();
+    assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
+    assert!(error.to_string().contains("start "), "{error}");
+}
+
+#[test]
+fn a_reaper_without_its_thread_kills_and_reaps_the_child() {
+    let child = std::process::Command::new("sleep")
+        .arg("30")
+        .spawn()
+        .unwrap();
+    let pid = child.id().to_string();
+    drop(Reaper(Some(child)));
+    // `kill -0` fails for a pid that no longer exists: the child is dead and reaped.
+    let alive = std::process::Command::new("kill")
+        .args(["-0", &pid])
+        .stderr(std::process::Stdio::null())
+        .status()
+        .unwrap();
+    assert!(!alive.success(), "the child {pid} still exists");
 }
 
 #[test]

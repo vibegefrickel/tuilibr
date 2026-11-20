@@ -69,3 +69,24 @@ fn the_mark_of_the_writer_ends_with_the_write() {
     drop(mark);
     assert!(!writing());
 }
+
+#[test]
+fn a_failed_move_on_open_keeps_the_log_open_and_growing() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("app.log");
+    // A folder that is not empty cannot be the target of a rename.
+    fs::create_dir_all(dir.path().join("app.log.1").join("blocker")).unwrap();
+    fs::write(&path, vec![b'x'; 120]).unwrap();
+    let log = CappedLog::open(path.clone(), 100).unwrap();
+    (&log).write_all(b"a").unwrap();
+    assert_eq!(fs::metadata(&path).unwrap().len(), 121);
+}
+
+#[test]
+fn the_open_makes_the_missing_folders() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("state").join("app").join("app.log");
+    let log = CappedLog::open(path.clone(), DEFAULT_CAP).unwrap();
+    (&log).write_all(b"line\n").unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"line\n");
+}

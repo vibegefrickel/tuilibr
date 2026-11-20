@@ -5,7 +5,8 @@
 //! relative counts as unset, as the XDG specification says. An app can name a root variable, for
 //! example `YOUTR_HOME`: its value puts the four folders below one root, for a test or a second
 //! profile. The lookup of the variables is an argument, so a test never changes the environment
-//! of the process.
+//! of the process. `in_one_folder` puts the cache, the state and the data in one folder, for an
+//! app with one override variable for its data.
 
 use std::ffi::OsString;
 use std::io;
@@ -119,6 +120,21 @@ impl AppDirs {
             cache: root.join("cache"),
             state: root.join("state"),
             data: root.join("data"),
+        }
+    }
+
+    /// These folders with the cache, the state and the data in the one `folder`, for an app with
+    /// one override variable for all its files except the config.
+    ///
+    /// The config folder and the home folder stay. The method applies after `root_variable`, so
+    /// the one folder wins over the root for these three folders.
+    #[must_use]
+    pub fn in_one_folder(self, folder: &Path) -> Self {
+        Self {
+            cache: folder.to_path_buf(),
+            state: folder.to_path_buf(),
+            data: folder.to_path_buf(),
+            ..self
         }
     }
 

@@ -5,7 +5,10 @@ use std::os::unix::fs::PermissionsExt as _;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use super::{remove_stale_temps, temp_path, temp_target, write_atomic};
+use super::{
+    remove_stale_temps, remove_stale_temps_of, temp_path, temp_target, write_atomic,
+    write_atomic_unsynced,
+};
 
 /// The names in `dir`, sorted.
 fn names(dir: &Path) -> Vec<String> {
@@ -109,4 +112,33 @@ fn the_sweep_removes_only_old_temp_files() {
         [".b.json.1.1.tmp", ".notes.tmp", "a.json"]
     );
     let _missing = remove_stale_temps(&dir.path().join("none"), Duration::ZERO).unwrap_err();
+}
+
+#[test]
+fn the_sweep_of_one_file_keeps_the_temp_files_of_the_others() {
+    let dir = tempfile::tempdir().unwrap();
+    let old_time = SystemTime::now() - Duration::from_secs(7200);
+    for name in [".a.json.1.0.tmp", ".a.json.old.1.1.tmp", ".b.json.1.2.tmp"] {
+        let file = File::create(dir.path().join(name)).unwrap();
+        file.set_times(FileTimes::new().set_modified(old_time))
+            .unwrap();
+    }
+    let removed = remove_stale_temps_of(dir.path(), "a.json", Duration::from_secs(3600)).unwrap();
+    assert_eq!(removed, 1);
+    assert_eq!(
+        names(dir.path()),
+        [".a.json.old.1.1.tmp", ".b.json.1.2.tmp"]
+    );
+}
+
+#[test]
+fn an_unsynced_write_replaces_the_file_with_its_mode() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("cache").join("thumb.bin");
+    write_atomic_unsynced(&path, b"old", None).unwrap();
+    write_atomic_unsynced(&path, b"new", Some(0o600)).unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"new");
+    let mode = fs::metadata(&path).unwrap().permissions().mode();
+    assert_eq!(mode & 0o777, 0o600);
+    assert_eq!(names(&dir.path().join("cache")), ["thumb.bin"]);
 }

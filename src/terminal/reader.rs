@@ -139,6 +139,14 @@ impl ReaderPause {
         self.paused.load(Ordering::SeqCst)
     }
 
+    /// Whether the paused reader said that it stopped, so a test of the app sees that `pause`
+    /// returned because the reader waited, not after its half second.
+    ///
+    /// `pause` sets it to `false` first, and the reader sets it in its next pass.
+    pub fn is_idle(&self) -> bool {
+        self.idle.load(Ordering::SeqCst)
+    }
+
     /// The reader stopped: it holds no event any more.
     fn mark_idle(&self) {
         self.idle.store(true, Ordering::SeqCst);
@@ -298,28 +306,58 @@ mod tests {
         pause
             .paused
             .store(true, std::sync::atomic::Ordering::SeqCst);
+        assert!(!pause.is_idle());
         let (goes_on, sent) = one_pausable_pass(&pause, |_| panic!("a paused reader polls"));
         assert!(goes_on && sent.is_empty());
-        assert!(pause.idle.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(pause.is_idle());
+    }
+
+    #[test]
+    fn a_pause_returns_as_soon_as_the_reader_stops() {
+        let pause = std::sync::Arc::new(ReaderPause::default());
+        let reader = std::sync::Arc::clone(&pause);
+        let thread = std::thread::spawn(move || {
+            while !reader.is_idle() {
+                pausable_pass(&reader, |_| Ok(None), &mut |_| true);
+            }
+        });
+        let started = std::time::Instant::now();
+        pause.pause();
+        assert!(pause.is_idle(), "the reader stopped");
+        assert!(
+            started.elapsed() < super::PAUSE_WAIT,
+            "the pause did not wait its whole time"
+        );
+        thread.join().unwrap();
+        pause.resume();
+        assert!(!pause.is_paused());
     }
 
     #[cfg(feature = "pictures")]
     mod filtered {
         use std::io;
-        use std::time::Duration;
+        use std::time::{Duration, Instant};
 
+        use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers};
+
+        use crate::pictures::kitty::answers::ANSWER_WAIT;
         use crate::pictures::kitty::query::LateAnswers;
         use crate::terminal::answers::{Filtered, LateAnswerFilter};
-        use crate::terminal::reader::ReaderPause;
         use crate::terminal::reader::filtered::pass;
+        use crate::terminal::reader::{POLL, ReaderPause};
 
         use super::key;
+
+        /// Alt and `character`: crossterm reads `ESC` and a key so.
+        fn alt(character: char) -> Event {
+            Event::Key(KeyEvent::new(KeyCode::Char(character), KeyModifiers::ALT))
+        }
 
         /// One pass with `poll`, and what `send` got.
         fn one_pass(
             filter: &mut LateAnswerFilter,
             pause: Option<&ReaderPause>,
-            poll: impl FnOnce(Duration) -> io::Result<Option<crossterm::event::Event>>,
+            poll: impl FnOnce(Duration) -> io::Result<Option<Event>>,
         ) -> (bool, Vec<Result<Filtered, String>>) {
             let mut sent = Vec::new();
             let goes_on = pass(filter, pause, poll, &mut |filtered: io::Result<
@@ -340,6 +378,35 @@ mod tests {
             assert!(matches!(&sent[0], Ok(filtered) if filtered.events == [key('a')]));
             let (goes_on, sent) = one_pass(&mut filter, None, |_| Ok(None));
             assert!(goes_on && sent.is_empty());
+        }
+
+        /// The timeout of the poll of one pass.
+        fn poll_timeout(filter: &mut LateAnswerFilter) -> Duration {
+            let mut timeout = None;
+            one_pass(filter, None, |wait| {
+                timeout = Some(wait);
+                Ok(None)
+            });
+            timeout.unwrap()
+        }
+
+        #[test]
+        fn the_poll_waits_no_longer_than_the_held_keys_or_the_poll_step() {
+            let mut idle = LateAnswerFilter::default();
+            assert_eq!(poll_timeout(&mut idle), POLL, "no held key");
+
+            // A key that can start an answer waits for the rest of the answer.
+            let mut holding = LateAnswerFilter::new(LateAnswers {
+                kitty: 1,
+                foreground: false,
+            });
+            let read = Instant::now()
+                .checked_sub(ANSWER_WAIT.saturating_sub(Duration::from_millis(10)))
+                .unwrap();
+            assert!(holding.read(alt('_'), read).events.is_empty());
+            let timeout = poll_timeout(&mut holding);
+            assert!(timeout <= Duration::from_millis(10), "{timeout:?}");
+            assert!(timeout < POLL);
         }
 
         #[test]

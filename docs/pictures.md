@@ -214,8 +214,10 @@ and the decode. Each frame, the app does these steps:
 4. Call `place(key, ..)` for each box, and give `pixels_of` to the pixel lookup of the frame.
 
 A job runs `run_caught`, maps its load with `LoopOutcome::of(load_or_decode(..), shape)`, and
-sends `ticket.finish(outcome)` to the app. The app gives the result to `ready(result, loops)`.
-The run loop sleeps for `next_wake(now)`.
+sends `ticket.finish(outcome)` to the app. If the app logs the panic of a job, it runs
+`run_caught_with(job, on_panic)`, and `on_panic` gets the text of the panic. The app gives the
+result to `ready(result, loops)`. The run loop sleeps for `next_wake(now)`. `is_decoding(key)`
+tells whether a job runs for a box, for a test of the app.
 
 The rules of the player:
 
@@ -237,7 +239,11 @@ The rules of the player:
    leaves the screen.
 5. **The wake.** `next_wake` gives the exact time of the next frame change through
    `LoopClock::instant_of`. It gives zero when a loop waits for its transfer or shows an old
-   frame. The player has no fixed poll.
+   frame. The player has no fixed poll. If `send_frames` held a loop back because stills wait,
+   the player keeps that hold until the next `begin_frame`. For a held loop, `needs_send` gives
+   `false` and `next_wake` gives the next tick of the clock, not zero. So the app does not spin
+   while the stills go out, and a hold that ends in the same pass costs one tick at most. The
+   app draws again for the stills, because `Screen::waiting()` is not empty.
 6. **The terminal player.** With `Loops::Animation`, the terminal plays each loop as one Kitty
    animation under one id, with `N=1` (rule 2 of the loops). An animation needs no wake.
 7. **The focus gain.** `pixels_of` gives the pixels of a tick frame for the new transfer.

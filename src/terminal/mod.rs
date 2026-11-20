@@ -154,6 +154,9 @@ pub struct Session {
     mouse: bool,
     /// The terminal is in raw mode on the alternate screen right now.
     active: bool,
+    /// The session holds no terminal: `suspend` and `resume` only change `active`. Only the
+    /// test session of `detached` sets it.
+    detached: bool,
 }
 
 impl Session {
@@ -173,7 +176,29 @@ impl Session {
             modes,
             mouse: modes.mouse,
             active: true,
+            detached: false,
         })
+    }
+
+    /// An active session that holds no terminal, so that a test of the app calls `set_mouse_to`
+    /// on a `Vec` without a tty.
+    ///
+    /// `suspend`, `resume`, `restore` and the drop change no terminal and write nothing.
+    #[cfg(any(test, feature = "test-support"))]
+    pub const fn detached(modes: Modes) -> Self {
+        Self {
+            modes,
+            mouse: modes.mouse,
+            active: true,
+            detached: true,
+        }
+    }
+
+    /// Whether the session holds the terminal in raw mode on the alternate screen now. After a
+    /// failed `resume` that stopped before raw mode, it is false: the app runs on the main screen
+    /// in cooked mode, and can exit or try `resume` again.
+    pub const fn is_active(&self) -> bool {
+        self.active
     }
 
     /// The modes of the session as they are right now.
@@ -187,6 +212,12 @@ impl Session {
     /// Turns the mouse reports off or on at run time, for example while a child window plays a
     /// video. A second call with the same value writes nothing.
     pub fn set_mouse(&mut self, on: bool) -> io::Result<()> {
+        self.set_mouse_to(&mut io::stdout(), on)
+    }
+
+    /// `set_mouse` with the bytes to `out`, so that a test of the app reads what goes to the
+    /// terminal.
+    pub fn set_mouse_to(&mut self, out: &mut impl Write, on: bool) -> io::Result<()> {
         if on == self.mouse {
             return Ok(());
         }
@@ -195,9 +226,9 @@ impl Session {
             return Ok(());
         }
         if on {
-            enable_mouse(&mut io::stdout())
+            enable_mouse(out)
         } else {
-            disable_mouse(&mut io::stdout())
+            disable_mouse(out)
         }
     }
 
@@ -208,6 +239,9 @@ impl Session {
             return Ok(());
         }
         self.active = false;
+        if self.detached {
+            return Ok(());
+        }
         release_terminal_to(&mut io::stdout(), self.modes(), disable_raw_mode)
     }
 
@@ -217,6 +251,10 @@ impl Session {
     /// so `restore` or the drop gives raw mode back; the shell of the user never stays raw.
     pub fn resume(&mut self) -> io::Result<()> {
         if self.active {
+            return Ok(());
+        }
+        if self.detached {
+            self.active = true;
             return Ok(());
         }
         enable_raw_mode()?;
@@ -237,13 +275,27 @@ impl Session {
     /// the session lets go of the terminal, `run` runs, the session takes the terminal back, and
     /// `terminal` paints every cell on its next draw. A failed release takes the terminal back and
     /// returns before `run`. A failed take-back returns its error after `run`; `restore` or the
-    /// drop still gives raw mode back.
+    /// drop still gives raw mode back. That error drops the value of `run`: `lend_keeping` keeps
+    /// it.
     pub fn lend<B: Backend, T>(
         &mut self,
         terminal: &mut Terminal<B>,
         pause: Option<&ReaderPause>,
         run: impl FnOnce() -> T,
     ) -> io::Result<T> {
+        self.lend_keeping(terminal, pause, run)
+            .map_err(|lend| lend.error)
+    }
+
+    /// `lend`, with the value of `run` in the error of a failed take-back, so that the files of a
+    /// picker or the text of an editor do not go with the error. The terminal repaints at the next
+    /// draw in each case, so the caller needs no `repaint_on_next_draw` of its own.
+    pub fn lend_keeping<B: Backend, T>(
+        &mut self,
+        terminal: &mut Terminal<B>,
+        pause: Option<&ReaderPause>,
+        run: impl FnOnce() -> T,
+    ) -> Result<T, LendError<T>> {
         if let Some(pause) = pause {
             pause.pause();
         }
@@ -254,24 +306,64 @@ impl Session {
         result
     }
 
-    /// `lend` without the pause of the reader.
+    /// `lend_keeping` without the pause of the reader.
     fn lend_unpaused<B: Backend, T>(
         &mut self,
         terminal: &mut Terminal<B>,
         run: impl FnOnce() -> T,
-    ) -> io::Result<T> {
+    ) -> Result<T, LendError<T>> {
         if let Err(error) = self.suspend() {
             #[expect(
                 clippy::let_underscore_must_use,
                 reason = "the release error matters more than a failed take-back"
             )]
             let _ = self.resume();
-            return Err(error);
+            repaint_on_next_draw(terminal);
+            return Err(LendError { error, value: None });
         }
         let value = run();
-        self.resume()?;
+        // The screen is unknown after a take-back too, failed or not: the next draw paints
+        // every cell.
+        let resumed = self.resume();
         repaint_on_next_draw(terminal);
-        Ok(value)
+        match resumed {
+            Ok(()) => Ok(value),
+            Err(error) => Err(LendError {
+                error,
+                value: Some(value),
+            }),
+        }
+    }
+}
+
+/// The error of `Session::lend_keeping`, with the value of `run` when it ran, so that the app
+/// keeps the result of the child after a failed take-back.
+#[derive(Debug)]
+pub struct LendError<T> {
+    /// The error of the release or of the take-back of the terminal.
+    pub error: io::Error,
+    /// The value of `run`: `None` when the release failed and `run` did not run.
+    pub value: Option<T>,
+}
+
+impl<T> std::fmt::Display for LendError<T> {
+    /// The text of the terminal error, so the error reads as the error of `lend`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.error.fmt(f)
+    }
+}
+
+impl<T: std::fmt::Debug> std::error::Error for LendError<T> {
+    /// The terminal error, so a report with the chain names it once.
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.error.source()
+    }
+}
+
+/// The terminal error alone, so `?` in a function that returns `io::Result` drops the value.
+impl<T> From<LendError<T>> for io::Error {
+    fn from(lend: LendError<T>) -> Self {
+        lend.error
     }
 }
 
@@ -302,12 +394,19 @@ pub fn repaint_on_next_draw<B: Backend>(terminal: &mut Terminal<B>) {
 /// goes on drawing, and runs the hook that was in place before, which prints the message on stderr,
 /// onto the alternate screen. An app that wants no print there uses `install_panic_hook_with`. The
 /// hook exits nowhere: the app decides what happens after the message.
+///
+/// A panic of another thread inside the log writer of `log_file` skips the worker hook of
+/// `install_panic_hook_with`: that thread holds the lock of the log, so a log call in the hook
+/// waits for ever.
 pub fn install_panic_hook(modes: Modes) {
     install_hook(modes, None);
 }
 
 /// `install_panic_hook`, with `worker` for a panic on another thread in place of the hook that
 /// was in place before. The app logs the panic there and prints nothing onto its screen.
+///
+/// The hook does not call `worker` while `log_file::writing` is true on the thread of the panic,
+/// so `worker` needs no guard of its own.
 pub fn install_panic_hook_with(
     modes: Modes,
     worker: impl Fn(&PanicHookInfo<'_>) + Send + Sync + 'static,
@@ -330,11 +429,25 @@ fn install_hook(modes: Modes, worker: Option<WorkerHook>) {
             let _ = release_terminal_to(&mut io::stdout(), modes, disable_raw_mode);
             previous(info);
         } else if let Some(worker) = &worker {
-            worker(info);
+            if !in_log_writer() {
+                worker(info);
+            }
         } else {
             previous(info);
         }
     }));
+}
+
+/// Whether this thread is inside a write of `log_file`, which exists on unix only.
+fn in_log_writer() -> bool {
+    #[cfg(unix)]
+    {
+        crate::log_file::writing()
+    }
+    #[cfg(not(unix))]
+    {
+        false
+    }
 }
 
 #[cfg(test)]

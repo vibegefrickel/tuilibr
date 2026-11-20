@@ -1,4 +1,6 @@
-use super::{LoopLimits, LoopOutcome, LoopPlayer, LoopResult, LoopTicket, run_caught};
+use super::{
+    LoopLimits, LoopOutcome, LoopPlayer, LoopResult, LoopTicket, run_caught, run_caught_with,
+};
 use crate::pictures::jobs::thumbnail_cache::GridPicture;
 use crate::pictures::kitty::screen::{Placements, Screen, Update};
 use crate::pictures::kitty::{KittyBackend, Loops, Transfer};
@@ -382,7 +384,89 @@ fn loops_wait_while_stills_wait() {
         .unwrap();
     drop(update);
     assert!(out.is_empty());
+    assert!(!player.needs_send(), "the stills go first");
+    // The hold gives the next tick, not a zero wake: the app does not spin while stills wait.
+    let next_tick = LoopClock::starting_at(epoch).instant_of(1);
+    assert_eq!(player.next_wake(epoch), Some(next_tick - epoch));
+    assert!(!player.due(epoch));
+
+    // The next frame forgets the hold. Without waiting stills, the loop goes out at once.
+    show(&mut player, &[7], epoch);
     assert!(player.needs_send());
+    assert_eq!(player.next_wake(epoch), Some(Duration::ZERO));
+    frame = Placements::default();
+    let mut drained = Screen::default();
+    let mut out = Vec::new();
+    let mut update = Update::new(&mut out);
+    player
+        .send_frames(&mut update, &mut drained, graphics, &mut frame, 0)
+        .unwrap();
+    drop(update);
+    assert!(!out.is_empty(), "the loop goes out");
+}
+
+#[test]
+fn a_hold_counts_only_for_the_held_box() {
+    let (mut player, epoch) = player(LoopLimits::default());
+    let mut screen = Screen::default();
+    show(&mut player, &[1], epoch);
+    let ticket = start(&mut player).pop().unwrap();
+    player.ready(loop_of(ticket, 3), Loops::Ticks);
+    flush(&mut player, &mut screen, Loops::Ticks, &[1]);
+    assert!(player.is_playing(&1));
+
+    // Box 1 plays and is placed. Its next change is at tick 4, the hold of box 2 wakes at tick 1.
+    show(&mut player, &[1, 2], epoch);
+    let ticket = start(&mut player).pop().unwrap();
+    player.ready(loop_of(ticket, 2), Loops::Ticks);
+    let mut waiting = Screen::default().with_pass_bytes(1);
+    let mut frame = Placements::default();
+    frame.place(10, Rect::new(0, 0, 1, 1));
+    frame.place(11, Rect::new(0, 1, 1, 1));
+    let still = RgbaImage::new(2, 2);
+    waiting
+        .flush(
+            &mut Vec::new(),
+            backend(Loops::Ticks),
+            &mut frame,
+            &[],
+            |_| Some((&still).into()),
+        )
+        .unwrap();
+    assert_eq!(waiting.waiting(), &[11]);
+    let mut out = Vec::new();
+    let mut update = Update::new(&mut out);
+    player
+        .send_frames(
+            &mut update,
+            &mut waiting,
+            backend(Loops::Ticks),
+            &mut frame,
+            0,
+        )
+        .unwrap();
+    drop(update);
+    assert!(out.is_empty(), "box 2 waits for the stills");
+    let clock = LoopClock::starting_at(epoch);
+    assert_eq!(player.next_wake(epoch), Some(clock.instant_of(1) - epoch));
+    player.forget_where(|&key| key == 2);
+    assert_eq!(player.next_wake(epoch), Some(clock.instant_of(4) - epoch));
+}
+
+#[test]
+fn is_decoding_names_the_boxes_with_a_running_job() {
+    let (mut player, epoch) = player(LoopLimits::default());
+    show(&mut player, &[1, 2], epoch);
+    assert!(!player.is_decoding(&1));
+    let mut tickets = start(&mut player).into_iter();
+    let first = tickets.next().unwrap();
+    assert!(player.is_decoding(&1));
+    assert!(player.is_decoding(&2));
+    player.ready(loop_of(first, 2), Loops::Ticks);
+    assert!(!player.is_decoding(&1), "the result came");
+    assert!(player.is_decoding(&2));
+    player.clear();
+    assert!(!player.is_decoding(&2));
 }
 
 #[test]
@@ -476,6 +560,29 @@ fn outcomes_map_the_errors_and_a_panic_fails() {
         run_caught(|| LoopOutcome::Cancelled),
         LoopOutcome::Cancelled
     ));
+
+    let mut texts = Vec::new();
+    let caught = run_caught_with(
+        || panic!("frame {} broke", 3),
+        |text| texts.push(text.to_owned()),
+    );
+    assert!(matches!(caught, LoopOutcome::Failed));
+    let caught = run_caught_with(
+        || panic!("a fixed text"),
+        |text| texts.push(text.to_owned()),
+    );
+    assert!(matches!(caught, LoopOutcome::Failed));
+    let caught = run_caught_with(
+        || std::panic::panic_any(7_u8),
+        |text| texts.push(text.to_owned()),
+    );
+    assert!(matches!(caught, LoopOutcome::Failed));
+    let kept = run_caught_with(|| LoopOutcome::Cancelled, |_| unreachable!("no panic"));
+    assert!(matches!(kept, LoopOutcome::Cancelled));
+    assert_eq!(
+        texts,
+        ["frame 3 broke", "a fixed text", "a panic without a text"]
+    );
 }
 
 #[test]

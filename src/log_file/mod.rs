@@ -33,16 +33,29 @@ pub struct CappedLog {
 }
 
 impl CappedLog {
-    /// Opens `path` for appending and makes the file if it is missing. A log at its cap moves
-    /// aside first. A failed move is an error here, so the app learns at the start that its log
-    /// cannot rotate.
+    /// Opens `path` for appending and makes the file and its folder if they are missing. A log at
+    /// its cap moves aside first.
+    ///
+    /// A failed move is no error: the log stays open and grows, as after a failed move of a write.
+    /// The app loses no line for a log that cannot rotate. Only a failed folder or a failed open
+    /// is an error.
     pub fn open(path: PathBuf, cap: u64) -> io::Result<Self> {
+        if let Some(parent) = path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            fs::create_dir_all(parent)?;
+        }
         let log = Self {
             file: Mutex::new(open_append(&path)?),
             path,
             cap,
         };
-        log.keep_under_cap(&mut log.lock())?;
+        #[expect(
+            clippy::let_underscore_must_use,
+            reason = "a failed move only lets the log grow on; the log must open for it"
+        )]
+        let _ = log.keep_under_cap(&mut log.lock());
         Ok(log)
     }
 

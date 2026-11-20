@@ -9,7 +9,8 @@ use crossterm::event::KeyboardEnhancementFlags;
 use ratatui::{Terminal, backend::TestBackend};
 
 use super::{
-    Modes, disable_mouse, enable_mouse, enter_to, release_terminal_to, repaint_on_next_draw,
+    LendError, Modes, Session, disable_mouse, enable_mouse, enter_to, install_panic_hook_with,
+    release_terminal_to, repaint_on_next_draw,
 };
 
 /// Each part of `parts` appears in `text`, after the part before it.
@@ -97,6 +98,86 @@ fn modes_that_are_off_write_nothing_of_their_own() {
     release_terminal_to(&mut release, Modes::default(), || Ok(())).unwrap();
     let release = String::from_utf8(release).unwrap();
     assert_eq!(release, "\x1b[?2026l\x1b[?25h\x1b[?1049l");
+}
+
+#[test]
+fn the_mouse_goes_off_and_on_once_each() {
+    let mut session = Session::detached(Modes {
+        mouse: true,
+        ..Modes::default()
+    });
+    let mut out = Vec::new();
+    session.set_mouse_to(&mut out, true).unwrap();
+    assert!(out.is_empty(), "nothing changed");
+    session.set_mouse_to(&mut out, false).unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&out),
+        "\x1b[?1006l\x1b[?1002l\x1b[?1000l"
+    );
+    assert!(!session.modes().mouse);
+    out.clear();
+    session.set_mouse_to(&mut out, false).unwrap();
+    assert!(out.is_empty(), "released once");
+    session.set_mouse_to(&mut out, true).unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&out),
+        "\x1b[?1000h\x1b[?1002h\x1b[?1006h"
+    );
+}
+
+#[test]
+fn a_suspended_session_turns_the_mouse_on_at_the_resume_only() {
+    let mut session = Session::detached(Modes::default());
+    session.suspend().unwrap();
+    let mut out = Vec::new();
+    session.set_mouse_to(&mut out, true).unwrap();
+    assert!(out.is_empty(), "no terminal to write to");
+    assert!(session.modes().mouse, "the resume turns it on");
+    session.resume().unwrap();
+}
+
+#[test]
+fn a_lend_gives_the_value_of_the_child_and_takes_the_terminal_back() {
+    let mut session = Session::detached(Modes::default());
+    let mut terminal = Terminal::new(TestBackend::new(4, 1)).unwrap();
+    let value = session
+        .lend_keeping(&mut terminal, None, || "edited text")
+        .unwrap();
+    assert_eq!(value, "edited text");
+    assert_eq!(session.lend(&mut terminal, None, || 7).unwrap(), 7);
+}
+
+#[test]
+fn a_lend_error_reads_as_the_terminal_error_and_keeps_the_value() {
+    let lend = LendError {
+        error: io::Error::new(io::ErrorKind::BrokenPipe, "take-back failed"),
+        value: Some(vec!["a.jpg"]),
+    };
+    assert_eq!(lend.to_string(), "take-back failed");
+    assert_eq!(lend.value.as_deref(), Some(&["a.jpg"][..]));
+    let error = io::Error::from(lend);
+    assert_eq!(error.kind(), io::ErrorKind::BrokenPipe);
+}
+
+#[test]
+fn a_worker_panic_inside_the_log_writer_skips_the_worker_hook() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let calls = Arc::new(AtomicUsize::new(0));
+    let counted = Arc::clone(&calls);
+    install_panic_hook_with(Modes::default(), move |_| {
+        counted.fetch_add(1, Ordering::SeqCst);
+    });
+    let writer = std::thread::spawn(|| {
+        let _writing = crate::log_file::Writing::enter();
+        panic!("a panic inside the log writer");
+    });
+    assert!(writer.join().is_err());
+    assert_eq!(calls.load(Ordering::SeqCst), 0, "inside the writer");
+    let worker = std::thread::spawn(|| panic!("a panic of a worker"));
+    assert!(worker.join().is_err());
+    assert_eq!(calls.load(Ordering::SeqCst), 1, "outside the writer");
+    drop(std::panic::take_hook());
 }
 
 #[test]
@@ -577,4 +658,14 @@ mod start {
         assert!(kitty.shows_pictures() && kitty.cell_from_terminal);
         assert!(!Start::without_kitty().shows_pictures());
     }
+}
+
+#[test]
+fn a_detached_session_reports_its_active_state() {
+    let mut session = Session::detached(Modes::default());
+    assert!(session.is_active());
+    session.suspend().unwrap();
+    assert!(!session.is_active());
+    session.resume().unwrap();
+    assert!(session.is_active());
 }

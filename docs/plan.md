@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 219dc37
+- Commit: d1e71d3
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -50,6 +50,41 @@
     adopt them (`/tmp/<app>-brief-crate-bc.md`, with the one-time XDG folder moves).
   - the loop player got three fixes from phewr: `clear()` empties the boxes, a failure lasts
     one visit, the budget counts every stored loop first.
+  - adopted: wettr (`43cd358`, `b1d403a`), youtr (`ce0bf52`, `c929f95`), agendr (`c7f8913`,
+    `e00f416`), schnattr B (`9954a9c`), phewr B (`a5be1ea`). Crate gaps to fix
+    after all B/C merges (the API stays stable until then, agendr asked): `programs::{open,
+    copy}` keep the program name in the error (wettr and youtr add it at the call),
+    `CappedLog::open` creates its folder, `AppDirs::below` without the unused `home`, and the doc
+    of `write_atomic` tells the app to call `remove_stale_temps` at start. Player gaps from
+    schnattr (`ad11ee7`, `loops.rs` 544 to 329 lines): a per-key `is_decoding`, no zero
+    `next_wake` while `send_frames` holds the loops back for waiting stills, and a
+    `run_caught` variant that hands the panic text to the app for its log. From agendr
+    (`c7f8913`, `e00f416`): `buffer::joined`, a single-folder override in `AppDirs`,
+    `CappedLog::open` keeps logging when the start rotation fails, `programs::open` tells a
+    failed start from an exit with an error, and the crate panic hook skips the app log while
+    `log_file::writing()` is true. From phewr (`b81f40c`): a `Session::set_mouse_to(out, on)` twin, so
+    an app can test the mouse bytes. From schnattr (`9954a9c`, batch B, about 680 lines less): a test of the
+    reader poll bound, a public idle mark of `ReaderPause`, no unreaped child in
+    `programs::launch`, a name filter for `remove_stale_temps`, `write_atomic` without
+    `sync_all` for caches, and `Session::lend` that returns the value of `run` with a failed
+    take-back. Candidate: a shared one-time folder move in `dirs` (agendr,
+    phewr and schnattr each wrote one); compare the three after their merges.
+- Done (2026-11-20, late): the gaps of the apps are fixed in the crate (18 of 19; `AppDirs::below`
+  keeps its two arguments, because a running phewr worker uses them): program names in the
+  `programs` errors, `CappedLog` makes its folder and survives a failed start rotation,
+  `in_one_folder`, `buffer::joined`, the panic hook skips the app log in the log writer,
+  `is_decoding`, the stills hold of the player, `run_caught_with`, `set_mouse_to` and
+  `Session::detached`, `ReaderPause::is_idle`, the launch reaper, `remove_stale_temps_of`,
+  `write_atomic_unsynced`, `Session::lend_keeping`. youtr, wettr and agendr got the forced
+  error-text edits in the same step (uncommitted). The shared folder move: a small
+  `dirs::move_once(old, new, OtherVolume)` when schnattr builds its move.
+- Done: phewr batches B and C (`a5be1ea`, `58ed2b8`, it uses `remove_stale_temps_of`, so it
+  needs this crate state committed). Open gap from phewr: `AppDirs::from_vars` fails on an empty
+  HOME (phewr falls back to a temp folder itself). schnattr: `xdg-move` runs; `move_once` comes
+  from its rename-or-copy core after its merge, if a second app needs it.
+- Done: phewr has batches A, B and C and the gap follow-up (`87278c8`); agendr dropped its
+  workarounds (`9acfad3`). From agendr: `lend_keeping` repaints in every case, and
+  `Session::is_active()` shows a failed take-back.
 - Open (agent): answer the crate requests of the five apps. Every other open item needs the
   maintainer at a terminal (the test run, the test matrix, the RGBA measure).
 - Open (user): push `main` (8 commits ahead of `origin`). No worktree is left.

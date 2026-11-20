@@ -18,7 +18,8 @@
 //! 4. **The budget.** A loop above the budget of the terminal moves its ids to the stale list,
 //!    and its box keeps the still until it leaves the screen.
 //! 5. **The wake.** [`LoopPlayer::next_wake`] gives the exact time of the next frame change on
-//!    the shared clock.
+//!    the shared clock. A loop that [`LoopPlayer::send_frames`] held back because stills wait
+//!    gives no zero wake: it wakes at the next tick of the clock.
 //! 6. **The terminal player.** With `Loops::Animation`, the terminal plays each loop as one
 //!    Kitty animation under one id.
 //! 7. **The focus gain.** [`LoopPlayer::pixels_of`] gives the pixels of a tick frame for the new
@@ -27,10 +28,11 @@
 //!
 //! Two gates keep the cores for the stills: the app calls [`LoopPlayer::start_jobs`] only when
 //! no still decodes, and [`LoopPlayer::cancel_jobs`] stops the jobs when new stills wait. A loop
-//! also waits for its transfer while stills of the last pass wait.
+//! also waits for its transfer while stills of the last pass wait. [`LoopPlayer::is_decoding`]
+//! tells whether a job runs for a box.
 //!
 //! The player takes the base of phewr: the job cap without a loop cap, the exact wake, the
-//! animation path, the panic guard ([`run_caught`]), the generation and the gates for the
+//! animation path, the panic guard ([`run_caught`], [`run_caught_with`]), the generation and the gates for the
 //! stills. It takes the fixes of schnattr: the cancel of a hidden job, the minimum of 2 frames,
 //! the stale ids above the budget, [`LoopPlayer::pixels_of`] and the `play` flag of each box.
 
@@ -38,7 +40,7 @@ mod job;
 #[cfg(test)]
 mod tests;
 
-pub use job::{LoopOutcome, LoopResult, LoopTicket, run_caught};
+pub use job::{LoopOutcome, LoopResult, LoopTicket, run_caught, run_caught_with};
 
 use super::{place_loop_frame, transmit_loop_to};
 use crate::pictures::jobs::thumbnail_cache::GridPicture;
@@ -103,6 +105,9 @@ pub struct LoopPlayer<K> {
     play: HashMap<K, bool>,
     /// The ids of the loops that left. The next flush deletes them.
     stale: Vec<u32>,
+    /// The playing boxes whose transfer the last `send_frames` held back because stills waited.
+    /// `begin_frame` empties it, so it holds the hold of this frame only.
+    held: HashSet<K>,
     /// The number of the last job, so a result lands only for the job that still runs.
     jobs: u64,
     /// Goes up at each [`LoopPlayer::clear`], so a result of an older job goes away.
@@ -121,6 +126,7 @@ impl<K> fmt::Debug for LoopPlayer<K> {
             .field("over_budget", &self.over_budget.len())
             .field("shown", &self.shown.len())
             .field("stale", &self.stale.len())
+            .field("held", &self.held.len())
             .field("generation", &self.generation)
             .finish_non_exhaustive()
     }
@@ -150,6 +156,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             shown: Vec::new(),
             play: HashMap::new(),
             stale: Vec::new(),
+            held: HashSet::new(),
             jobs: 0,
             generation: 0,
         }
@@ -167,6 +174,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     pub fn begin_frame(&mut self, now: Instant) -> u64 {
         self.shown.clear();
         self.play.clear();
+        self.held.clear();
         self.tick = self.clock.tick_at(now);
         self.tick
     }
@@ -226,6 +234,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         });
         self.over_budget.retain(|key| play.contains_key(key));
         self.failed.retain(|key| play.contains_key(key));
+        self.held.retain(|key| play.contains_key(key));
     }
 
     /// Starts the jobs of the playing boxes without a loop in the order of the screen, within
@@ -285,7 +294,9 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     ///
     /// `kept_bytes` is the bytes of the stills on screen. A loop above the budget of the
     /// terminal goes to the stale list, and its box keeps the still. A box that does not play
-    /// sends nothing, and no loop goes out while stills of the last pass wait.
+    /// sends nothing, and no loop goes out while stills of the last pass wait. The player keeps
+    /// such a hold until the next `begin_frame`, so `needs_send` and `next_wake` give no zero
+    /// wake for it.
     pub fn send_frames<W: Write + ?Sized>(
         &mut self,
         update: &mut Update<'_, W>,
@@ -295,6 +306,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         kept_bytes: usize,
     ) -> io::Result<()> {
         let stills_wait = !screen.waiting().is_empty();
+        self.held.clear();
         // Every stored loop of the frame counts before the first send, so a loop that waits in
         // front of a stored one cannot push the terminal above its budget.
         let mut kept = self
@@ -315,7 +327,14 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
             }
             let bytes = cell.bytes();
             let play = self.play.get(key).copied().unwrap_or(false);
-            if !play || stills_wait || update.pixel_bytes() >= EMIT_PASS_BYTES {
+            if !play {
+                continue;
+            }
+            if stills_wait {
+                self.held.insert(key.clone());
+                continue;
+            }
+            if update.pixel_bytes() >= EMIT_PASS_BYTES {
                 continue;
             }
             if kept.saturating_add(bytes) > screen.budget() {
@@ -368,8 +387,15 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     }
 
     /// True when a playing loop of this frame waits for its transfer or its first placement.
+    ///
+    /// A loop that `send_frames` held back because stills wait does not count: the app draws
+    /// again for the stills, and [`Self::next_wake`] wakes it at the next tick.
     pub fn needs_send(&self) -> bool {
-        self.playing().any(|cell| cell.placed.is_none())
+        self.shown
+            .iter()
+            .filter(|key| self.plays(key) && !self.held.contains(*key))
+            .filter_map(|key| self.loops.get(key))
+            .any(|cell| cell.placed.is_none())
     }
 
     /// True when a playing tick loop of this frame shows another frame than the one at `now`.
@@ -382,14 +408,20 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     /// The time from `now` to the next frame change of a playing tick loop. Zero when a loop
     /// waits for its transfer or is [`Self::due`]. `None` when no loop needs a wake: a Kitty
     /// animation plays alone.
+    ///
+    /// A loop that `send_frames` held back because stills wait gives the next tick of the clock,
+    /// not zero. So the app does not spin while the stills go out, and a hold that ends in the
+    /// same pass costs one tick at most.
     pub fn next_wake(&self, now: Instant) -> Option<Duration> {
         if self.needs_send() || self.due(now) {
             return Some(Duration::ZERO);
         }
         let tick = self.clock.tick_at(now);
+        let held = (!self.held.is_empty()).then(|| tick.saturating_add(1));
         self.playing()
             .filter(|cell| !cell.animation && cell.placed.is_some())
             .map(|cell| cell.next_change(tick))
+            .chain(held)
             .min()
             .map(|next| self.clock.instant_of(next).saturating_duration_since(now))
     }
@@ -416,6 +448,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         self.over_budget.clear();
         self.shown.clear();
         self.play.clear();
+        self.held.clear();
         self.generation = self.generation.wrapping_add(1);
     }
 
@@ -439,6 +472,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
         });
         self.failed.retain(|key| !forget(key));
         self.over_budget.retain(|key| !forget(key));
+        self.held.retain(|key| !forget(key));
     }
 
     /// The terminal deleted every placement. The next frame places each loop again.
@@ -449,6 +483,12 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     /// True while a job runs, so the run loop polls for its result.
     pub fn pending(&self) -> bool {
         !self.running.is_empty()
+    }
+
+    /// True while a job decodes the loop of `key`, so a test or the app sees which boxes started.
+    /// A cancelled job counts until its result comes back.
+    pub fn is_decoding(&self, key: &K) -> bool {
+        self.running.contains_key(key)
     }
 
     /// True when the loop of `key` shows a frame now.
