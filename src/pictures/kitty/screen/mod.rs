@@ -28,15 +28,14 @@ use std::time::{Duration, Instant};
 
 /// The most losses of one picture within `LOSS_WINDOW` that the screen answers with a new
 /// transfer. When the store of the terminal is smaller than the budget, each transfer can evict
-/// another picture on the screen, and its `ENOENT` would bring the next transfer at the speed of
-/// the round trip.
+/// another picture on the screen. Without the limit, each `ENOENT` brings the next transfer at the
+/// speed of the round trip.
 const MAX_LOSSES: usize = 3;
 
 /// The time within which `MAX_LOSSES` losses of one picture stop its new transfers.
 const LOSS_WINDOW: Duration = Duration::from_secs(10);
 
-/// The marks of a synchronized update live in `terminal`. These paths stay for the apps that
-/// import them from here.
+/// The marks of a synchronized update, for the apps that import them from here.
 pub use crate::terminal::{BEGIN_SYNC, END_SYNC};
 
 /// Which placements a flush writes.
@@ -125,8 +124,6 @@ impl Placements {
     }
 }
 
-/// The places for apps with other needs: the ground under the text and
-/// the overlay.
 impl Placements {
     /// Puts the picture `id` on `cells` under the text of the cells, as a ground for text.
     pub fn place_under(&mut self, id: u32, cells: Rect) {
@@ -255,9 +252,8 @@ pub struct Screen {
     /// The pictures that the terminal can still store after a clear: a terminal that kept them
     /// through the clear still needs their delete. They count for no budget.
     maybe_stored: BTreeSet<u32>,
-    /// The stored pictures whose pixels go out again at their next placement: after a focus
-    /// gain, the terminal or a multiplexer can have dropped them. They still count for the
-    /// budget.
+    /// The stored pictures whose pixels go out again at their next placement: a focus gain can
+    /// lose them in the terminal or in a multiplexer. They still count for the budget.
     resend: BTreeSet<u32>,
     /// The cells by picture id and placement id.
     placed: BTreeMap<(u32, u32), Shown>,
@@ -677,9 +673,6 @@ impl Screen {
     }
 }
 
-/// The settings and the events for apps with other needs: the placement policy, the byte cap,
-/// the own update, the resize, the clear, the focus gain and the quit. Each part has its own
-/// feature, so an app builds only the parts that it calls. The tests build every part.
 impl Screen {
     /// The same screen with the placement policy `placing`.
     #[must_use]

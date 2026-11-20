@@ -73,7 +73,8 @@ pub fn spread(left: Vec<Span<'static>>, right: Vec<Span<'static>>, width: usize)
     Line::from(spans)
 }
 
-/// The spans that fit `room`, the first one that does not cut with `…` and the rest left out.
+/// The spans that fit `room`. The first span that does not fit gets a cut with `…`, and the rest
+/// drop.
 fn cut(spans: Vec<Span<'static>>, room: usize) -> Vec<Span<'static>> {
     let mut room = room;
     let mut kept = Vec::new();

@@ -392,7 +392,7 @@ fn non_ascii_path_keeps_cube() {
     assert!(file.is_file());
 }
 
-/// The copied math matches the player cube at each point, within 1e-3 of the output range.
+/// The `ToneMap` of a still matches the player cube at each point, within 1e-3 of the output range.
 #[test]
 fn map_matches_player_cube() {
     use crate::pictures::motion::tone_map::{Cube, CubeSource};

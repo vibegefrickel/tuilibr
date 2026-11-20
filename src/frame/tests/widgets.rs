@@ -53,7 +53,7 @@ fn an_entry_has_the_picture_the_name_with_the_pill_and_the_second_row() {
     );
     assert_eq!(buffer[(18, 0)].fg, Color::Black);
     assert_eq!(buffer[(19, 1)].bg, Color::White);
-    // The second row keeps the one dark tone of the ground, regular weight, no dim.
+    // The second row keeps the one dark tone of the ground, with regular weight and no dim.
     assert_eq!(buffer[(5, 1)].fg, Color::Black, "the second row tone");
     assert!(!buffer[(5, 1)].modifier.contains(Modifier::DIM));
     assert!(!buffer[(5, 1)].modifier.contains(Modifier::BOLD));
@@ -412,7 +412,7 @@ fn a_bar_with_one_left_part_keeps_the_style_of_the_middle_and_the_time() {
         Color::Red,
         "the style of the middle text"
     );
-    // On a narrow bar, the left part and the first right groups go. The time and the icon stay.
+    // On a narrow bar, the left part and the first right groups drop. The time and the icon stay.
     let buffer = drawn(30, 1, |frame| {
         places = draw_bar(frame, bar_without_tabs(), frame.area(), 0);
     });

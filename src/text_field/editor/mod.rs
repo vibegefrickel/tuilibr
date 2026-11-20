@@ -43,7 +43,7 @@ pub enum EditorError {
     Failed(ExitStatus),
     /// The editor did not start.
     Start(io::Error),
-    /// The temporary file could not be written or read.
+    /// A write or a read of the temporary file failed.
     File(io::Error),
 }
 
@@ -78,7 +78,7 @@ pub fn edit_text(text: &str, multi_line: bool) -> Result<String, EditorError> {
 }
 
 /// Finds the editor command from the variables that `variable` reads: `$VISUAL`, then `$EDITOR`,
-/// then `nvim` when it is in `$PATH`.
+/// then `nvim` from `$PATH`.
 ///
 /// The caller gives the lookup, so that a test does not change the environment of the process.
 pub fn editor_command(variable: impl Fn(&str) -> Option<OsString>) -> Option<String> {

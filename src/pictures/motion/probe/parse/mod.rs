@@ -6,7 +6,7 @@ use crate::pictures::motion::tone_map::{Hdr, Primaries};
 use serde::Deserialize;
 use std::io;
 
-/// The rate when the container gives none, or none that makes sense.
+/// The rate for a container without a rate, or without a rate that makes sense.
 const FALLBACK_FPS: f64 = 24.0;
 
 /// Above this rate, an animation plays at the mean rate of its frames, not at the rate of
@@ -106,7 +106,7 @@ struct Packet {
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Timing {
     fps: f64,
-    /// `None` when the walk stopped before the end.
+    /// `None` after a walk that stopped before the end.
     duration: Option<f64>,
 }
 
@@ -214,7 +214,7 @@ fn chroma(pix_fmt: &str) -> Chroma {
     }
 }
 
-/// The bits per sample of an ffmpeg pixel format name, 8 when the name holds no depth.
+/// The bits per sample of an ffmpeg pixel format name, 8 for a name without a depth.
 fn bit_depth(pix_fmt: &str) -> u8 {
     let name = pix_fmt
         .strip_suffix("le")
@@ -250,8 +250,8 @@ fn fraction(text: &str) -> Option<f64> {
     (numerator > 0.0 && denominator > 0.0).then(|| numerator / denominator)
 }
 
-/// The pacing rate from `r_frame_rate` (`real`) and `avg_frame_rate` (`average`), and `true`
-/// when ffmpeg must get it as `-r`.
+/// The pacing rate from `r_frame_rate` (`real`) and `avg_frame_rate` (`average`), and whether
+/// ffmpeg must get it as `-r`.
 ///
 /// Without an average rate, a video paces at `real`, because ffmpeg writes raw frames at
 /// `real` then. An animation gets its rate from the packets later.
@@ -308,8 +308,8 @@ fn choose_stream(streams: &[Stream], animation: bool) -> Option<&Stream> {
     })
 }
 
-/// The rate from the first [`TIMING_PACKETS`] packets, and the length when the walk reached
-/// the end. `ffprobe` read at most `limit` packets.
+/// The rate from the first [`TIMING_PACKETS`] packets, and the length after a walk to the end.
+/// `ffprobe` read at most `limit` packets.
 fn animation_timing(packets: &[Packet], stream: &Stream, limit: usize) -> Option<Timing> {
     let durations: Vec<i64> = packets
         .iter()
@@ -326,7 +326,7 @@ fn animation_timing(packets: &[Packet], stream: &Stream, limit: usize) -> Option
 /// The rate is the inverse of the delays' greatest common divisor: a GIF with delays of 100
 /// and 500 ms plays at 10 fps. Above [`MAX_ANIMATION_FPS`], the rate is the mean rate. A GIF
 /// of 30 fps alternates delays of 30 and 40 ms (gcd 10 ms), and a cap rounds them to 20 and
-/// 40 ms. The length is the sum when `complete`.
+/// 40 ms. If `complete` is true, the length is the sum.
 fn timing_of(durations: &[i64], seconds_per_unit: f64, complete: bool) -> Option<Timing> {
     let step = durations
         .iter()

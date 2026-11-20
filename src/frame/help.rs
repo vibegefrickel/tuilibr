@@ -15,7 +15,7 @@ use super::style::{dim, heading};
 use crate::cells::to_u16;
 
 /// A heading and its keys with what they do. The lifetime lets an app build rows at run time, on
-/// the stack; a const table is `Section<'static>`.
+/// the stack. A const table is `Section<'static>`.
 pub type Section<'a> = (&'a str, &'a [(&'a str, &'a str)]);
 
 /// The columns between two columns of sections.
@@ -100,17 +100,17 @@ pub fn first_misfit<'a>(
     })
 }
 
-/// The one dialog box of every app: a help page, a confirm question, a form or a downloads window
-/// sits in it, so each app shows the same box.
+/// The one dialog box of every app, for a help page, a confirm question, a form or a downloads
+/// window.
 ///
-/// It is centered in `area`, with rounded corners like the panes of the maximal layout, its title
-/// after one line cell like a pane box, and an optional hint at the bottom right, before one line
-/// cell, as the mirror of the title. The padding is two columns at the sides, so the body starts
-/// in the column of the first letter of the title, and one row at the top and the bottom
-/// (`DIALOG_FRAME_COLUMNS` and `DIALOG_FRAME_ROWS` with the border). It keeps a margin of 4
-/// columns and 2 rows. When `size` does not fit the height, the padding rows go first, then the
-/// margin rows, so a low screen gives the rows to the body. The caller draws the body in the
-/// returned area inside the box.
+/// The box sits in the center of `area`. It has rounded corners and its title after one line cell,
+/// as a pane box. An optional hint sits at the bottom right before one line cell, as the mirror of
+/// the title. The padding is two columns at the sides and one row at the top and the bottom
+/// (`DIALOG_FRAME_COLUMNS` and `DIALOG_FRAME_ROWS` with the border). So the body starts in the
+/// column of the first letter of the title.
+///
+/// The box keeps a margin of 4 columns and 2 rows. If `size` does not fit the height, the padding
+/// rows drop first, then the margin rows. The caller draws the body in the returned area.
 pub fn dialog_box(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -143,9 +143,7 @@ pub fn dialog_rect(area: Rect, size: (u16, u16)) -> Rect {
         .inner(rect)
 }
 
-/// The box with its border, centered in `area`, and its padding. The box is at most `size` and
-/// sits inside the margin of 4 columns and 2 rows. A `size` higher than the room drops the two
-/// padding rows, and a `size` higher than the area drops the margin rows too.
+/// The box with its border, centered in `area`, and its padding.
 fn dialog_outer(area: Rect, (width, height): (u16, u16)) -> (Rect, Padding) {
     let room = area.height.saturating_sub(2);
     let (height, padding) = if height <= room {
@@ -195,15 +193,14 @@ pub fn draw_help(frame: &mut Frame<'_>, area: Rect, view: &HelpView<'_>) {
     }
 }
 
-/// The hint at the bottom of the help box.
 const HINT: &str = "any key closes";
 
 /// The size that `draw_help` asks `dialog_box` for: the columns, the gap, the padding and the
 /// border, and every row plus the padding and the border, so a new key cannot push the last rows
 /// out unnoticed.
 ///
-/// One column when two columns do not fit the width and one column fits the height. `dialog_box`
-/// then keeps its margin of 4 columns and 2 rows.
+/// If two columns do not fit the width and one column fits the height, the size has one column.
+/// Both tests leave room for the margin of `dialog_box`.
 pub fn help_size(area: Rect, view: &HelpView<'_>) -> (u16, u16) {
     let column = view.key_width + view.text_width;
     let width = view.width();

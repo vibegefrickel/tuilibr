@@ -2,17 +2,17 @@
 //! color (OSC 10), the Kitty probe and the device attributes (DA1), and the read of the answers.
 //!
 //! Most terminals answer in the order of the queries, so DA1 comes last. Ghostty 1.4 sends DA1
-//! before the OSC 10 answer and before the Kitty answers. For this reason, the start read waits
-//! a short grace after DA1 for the answers that are still missing.
+//! before the OSC 10 answer and before the Kitty answers. The start read then waits a short grace
+//! after DA1 for the missing answers.
 
 use std::io::{self, Write};
 use std::time::{Duration, Instant};
 
 const PROBE_TIMEOUT: Duration = Duration::from_millis(300);
 
-/// The longest wait after DA1 for the OSC 10 answer and the Kitty answers. Ghostty 1.4 sends
-/// them after DA1. 100 ms covers a slow or remote terminal. A terminal without the Kitty
-/// protocol or without OSC 10 pays this wait once at the start.
+/// The longest wait after DA1 for the OSC 10 answer and the Kitty answers. 100 ms covers a slow
+/// or remote terminal. A terminal without the Kitty protocol or without OSC 10 pays this wait once
+/// at the start.
 const LATE_ANSWER_GRACE: Duration = Duration::from_millis(100);
 
 /// The answers at the start. `None` for an answer that did not come in time.
@@ -33,12 +33,11 @@ pub struct StartAnswers {
 pub struct LateAnswers {
     /// The owed Kitty answers. After a device attributes answer, no Kitty answer is owed.
     pub kitty: usize,
-    /// The OSC 10 answer is owed. It stays owed after DA1: Ghostty 1.4 sends DA1 before it.
+    /// The OSC 10 answer is owed. It stays owed after DA1.
     pub foreground: bool,
 }
 
-/// The primary device attributes query (DA1). Every terminal answers it. Most terminals answer
-/// it after the queries before it, but Ghostty 1.4 answers it before OSC 10 and the Kitty probe.
+/// The primary device attributes query (DA1). Every terminal answers it.
 const DEVICE_ATTRIBUTES_QUERY: &[u8] = b"\x1b[c";
 
 /// OSC 10 asks for the foreground color. The answer ends with BEL like the query, so it never
@@ -48,13 +47,12 @@ const FOREGROUND_QUERY: &[u8] = b"\x1b]10;?\x07";
 /// Send the cell size query, the foreground query, the Kitty `probe` and DA1 in one write, and
 /// wait for the cell size, the OSC 10 answer and `answers` Kitty answers.
 ///
-/// The DA1 answer ends the wait even when the terminal skips an answer. Ghostty 1.4 sends DA1
-/// before the OSC 10 answer and the Kitty answers, so after DA1 the read waits at most
-/// `LATE_ANSWER_GRACE` for the missing answers. Only a terminal that answers neither the
+/// The DA1 answer ends the wait even when the terminal skips an answer. After DA1, the read waits
+/// at most `LATE_ANSWER_GRACE` for the missing answers. Only a terminal that answers neither the
 /// queries nor DA1 costs `PROBE_TIMEOUT`.
 ///
-/// The answers must not reach crossterm. It reads them as key presses. The function runs
-/// before the first `event::poll` and reads the tty itself.
+/// The answers must not reach crossterm: it reads them as key presses. The function runs before
+/// the first `event::poll` and reads the tty itself.
 pub fn query_cell_size_and_probe(probe: &[u8], answers: usize) -> StartAnswers {
     let mut answer = Vec::new();
     // After a timeout, `answer` holds the answers that came in time.
@@ -121,7 +119,7 @@ fn start_answers_end(answer: &[u8], answers: usize) -> Option<usize> {
 }
 
 /// The end of the last start answer once DA1, the OSC 10 answer and `answers` Kitty answers are
-/// there. Ghostty 1.4 sends the last two after DA1.
+/// there.
 fn all_answers_end(answer: &[u8], answers: usize) -> Option<usize> {
     let required = [
         device_attributes_end(answer)?,
@@ -333,8 +331,8 @@ fn parse_cell_size_report(answer: &[u8]) -> Option<(u32, u32)> {
 }
 
 fn cell_pixel_size(ws: &crossterm::terminal::WindowSize) -> (u32, u32) {
-    // tmux and SSH can report 0 pixels with valid columns and rows. A zero report gets the
-    // conventional cell metrics, not a 1x1 cell.
+    // tmux and SSH can report 0 pixels with valid columns and rows. A zero report gets an 8x16
+    // cell, not a 1x1 cell.
     let w = if ws.columns > 0 && ws.width > 0 {
         u32::from(ws.width) / u32::from(ws.columns)
     } else {

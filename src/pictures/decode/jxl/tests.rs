@@ -276,8 +276,7 @@ fn samples_clamp_and_round_like_jxl_oxide() {
 
 #[test]
 fn hdr_gray_ramps_stay_neutral() {
-    // The module puts SDR white at 500 nits, like the player. libjxl puts it at about 250 nits in
-    // pq.
+    // The module puts SDR white at 500 nits. libjxl puts it at about 250 nits in PQ.
     for name in ["pq", "hlg", "pq-icc", "hlg-icc"] {
         assert_gray_ramp(name);
     }
@@ -401,7 +400,8 @@ fn exif_box_reaches_info_panel() {
 
 /// Compare a real file with a djxl rendering into 8-bit sRGB:
 /// `<APP>_TEST_JXL=a.jxl <APP>_TEST_JXL_REF=a.png`. The test prints the differences in levels
-/// and fails above 4 levels. `<APP>_TEST_JXL_MAX` sets another limit, `<APP>_TEST_JXL_OUT` writes the decode.
+/// and fails above 4 levels. `<APP>_TEST_JXL_MAX` sets another limit. `<APP>_TEST_JXL_OUT`
+/// writes the decode.
 #[test]
 #[ignore = "needs <APP>_TEST_JXL and <APP>_TEST_JXL_REF, a real file and its rendering"]
 fn real_jxl_matches_reference() {
@@ -421,7 +421,7 @@ fn real_jxl_matches_reference() {
     assert_eq!(decoded.dimensions(), reference.dimensions(), "size");
     let (mut largest, mut sum, mut count) = (0u8, 0u64, 0u64);
     for (ours, theirs) in decoded.pixels().zip(reference.pixels()) {
-        // The RGB of a fully transparent pixel is free, only its alpha counts.
+        // Only the alpha of a fully transparent pixel counts.
         let skip = if theirs.0[3] == 0 && ours.0[3] == 0 {
             3
         } else {

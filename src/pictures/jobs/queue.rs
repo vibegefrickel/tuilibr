@@ -32,7 +32,6 @@ pub struct ThumbJob<K = usize> {
     pub priority: Priority,
 }
 
-/// A job with the first rank, for the tests.
 #[cfg(any(test, feature = "test-support"))]
 impl<K> ThumbJob<K> {
     /// A job of `key` at `rect` with the first rank.
@@ -98,7 +97,7 @@ impl<K: Clone + Eq + Hash> JobQueue<K> {
         }
     }
 
-    /// True when a job of `key` waits. The count per key makes this a hash lookup.
+    /// True when a job of `key` waits.
     pub fn contains<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,

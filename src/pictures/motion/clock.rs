@@ -18,7 +18,6 @@ const START_ALIGN: u64 = 4;
 /// Every loop of a screen reads the same clock, so the cells change their frames in the same tick.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct LoopClock {
-    /// The time of tick 0.
     epoch: Instant,
 }
 
@@ -55,7 +54,7 @@ pub struct CellLoop {
     pub ids: Vec<u32>,
     /// The gaps of a Kitty animation in milliseconds, at least 1.
     gaps_ms: Vec<u32>,
-    /// True when the terminal plays the loop as one Kitty animation under `ids[0]`.
+    /// True for a loop that the terminal plays as one Kitty animation under `ids[0]`.
     pub animation: bool,
     /// The end tick of each frame from the loop start. The last one is the loop length.
     ends: Vec<u64>,
@@ -66,7 +65,7 @@ pub struct CellLoop {
 }
 
 impl CellLoop {
-    /// An animation holds one id, ticks hold one id per frame.
+    /// The id count of a loop: one for an animation, one per frame for ticks.
     pub const fn id_count(animation: bool, frame_count: usize) -> usize {
         if animation { 1 } else { frame_count }
     }
@@ -117,15 +116,18 @@ impl CellLoop {
         self.frames.first().map_or((1, 1), |frame| frame.cells)
     }
 
-    /// Start the clock at the next multiple of [`START_ALIGN`] after `tick`, unless it runs. Until
-    /// then, the first frame shows.
+    /// If the clock does not run, start it at the next multiple of [`START_ALIGN`] after `tick`.
+    ///
+    /// Until then, the first frame shows.
     pub const fn start_at(&mut self, tick: u64) {
         if self.start.is_none() {
             self.start = Some(tick.div_ceil(START_ALIGN) * START_ALIGN);
         }
     }
 
-    /// A loop without ids gives 0, the Kitty id of no image.
+    /// The Kitty id of the frame at `tick`.
+    ///
+    /// A loop without ids gives 0, the id of no image.
     pub fn id_at(&self, tick: u64) -> u32 {
         let (frame, _) = self.position(tick);
         self.ids

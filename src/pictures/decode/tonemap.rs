@@ -8,7 +8,7 @@
 use image::{DynamicImage, RgbaImage};
 use rayon::prelude::*;
 
-/// Each image that is not float comes back unchanged.
+/// Maps a float image to 8 bit. Each other image comes back unchanged.
 pub fn to_display(image: DynamicImage) -> DynamicImage {
     let (width, height) = (image.width(), image.height());
     let pixels = match &image {
@@ -56,7 +56,6 @@ fn tone(sample: f32, white: f32) -> u8 {
     unit_to_byte(encoded)
 }
 
-/// NaN becomes 0.
 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -74,7 +73,7 @@ mod tests {
 
     #[test]
     fn display_referred_keeps_values() {
-        // For a white point of 1.0 only the sRGB curve applies.
+        // For a white point of 1.0, only the sRGB curve applies.
         assert_eq!(tone(0.0, 1.0), 0);
         assert_eq!(tone(0.18, 1.0), 118);
         assert_eq!(tone(1.0, 1.0), 255);

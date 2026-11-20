@@ -1,18 +1,16 @@
 //! The conversions between the `usize` of a text measure and the `u16` of a ratatui cell, and
 //! from a measured `f64` to a whole number.
 //!
-//! A measure that does not fit a `u16` saturates: a cell count above 65535 draws nothing useful,
-//! and a wrap would place it at the start of the screen. A float conversion saturates too, and
-//! NaN becomes 0. Each float conversion names its rounding, so a call site needs no cast and no
-//! `expect` of its own.
+//! Each conversion saturates at the ends of the target range. A wrap places a cell count above
+//! 65535 at the start of the screen. NaN becomes 0. Each float conversion names its rounding, so
+//! a call site needs no cast and no `expect`.
 
-/// `value` as a cell count. A value above `u16::MAX` becomes `u16::MAX` instead of a wrap.
+/// `value` as a cell count.
 pub fn to_u16(value: usize) -> u16 {
     u16::try_from(value).unwrap_or(u16::MAX)
 }
 
-/// Any whole number as a cell count, for a measure in `u32`, `i32`, `i64` or another integer
-/// type. A negative value becomes 0, and a value above `u16::MAX` becomes `u16::MAX`.
+/// Any integer as a cell count, for a measure in `u32`, `i32`, `i64` or another integer type.
 pub fn clamp_to_u16<T>(value: T) -> u16
 where
     T: TryInto<u16> + PartialOrd + Default,
@@ -24,13 +22,12 @@ where
     }
 }
 
-/// A cell count as a `usize`, for the text measures. The conversion never fails.
+/// A cell count as a `usize`, for the text measures.
 pub fn to_usize(value: u16) -> usize {
     usize::from(value)
 }
 
-/// `value` rounded to a pixel size, so that a call site needs no cast of its own. A negative
-/// value and NaN give 0, and a value above `u32::MAX` gives `u32::MAX`.
+/// `value` rounded to a pixel size.
 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -40,8 +37,7 @@ pub const fn round_to_u32(value: f64) -> u32 {
     value.round() as u32
 }
 
-/// `value` rounded to a cell count, so that a call site needs no cast of its own. A negative
-/// value and NaN give 0, and a value above `u16::MAX` gives `u16::MAX`.
+/// `value` rounded to a cell count.
 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -51,8 +47,7 @@ pub const fn round_to_u16(value: f64) -> u16 {
     value.round() as u16
 }
 
-/// `value` without its fraction, for a temperature, a speed or a Unix second. NaN gives 0, and a
-/// value outside the `i64` range gives the nearest end of the range.
+/// `value` without its fraction, for a temperature, a speed or a Unix second.
 #[expect(
     clippy::cast_possible_truncation,
     reason = "a float cast saturates, and NaN becomes 0"
@@ -61,8 +56,7 @@ pub const fn trunc_to_i64(value: f64) -> i64 {
     value as i64
 }
 
-/// `value` without its fraction, for a row, a column or an index. A negative value and NaN give
-/// 0, and a value above `usize::MAX` gives `usize::MAX`.
+/// `value` without its fraction, for a row, a column or an index.
 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,

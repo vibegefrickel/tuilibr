@@ -8,8 +8,8 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-/// Change the number when the thumbnail output changes. The app name keeps the keys of two apps
-/// apart, and an app that set its name keeps the keys of its own copy of the module.
+/// When the thumbnail output changes, change the number. The app name keeps the keys of two apps
+/// apart.
 fn thumbnail_cache_version() -> String {
     format!("{}-thumbnail-v22", crate::pictures::names::app_name())
 }
@@ -208,7 +208,7 @@ pub fn try_load_from_disk_cache(
     thumbnail_entry(cache_dir, path, target)?.load()
 }
 
-/// Saves a thumbnail of `path` at `target`, for a test.
+/// Save a thumbnail of `path` at `target`, for a test.
 #[cfg(any(test, feature = "test-support"))]
 pub fn try_save_to_disk_cache(
     cache_dir: &Path,
@@ -264,7 +264,7 @@ impl PathCounter {
     }
 }
 
-/// The cache key computations per path, so a test sees that a key is computed one time.
+/// The cache key computations per path, for the tests that count them.
 #[cfg(any(test, feature = "test-support"))]
 pub static KEY_COMPUTATIONS: PathCounter = PathCounter::new();
 
@@ -298,8 +298,8 @@ mod tests {
         assert_eq!(first.extension().and_then(|ext| ext.to_str()), Some("qoi"));
     }
 
-    /// The key hashes the input of the key code before `CacheEntry`, in the same order. The cache
-    /// files of the same version stay valid.
+    /// The key hashes a fixed input in a fixed order, so the cache files of one version stay
+    /// valid.
     #[test]
     fn key_hashes_old_key_input() {
         use std::collections::hash_map::DefaultHasher;

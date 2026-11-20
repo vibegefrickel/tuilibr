@@ -3,8 +3,8 @@
 //! An app asks the store for a picture by its own key. The store holds the bitmap under a Kitty
 //! id, gives each frame its placements through `Screen`, and keeps the loads in flight and the
 //! failed loads. The app runs a load on its own runtime: `start_load` gives a `Loader`, the task
-//! calls `Loader::finish`, and the next `get` takes the result on the render thread. So the
-//! store needs no runtime and no channel; the app sends its own message after `finish`.
+//! calls `Loader::finish`, and the next `get` takes the result on the render thread. The store
+//! needs no runtime and no channel. The app sends its own message after `finish`.
 
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet};

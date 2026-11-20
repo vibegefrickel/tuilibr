@@ -109,7 +109,6 @@ pub struct LoopTicket<K> {
 }
 
 impl<K> LoopTicket<K> {
-    /// A ticket of the player.
     pub(super) const fn new(key: K, number: u64, generation: u32, cancel: Arc<AtomicBool>) -> Self {
         Self {
             key,

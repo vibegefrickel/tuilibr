@@ -9,7 +9,6 @@ use crate::frame::until_next_minute;
 /// It compares the wall clock, because an `Instant` stops while the computer sleeps.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MinuteClock {
-    /// The wall clock time of the next full minute after the draw.
     next: SystemTime,
 }
 

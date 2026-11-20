@@ -5,7 +5,7 @@
 //! late OSC 10 answer `ESC ] 10;rgb:... BEL` arrives as Alt+`]`, `1`, `0`, ... and Ctrl+`g` (or
 //! Alt+`\` for an ST end). The owed Kitty answers and the owed OSC 10 answer count apart: a Kitty
 //! answer pays for no OSC 10 answer. A terminal that answers DA1 but never OSC 10 keeps one owed
-//! OSC 10 answer for the whole run; then a real Alt+`]` and the printable keys after it go, until
+//! OSC 10 answer for the whole run. Then a real Alt+`]` and the printable keys after it go, until
 //! Alt+`\`, Ctrl+`g` or a key that fits no answer ends the swallow.
 
 use std::time::{Duration, Instant};
@@ -29,14 +29,14 @@ pub struct Filtered {
 
 /// The time in which a late answer of the start queries can still come.
 ///
-/// After it, nothing is owed: a terminal that never answers OSC 10 would else eat Alt+`]` and the
-/// keys after it for the whole run. A late answer comes well inside this time.
+/// After it, nothing is owed. Else a terminal that never answers OSC 10 eats Alt+`]` and the keys
+/// after it for the whole run. A late answer comes well inside this time.
 pub const OWED_FOR: Duration = Duration::from_secs(5);
 
 /// The filter of the terminal events.
 ///
 /// Every event passes it once, in its order. `AnswerKeys` reads the Kitty answers first and holds
-/// the keys that can start one for at most `ANSWER_WAIT`; then the owed late answers of the start
+/// the keys that can start one for at most `ANSWER_WAIT`. Then the owed late answers of the start
 /// go, for at most `OWED_FOR` after the start.
 #[derive(Debug)]
 pub struct LateAnswerFilter {

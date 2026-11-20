@@ -186,7 +186,7 @@ fn open_for_render(path: &Path) -> io::Result<JxlImage> {
     Ok(image)
 }
 
-/// Check the buffers against the allocation limit of the `image` route.
+/// Make sure that the buffers fit the allocation limit of the `image` route.
 fn reserve(image: &JxlImage, bytes_per_pixel: usize) -> io::Result<()> {
     let bytes = u64::from(image.width())
         .checked_mul(u64::from(image.height()))
@@ -219,8 +219,8 @@ fn request_target(image: &mut JxlImage, target: ColorTarget) {
     image.request_color_encoding(encoding);
 }
 
-/// A transform error falls back to `jxl-oxide` with a new decoder. The first decoder has
-/// rendered without a color request.
+/// A transform error falls back to `jxl-oxide` with a new decoder. The first decoder rendered
+/// without a color request.
 fn decode_icc_or_enum(
     path: &Path,
     image: &JxlImage,
@@ -462,9 +462,9 @@ struct Plane<'r> {
 /// `None` unless each grid starts at the image origin. The region of a grid is private in
 /// `jxl-oxide` 0.12. `jxl-render` 0.12.4 starts each grid at the origin when the keyframe is the
 /// first frame, the frame has no offset and the render is not cropped
-/// (`parallel_copy_matches_stream` holds it). Patches put a reference frame before the keyframe,
-/// so they take the stream, and so do layers. Spot colors mix into the color channels and take
-/// the stream.
+/// (the test `parallel_copy_matches_stream` holds it). Patches put a reference frame before the
+/// keyframe, so a file with patches or layers takes the stream. Spot colors mix into the color
+/// channels and take the stream.
 fn planes<'r>(image: &JxlImage, render: &'r Render) -> Option<Vec<Plane<'r>>> {
     let frame = image.frame_by_keyframe(render.keyframe_index())?;
     let header = frame.header();

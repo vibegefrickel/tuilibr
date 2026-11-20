@@ -404,10 +404,10 @@ fn pq_preview_maps_with_the_primary_peak() {
     let map = |peak| color::convert(pixels.clone(), &color, color::target(), peak);
     let preview = decode_heif_preview(&thumb, (128, 64)).unwrap();
     assert_eq!(preview.dimensions(), (32, 16));
-    // The same pixels map to the same output, so the preview must equal the 4000-nit map exactly.
+    // The same pixels give the same output, so the preview equals the 4000-nit map.
     assert_eq!(preview, map(peak));
-    // The 4000-nit and 1000-nit maps of the chart differ by about 3 levels on average (measured
-    // 3.4 at the patch centers). The bound 2.0 keeps the test from passing for two equal maps.
+    // The 4000-nit and 1000-nit maps of the chart differ by 3.4 levels at the patch centers. If
+    // the two maps are equal, the bound 2.0 fails the test.
     let to_default = patch_difference(&preview, &map(Peak::DEFAULT));
     assert!(to_default > 2.0, "{to_default}");
 }

@@ -24,7 +24,7 @@ fn flushed(store: &mut PictureStore<String>) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// The deletes of an image id in `bytes`.
+/// True when `bytes` delete the image `id`.
 fn deletes(bytes: &str, id: u32) -> bool {
     bytes.contains(&format!("a=d,d=I,i={id}"))
 }

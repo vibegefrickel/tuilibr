@@ -1,6 +1,5 @@
 //! The draw of a text field: one row with a prefix, the window of the field and a suffix, or a
-//! box of wrapped rows with the prefix on the first row. The terminal cursor goes to the cursor
-//! of the field when the field has the focus.
+//! box of wrapped rows with the prefix on the first row.
 
 use ratatui::{
     Frame,

@@ -24,8 +24,9 @@ const TEMP_SUFFIX: &str = ".tmp";
 /// Writes `bytes` to `path` through a temp file in the same folder, so that a crash never leaves
 /// half a file.
 ///
-/// The parent folder comes first if it is missing. The temp file gets `mode` (for example
-/// `0o600` for a file with a token, from the first byte on) or the default mode of the process.
+/// If the parent folder is missing, the write makes it first. The temp file gets `mode` (for
+/// example `0o600` for a file with a token, from the first byte on) or the default mode of the
+/// process.
 /// After the write, `fsync` puts the bytes on the disk, and the rename replaces `path` in one step.
 /// A failed step removes the temp file and leaves the old file as it was.
 ///

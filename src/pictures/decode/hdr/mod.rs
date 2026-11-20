@@ -1,9 +1,9 @@
 //! The tone map of HDR stills: a PQ or HLG signal in AVIF, HEIC, JPEG XL or PNG.
 //!
-//! The map copies the math of the player's HDR cube (`player/tone_map.rs`), and a test compares
-//! both at each cube point. A still and a video of one scene show the same colors. `Decoded`
-//! maps the 16-bit image after the resize. An 8-bit HDR image maps in `color::convert`. The
-//! libheif route maps a deep image itself, with the HDR10 peak of its `clli` or `mdcv` box.
+//! The map copies the math of the video cube (`motion::tone_map`), and a test compares both at
+//! each cube point. A still and a video of one scene show the same colors.
+//! `Decoded` maps the 16-bit image after the resize. An 8-bit HDR image maps in `color::convert`.
+//! The libheif route maps a deep image itself, with the HDR10 peak of its `clli` or `mdcv` box.
 
 mod primaries;
 
@@ -16,18 +16,18 @@ use image::{DynamicImage, RgbImage, RgbaImage};
 use rayon::prelude::*;
 use std::sync::OnceLock;
 
-/// The HLG reference display. The value of `player/tone_map.rs`.
+/// The HLG reference display, as in `motion::tone_map`.
 const HDR_PEAK_NITS: f64 = 1000.0;
-/// The HDR level that becomes SDR white. The value of `player/tone_map.rs`.
+/// The HDR level that becomes SDR white, as in `motion::tone_map`.
 const SDR_WHITE_NITS: f64 = 500.0;
-/// The output table steps over the square root of the linear value. Near black one step moves
+/// The output table steps over the square root of the linear value. Near black, one step moves
 /// the output by less than 0.25 levels.
 const ENCODE_STEPS: usize = 4096;
 const PIXELS_PER_TASK: usize = 64 * 1024;
 /// The HDR10 metadata outside this range in nits is a placeholder or an error.
 const PLAUSIBLE_PEAK_NITS: std::ops::RangeInclusive<f64> = 100.0..=10_000.0;
 
-/// The display peak in nits that a PQ signal rolls off to, in buckets: a few player cubes cover
+/// The display peak in nits that a PQ signal rolls off to, in buckets: a few video cubes cover
 /// all clips, and a still maps like a video with the same metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Peak(u32);
@@ -191,7 +191,7 @@ impl ToneMap {
         self
     }
 
-    /// Linear SDR light in the target, as `tone_map` in `player/tone_map.rs` computes it.
+    /// Linear SDR light in the target, as `motion::tone_map` computes it.
     ///
     /// An extended Reinhard curve on the luminance keeps the hue. A color outside the target moves
     /// toward its gray, and a channel above white scales the whole color down.
@@ -258,7 +258,7 @@ impl ToneMap {
         out
     }
 
-    /// The alpha stays.
+    /// Maps 8-bit pixels in place. The alpha stays.
     pub fn map_in_place(&self, pixels: &mut [u8], channels: usize) {
         let (table, encode) = (self.curve.table(), encode_table());
         pixels
@@ -289,8 +289,8 @@ impl ToneMap {
     }
 }
 
-/// A double precision value in single precision. The tone map computes in single precision, as the
-/// cube of the player does, so the rounding is the intent.
+/// A double precision value in single precision. The video cube also computes in single
+/// precision, so the rounding is the intent.
 #[expect(
     clippy::cast_possible_truncation,
     reason = "the step to single precision is the intent, the values are near 0..=1000"

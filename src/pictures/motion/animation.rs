@@ -16,6 +16,8 @@ const ANIMATION_EXTENSIONS: &[&str] = &["gif", "webp", "png", "apng", "avif"];
 /// A larger box or chunk is a broken file.
 const MAX_CHUNK: u64 = 1 << 31;
 
+/// True for the extension of an animated format.
+///
 /// The player decodes such a file in software at a constant rate.
 pub fn has_animation_extension(path: &Path) -> bool {
     crate::pictures::decode::extensions::has_extension(path, ANIMATION_EXTENSIONS)
@@ -44,8 +46,9 @@ pub(in crate::pictures::motion) fn embedded_primaries(path: &Path) -> Option<Pri
     Primaries::of_source_color(&source)
 }
 
-/// A broken file is not animated. Each call reads the file header: the UI thread calls it for
-/// one file after a key press only.
+/// True for an animated file. A broken file is not animated.
+///
+/// Each call reads the file header. The UI thread calls it only for one file after a key press.
 pub fn is_animated(path: &Path) -> bool {
     has_animation_extension(path) && read_is_animated(path).unwrap_or(false)
 }
@@ -105,7 +108,7 @@ fn skip<R: Read + Seek>(reader: &mut BufReader<R>, count: u64) -> io::Result<()>
     reader.seek_relative(count as i64)
 }
 
-/// A PNG is animated when an `acTL` chunk comes before the first `IDAT` chunk.
+/// If an `acTL` chunk comes before the first `IDAT` chunk, the PNG is animated.
 fn png_has_actl_chunk<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<bool> {
     reader.seek_relative(8)?;
     loop {
@@ -120,8 +123,8 @@ fn png_has_actl_chunk<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<bo
     }
 }
 
-/// A WebP is animated when its `VP8X` chunk sets the animation flag, or when it holds an
-/// `ANIM` chunk. A simple file starts with `VP8 ` or `VP8L` and holds one frame.
+/// If the `VP8X` chunk sets the animation flag or the file holds an `ANIM` chunk, the WebP is
+/// animated. A simple file starts with `VP8 ` or `VP8L` and holds one frame.
 fn webp_has_anim_chunk<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<bool> {
     reader.seek_relative(12)?;
     loop {
@@ -139,7 +142,7 @@ fn webp_has_anim_chunk<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<b
     }
 }
 
-/// An AVIF is an image sequence when its `ftyp` box carries the brand `avis`.
+/// If the `ftyp` box carries the brand `avis`, the AVIF is an image sequence.
 fn avif_has_avis_brand<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<bool> {
     let size = read_u32_be(&mut reader)?;
     let mut kind = [0_u8; 4];
@@ -152,7 +155,7 @@ fn avif_has_avis_brand<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<b
     Ok(brands.chunks(4).any(|brand| brand == b"avis"))
 }
 
-/// A GIF is animated when its block list holds a second image descriptor.
+/// If the block list holds a second image descriptor, the GIF is animated.
 fn gif_has_two_frames<R: Read + Seek>(mut reader: BufReader<R>) -> io::Result<bool> {
     reader.seek_relative(10)?;
     let packed = read_u8(&mut reader)?;

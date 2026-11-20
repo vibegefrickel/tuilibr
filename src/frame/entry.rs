@@ -53,7 +53,7 @@ pub fn draw_entry(frame: &mut Frame<'_>, picture: &mut dyn Pictures, entry: Entr
         0
     };
     let picture_area = Rect::new(area.x, area.y, columns, area.height);
-    // One blank column parts the text from the picture box.
+    // One blank column separates the text from the picture box.
     let used = if columns == 0 { 0 } else { columns + 1 };
     let text = Rect::new(
         area.x + used,

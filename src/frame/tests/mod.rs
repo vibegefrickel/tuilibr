@@ -26,7 +26,6 @@ struct FakePictures {
     /// The pixels of one cell. Without it, a cell of 8 x 16, which makes a box of 2 rows 4
     /// columns wide.
     font: Option<CellSize>,
-    /// The terminal shows no pictures.
     no_pictures: bool,
 }
 

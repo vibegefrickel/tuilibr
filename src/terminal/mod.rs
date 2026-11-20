@@ -3,12 +3,6 @@
 //! The session holds raw mode, the alternate screen, the modes and their restore, and the loan
 //! to a child process. The synchronized update holds a frame together. The reader thread reads
 //! the events. `start` holds the start queries and `answers` the filter of the late answers.
-//!
-//! Each app had its own version with its own bugs in 2026-11. This one carries every fix and every
-//! test of the three.
-//!
-//! (one app wraps the crossterm backend for the wide cells). The session owns raw mode, the
-//! alternate screen, the cursor and the modes, and gives them back in the reverse order.
 
 use std::io::{self, Write};
 use std::panic::PanicHookInfo;
@@ -197,7 +191,7 @@ impl Session {
     /// Whether raw mode is on, so the keys reach the app. After a failed `resume` that stopped
     /// before raw mode, it is false: the app runs on the main screen in cooked mode, and can exit
     /// or try `resume` again. An active session can lack the alternate screen or the modes after
-    /// a failed write of the enter sequence; the next draw after `lend_keeping` paints every cell.
+    /// a failed write of the enter sequence. The next draw after `lend_keeping` paints every cell.
     pub const fn is_active(&self) -> bool {
         self.active
     }
@@ -249,7 +243,7 @@ impl Session {
     /// Takes the terminal back after `suspend`, with an empty screen. The app then calls
     /// `repaint_on_next_draw` on its terminal, so the next draw paints every cell. A second call
     /// changes nothing. When a write fails after raw mode went on, the session counts as active,
-    /// so `restore` or the drop gives raw mode back; the shell of the user never stays raw.
+    /// so `restore` or the drop gives raw mode back. The shell of the user never stays raw.
     pub fn resume(&mut self) -> io::Result<()> {
         if self.active {
             return Ok(());
@@ -263,8 +257,8 @@ impl Session {
         enter_to(&mut io::stdout(), self.modes())
     }
 
-    /// Gives the terminal back at the end. The app deletes its pictures first. The same sequence
-    /// as `suspend`; a second call changes nothing.
+    /// Gives the terminal back at the end. The app deletes its pictures first. It runs the same
+    /// sequence as `suspend`. A second call changes nothing.
     pub fn restore(&mut self) -> io::Result<()> {
         self.suspend()
     }
@@ -275,7 +269,7 @@ impl Session {
     /// The reader of `pause` stops first, so a keystroke of the child never reaches the app. Then
     /// the session lets go of the terminal, `run` runs, the session takes the terminal back, and
     /// `terminal` paints every cell on its next draw. A failed release takes the terminal back and
-    /// returns before `run`. A failed take-back returns its error after `run`; `restore` or the
+    /// returns before `run`. A failed take-back returns its error after `run`. `restore` or the
     /// drop still gives raw mode back. That error drops the value of `run`: `lend_keeping` keeps
     /// it.
     pub fn lend<B: Backend, T>(

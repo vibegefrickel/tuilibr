@@ -3,8 +3,8 @@
 //!
 //! The app keeps the grid order, the byte cap of a pass and the terminal budget. It calls these
 //! functions for one cell at a time, and only on an open `screen::Update`, in the same update as
-//! `Screen::write_frame`: the update saves the cursor before its first byte and restores it at its
-//! end, so a placement does not move the cursor of a typed field, and the loops and the stills
+//! `Screen::write_frame`. The update saves the cursor before its first byte and restores it at its
+//! end. A placement then does not move the cursor of a typed field, and the loops and the stills
 //! land in one synchronized frame.
 //!
 //! [`player::LoopPlayer`] does this bookkeeping for an app: the order, the jobs, the caps, the

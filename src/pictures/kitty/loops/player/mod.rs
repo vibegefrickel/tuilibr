@@ -30,11 +30,6 @@
 //! no still decodes, and [`LoopPlayer::cancel_jobs`] stops the jobs when new stills wait. A loop
 //! also waits for its transfer while stills of the last pass wait. [`LoopPlayer::is_decoding`]
 //! tells whether a job runs for a box.
-//!
-//! The player takes the base of phewr: the job cap without a loop cap, the exact wake, the
-//! animation path, the panic guard ([`run_caught`], [`run_caught_with`]), the generation and the gates for the
-//! stills. It takes the fixes of schnattr: the cancel of a hidden job, the minimum of 2 frames,
-//! the stale ids above the budget, [`LoopPlayer::pixels_of`] and the `play` flag of each box.
 
 mod job;
 #[cfg(test)]
@@ -71,7 +66,7 @@ pub struct LoopLimits {
 
 impl Default for LoopLimits {
     /// 4 jobs, as many as the thumbnail decodes, and no cap on the loops: 30 loops of a grid
-    /// took about 3 % of one core (phewr, measured).
+    /// take about 3 % of one core (measured).
     fn default() -> Self {
         Self {
             max_jobs: 4,

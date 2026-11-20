@@ -32,7 +32,7 @@ pub struct VideoInfo {
     /// The pacing rate: `avg_frame_rate`, `r_frame_rate` for a variable rate, or the packet
     /// durations of an animation.
     pub fps: f64,
-    /// 0 when the container does not tell the length.
+    /// The length in seconds. 0 for a container that does not tell the length.
     pub duration: f64,
     /// The HDR curve, `None` for an SDR stream.
     pub hdr: Option<Hdr>,
@@ -42,8 +42,8 @@ pub struct VideoInfo {
     pub primaries: Primaries,
     /// The layout of the samples. It picks the frame format that `VideoToolbox` gives back.
     pub samples: Samples,
-    /// `VideoToolbox` decodes the stream. ffmpeg 9 gives it no stream above 10 bits except
-    /// `ProRes`, so a 12-bit HEVC or VP9 clip starts in software.
+    /// True for a stream that `VideoToolbox` decodes. ffmpeg 9 gives it no stream above 10 bits
+    /// except `ProRes`, so a 12-bit HEVC or VP9 clip starts in software.
     pub hardware: bool,
     /// How ffmpeg gets the output rate `fps`.
     pub rate: Rate,
@@ -55,11 +55,11 @@ pub struct VideoInfo {
 /// The sample layout of a stream, from its pixel format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Samples {
-    /// The bits per sample, 8 when the pixel format holds no depth.
+    /// The bits per sample, 8 for a pixel format without a depth.
     pub depth: u8,
     /// The chroma subsampling.
     pub chroma: Chroma,
-    /// True when the pixel format holds an alpha channel.
+    /// True for a pixel format with an alpha channel.
     pub alpha: bool,
 }
 
@@ -166,7 +166,7 @@ fn probe_args(video: &Path, packet_limit: Option<usize>) -> Vec<OsString> {
 }
 
 /// A stream can carry its HDR10 metadata only in the SEI of each frame, without `mdcv` and
-/// `clli` in its sample entry. ffprobe decodes the first frame for it, which costs 1.2 times the
+/// `clli` in its sample entry. ffprobe then decodes the first frame. This costs 1.2 times the
 /// stream probe at 1080p and up to 1.7 times at 4K.
 fn frame_peak_args(video: &Path, stream: usize) -> Vec<OsString> {
     let mut args: Vec<OsString> = ["-v", "error", "-of", "json", "-read_intervals", "%+#1"]
@@ -224,7 +224,9 @@ pub fn probe(program: &Path, path: &Path) -> io::Result<VideoInfo> {
 
 static PROBES: LazyLock<ProbeCache> = LazyLock::new(|| ProbeCache::new(PROBE_CACHE_ENTRIES));
 
-/// The thumbnail job probes each video of the grid. `Player::open` then starts no `ffprobe`.
+/// The probe of `path` from the session cache, else a new probe.
+///
+/// The thumbnail job probes each video of the grid, so the start of the player runs no `ffprobe`.
 pub fn probe_cached(program: &Path, path: &Path) -> io::Result<VideoInfo> {
     PROBES.get_or_probe(path, || probe(program, path))
 }
@@ -244,8 +246,10 @@ pub fn seed_probe(path: &Path, info: VideoInfo) {
     PROBES.get_or_probe(path, || Ok(info)).unwrap();
 }
 
-/// The GPU run of `path` failed and the software run gave a frame: later probes of the file
-/// answer `hardware: false`, so every start skips the GPU. A changed file drops the entry.
+/// Marks `path` after a failed GPU run and a software run with a frame.
+///
+/// Later probes of the file answer `hardware: false`, so every start skips the GPU. A changed
+/// file drops the entry.
 pub fn remember_software(path: &Path) {
     PROBES.mark_software(path);
 }
@@ -315,7 +319,8 @@ impl ProbeCache {
         Ok(info)
     }
 
-    /// The entry of `path` if the file still has its stamp. The cache keeps its order.
+    /// The entry of `path` for a file that still has the stamp of the entry. The cache keeps its
+    /// order.
     fn peek(&self, path: &Path) -> Option<VideoInfo> {
         let metadata = std::fs::metadata(path).ok()?;
         let stamp = (metadata.modified().ok(), metadata.len());
@@ -324,7 +329,7 @@ impl ProbeCache {
         (*cached_stamp == stamp).then(|| info.clone())
     }
 
-    /// Clears `hardware` of the entry, only if the file still has the stamp of the entry.
+    /// If the file still has the stamp of the entry, clears `hardware` of the entry.
     fn mark_software(&self, path: &Path) {
         let Ok(metadata) = std::fs::metadata(path) else {
             return;
@@ -356,7 +361,7 @@ impl Drop for Probing<'_> {
     }
 }
 
-/// `Command::output` with a timeout. A longer run is killed, and the error is `TimedOut`.
+/// `Command::output` with a timeout. The function kills a longer run, and the error is `TimedOut`.
 fn output_within(mut command: Command, timeout: Duration) -> io::Result<Output> {
     let mut child = command
         .stdin(Stdio::null())

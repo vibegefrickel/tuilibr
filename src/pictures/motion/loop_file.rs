@@ -8,16 +8,16 @@ use std::io;
 use std::path::Path;
 use std::time::Duration;
 
-/// Change the number when the loop output changes. The app name keeps the keys of two apps
-/// apart, like the thumbnail key.
+/// If the loop output changes, raise the number. The app name keeps the keys of two apps apart,
+/// like the thumbnail key.
 fn loop_cache_version() -> String {
     format!("{}-loop-v1", crate::pictures::names::app_name())
 }
 
-/// The first bytes of a loop file. The cache files of the first app keep this name.
+/// The first bytes of a loop file. The name of the first app stays, so its cache files stay valid.
 const LOOP_MAGIC: &[u8; 8] = b"PHEWRLP1";
 
-/// The loop frames of `path` for a grid picture of `target` pixels. A broken file goes away.
+/// The loop frames of `path` for a grid picture of `target` pixels. The call removes a broken file.
 pub fn try_load_loop(cache_dir: &Path, path: &Path, target: (u32, u32)) -> Option<LoopFrames> {
     let version = loop_cache_version();
     let cache_path = cache_file_path(cache_dir, path, target, &version, LOOP_EXTENSION)?;

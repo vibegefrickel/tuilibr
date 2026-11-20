@@ -40,8 +40,7 @@ pub struct EmbeddedJpeg {
     /// The stored height, before the orientation.
     pub height: u32,
     /// The container orientation (IFD0 of a TIFF RAW or an ORF, `CMT1` of a CR3), else the EXIF of
-    /// the JPEG.
-    /// exiftool and the RAW developers read the container first too.
+    /// the JPEG. exiftool and the RAW developers also read the container first.
     pub orientation: Option<u8>,
 }
 
@@ -107,7 +106,7 @@ pub fn decode(path: &Path, jpeg: &EmbeddedJpeg, target: Option<(u32, u32)>) -> i
 /// The shortest side of a reference picture. A smaller thumbnail tells too little.
 const REFERENCE_MIN_SIDE: u32 = 32;
 
-/// How much of the preview JPEG to read for its EXIF block.
+/// The read length at the start of the preview JPEG for its EXIF block.
 const EXIF_HEAD_BYTES: u64 = 64 * 1024;
 
 /// True when `found` is a better reference than `best`: big enough, and then the smaller one.
@@ -142,7 +141,7 @@ pub fn decode_reference(path: &Path, jpeg: &EmbeddedJpeg, target: (u32, u32)) ->
     decode_jpeg_bytes(&data, Some(target), jpeg.orientation).ok()
 }
 
-/// `None` when `jpeg` does not cover the fit into `box_px`. The caller then decodes the primary
+/// `None` when `jpeg` does not cover the fit into `box_px`. Then the caller decodes the primary
 /// image.
 pub fn decode_covering(path: &Path, jpeg: &EmbeddedJpeg, box_px: (u32, u32)) -> Option<Decoded> {
     jpeg.covers(box_px)
@@ -353,7 +352,7 @@ mod tests {
         assert!(jpeg.covers((32, 64)) && jpeg.covers((33, 64)) && jpeg.covers((32, 65)));
         assert!(!jpeg.covers((33, 65)));
 
-        // Red was left and is now at the top.
+        // The stored left half (red) shows at the top.
         let image = decode(&path, &jpeg, None).unwrap().image;
         assert_eq!((image.width(), image.height()), (32, 64));
         let rgba = image.to_rgba8();

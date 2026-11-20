@@ -143,7 +143,7 @@ pub fn write_pixels<W: Write + ?Sized>(
     transfer: Transfer,
     temp_dir: &Path,
 ) -> io::Result<()> {
-    // The protocol defines no empty image, so nothing goes out and the run loop goes on.
+    // The protocol defines no empty image.
     if pixels.width == 0 || pixels.height == 0 {
         return Ok(());
     }

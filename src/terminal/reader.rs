@@ -171,10 +171,10 @@ mod filtered {
     /// answer of the terminal never reaches the keys of the app.
     ///
     /// `owed` comes from `Start::owed`. Each pass of the filter goes to `send`, with its events
-    /// and the whole Kitty answers for the self check of the screen; an empty pass does not. `send`
-    /// returns `false` when the app wants no more events. After a read error, `send` gets the
-    /// error and the thread ends. With `pause`, the app can hold the reader while a child process
-    /// has the terminal; the reader then gives back the events that it held.
+    /// and the whole Kitty answers for the self check of the screen. An empty pass does not.
+    /// `send` returns `false` when the app wants no more events. After a read error, `send` gets
+    /// the error and the thread ends. With `pause`, the app can hold the reader while a child
+    /// process has the terminal. The reader then gives back the events that it held.
     pub fn spawn_filtered_reader(
         owed: LateAnswers,
         pause: Option<Arc<ReaderPause>>,

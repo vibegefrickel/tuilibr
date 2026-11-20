@@ -419,7 +419,7 @@ fn chart_signal(curve: &str) -> Vec<[f64; 3]> {
 /// Inside the sRGB gamut, a lossy file matches the cube within 4 levels per patch. `jxl-oxide`
 /// 0.12 clips the linear sRGB of XYB samples before the primaries conversion
 /// (`ColorTransformOp::Clip`). A BT.2020 color outside the sRGB gamut loses saturation, and
-/// libjxl keeps it. The last assert fails when `jxl-oxide` keeps it too.
+/// libjxl keeps it. If `jxl-oxide` keeps it too, the last assert fails.
 #[cfg(feature = "jxl")]
 #[test]
 fn lossy_jxl_matches_cube_in_gamut() {

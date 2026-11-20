@@ -1,15 +1,9 @@
 //! The screen frame of an app.
 //!
-//! It holds the split into a list pane and a main pane, the lines between them or the boxes
-//! around them, the dim of the pane without the focus, the list entry of two rows, the header,
-//! the status bar, the help box, the wait for the next minute of the clock, the double click, the
-//! scroll that keeps a line in view, and the text helpers that they share. `buffer` reads the
-//! text of a drawn buffer for the tests of an app.
-//!
 //! The frame knows no data of the app and no picture engine. The caller fills plain view structs
 //! and places the pictures through the `Pictures` trait. The implementation of the trait puts each
-//! picture into the placements of the picture engine of the app, and after the draw, the engine
-//! sends the changes to the terminal.
+//! picture into the placements of the picture engine of the app. After the draw, the engine sends
+//! the changes to the terminal.
 
 mod bar;
 pub mod buffer;

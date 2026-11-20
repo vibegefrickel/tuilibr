@@ -1,8 +1,8 @@
 //! The preview JPEG of an Olympus or OM System ORF. The maker note (tag 0x927C of the EXIF IFD)
 //! holds an IFD, its tag 0x2020 (`CameraSettings`) a sub-IFD, and that one the
 //! `PreviewImageStart` (0x101) and `PreviewImageLength` (0x102) pair. The TIFF IFDs of the tested
-//! ORF files hold no JPEG. A file without the maker note preview still takes the TIFF IFD walk,
-//! the ORF route before this reader, in case a camera writes a JPEG there.
+//! ORF files hold no JPEG. If a file has no maker note preview, the TIFF IFD walk runs, in case a
+//! camera writes a JPEG there.
 
 use super::tiff::{Entry, Ifd, read_ifd, tiff_order};
 use super::{ByteOrder, EmbeddedJpeg, Source};
@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(found.orientation, Some(6));
         assert_eq!(found.shown_size(), (32, 64));
         assert!(found.covers((32, 64)) && !found.covers((33, 65)));
-        // Red was left and is now at the top.
+        // The stored left half (red) shows at the top.
         let image = decode(&path, &found, None).unwrap().image.to_rgba8();
         assert_eq!(image.dimensions(), (32, 64));
         assert_close(image.get_pixel(16, 2).0, RED);

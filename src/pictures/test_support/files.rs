@@ -165,8 +165,7 @@ pub fn write_tiff_raw(path: &Path, orientation: u32) {
     fs::write(path, file).unwrap();
 }
 
-/// The maker note headers of an ORF: the current Olympus form, the OM System form and the old
-/// form, whose offsets count from the TIFF header.
+/// The current Olympus form of the maker note header of an ORF.
 pub const ORF_OLYMPUS: &[u8] = b"OLYMPUS\0II\x03\0";
 /// The OM System form of the maker note header.
 pub const ORF_OM_SYSTEM: &[u8] = b"OM SYSTEM\0\0\0II\x04\0";

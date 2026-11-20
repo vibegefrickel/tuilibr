@@ -32,10 +32,10 @@ use std::io;
 use std::path::Path;
 use std::sync::mpsc;
 
-/// The decoder of a file outside libheif. The info panel uses `decodes_with_libheif` too.
+/// The decoder of a file outside libheif. `decodes_with_libheif` decides first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Route {
-    /// Unknown extensions go here too, and the content decides.
+    /// The `image` formats. An unknown extension comes here too, and the content decides.
     Raster,
     /// JPEG XL through jxl-oxide.
     #[cfg(feature = "jxl")]
@@ -79,7 +79,7 @@ pub fn dimensions(path: &Path) -> Option<(u32, u32)> {
     }
 }
 
-/// The file of an ignored test. Without the variable the test skips with a note.
+/// The file of an ignored test. Without the variable, the test skips with a note.
 #[expect(clippy::print_stderr, reason = "the skip note of a real-file test")]
 #[cfg(any(test, feature = "test-support"))]
 pub fn real_test_file(variable: &str) -> Option<std::path::PathBuf> {
@@ -139,8 +139,7 @@ impl Decoded {
     }
 
     /// A deep HDR image resized in 16 bit and tone-mapped into `target`. Each other image comes
-    /// back unchanged. An 8-bit HDR image maps in
-    /// `color::convert`, with the peak that `Decoded` keeps.
+    /// back unchanged. `color::convert` maps an 8-bit HDR image with the peak that `Decoded` keeps.
     fn tone_mapped(self, box_px: Option<(u32, u32)>, target: ColorTarget) -> Self {
         let Some(map) = hdr::ToneMap::of_source(&self.color, target) else {
             return self;
@@ -249,7 +248,7 @@ pub fn decode_image(
 }
 
 /// A file without a known extension can hold a format that only sips reads, for example a HEIC
-/// photo named `.img`. A broken file with a raster extension runs no sips, so it costs no sips
+/// photo named `.img`. A broken file with a raster extension skips sips. Thus it costs no sips
 /// run each time it shows.
 #[cfg(all(feature = "sips", target_os = "macos"))]
 fn tries_sips_after_raster(path: &Path) -> bool {

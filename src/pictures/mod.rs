@@ -1,9 +1,8 @@
-//! The picture module: the decode, the resize, the shape, the jobs and the Kitty output of the
-//! pictures.
+//! The picture module: the decode, the resize, the shape, the jobs and the Kitty output.
 //!
-//! The app sets its name with `names::set_app_name` at start, turns on the decoders that it needs
-//! through the features `turbo`, `heic`, `jxl` and `sips`, and reaches its test helpers through the
-//! feature `test-support`. The rules of the Kitty layer are in `docs/pictures.md`.
+//! The app sets its name with `names::set_app_name` at start. The features `turbo`, `heic`, `jxl`
+//! and `sips` turn on the decoders. The feature `test-support` builds the test helpers. The rules
+//! of the Kitty layer are in `docs/pictures.md`.
 //!
 //! The module imports no app type. It refers to itself through `super::`, `self::` or
 //! `crate::pictures::`, and to no other module of the crate.

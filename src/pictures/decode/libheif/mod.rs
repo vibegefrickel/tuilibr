@@ -147,9 +147,9 @@ fn widen(sample: u16, bits: u8) -> u16 {
     u16::try_from(wide).unwrap_or(u16::MAX)
 }
 
-/// libheif writes RGB a little faster than RGBA. An image without alpha decodes as RGB when the
-/// resize after is fastest in RGB. The zoom source (no target) is RGBA, because its crops resize
-/// at a mild scale.
+/// libheif writes RGB a little faster than RGBA. If the resize is fastest in RGB, an image without
+/// alpha decodes as RGB. The zoom source (no target) is RGBA, because its crops resize at a mild
+/// scale.
 fn decode_layout(handle: &libheif_rs::ImageHandle, target: Option<(u32, u32)>) -> Layout {
     if handle.has_alpha_channel() {
         return Layout::Rgba;

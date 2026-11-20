@@ -49,9 +49,9 @@ pub fn lottie_still(tgs_or_json: &[u8], target: (u32, u32)) -> io::Result<RgbaIm
 /// The loop of a TGS sticker or Lottie JSON for a grid picture of `target` pixels, in the form of
 /// the video and animation loops, so the disk cache and the Kitty layer take it as they are.
 ///
-/// Without two different frames, the cell keeps its still: the error is `InvalidData`, also when
-/// the loop takes longer than [`LOOP_BUDGET`]. When `cancel` turns true, the render stops before
-/// the next frame with `Interrupted`.
+/// If the loop has fewer than two different frames or takes longer than [`LOOP_BUDGET`], the
+/// error is `InvalidData`, and the cell keeps its still. If `cancel` turns true, the render stops
+/// before the next frame with `Interrupted`.
 pub fn lottie_loop(
     tgs_or_json: &[u8],
     target: (u32, u32),
@@ -284,7 +284,7 @@ mod tests {
         let last = &animation.frames[2];
         assert_eq!(first.dimensions(), (64, 64));
         let pixel = first.get_pixel(16, 32).0;
-        // Straight alpha keeps full red at half opacity. Premultiplied red would be about 128.
+        // Straight alpha keeps full red at half opacity. Premultiplied red is about 128.
         assert_eq!(&pixel[..3], &[255, 0, 0]);
         assert!((126..=129).contains(&pixel[3]), "alpha {}", pixel[3]);
         assert_eq!(last.get_pixel(16, 32).0, [0; 4], "the square moved away");

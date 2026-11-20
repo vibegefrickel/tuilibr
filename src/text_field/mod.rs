@@ -9,7 +9,7 @@
 //! One row: `visible` cuts the text to the window that keeps the cursor in view, and a line break
 //! shows as `⏎` in one column, so that the cursor column and the text stay aligned. A box of
 //! rows: `wrap` breaks the text at the width and at each line break, and gives the cell of the
-//! cursor; `Wrapped::scroll` picks the first row for a box of a height.
+//! cursor. `Wrapped::scroll` picks the first row for a box of a height.
 //!
 //! A field that is wider than its input scrolls. The field keeps the first visible character,
 //! so that the cursor moves inside the window and the text stays in place. The draw of an app
@@ -30,8 +30,8 @@ pub mod keys;
 
 pub use keys::{Edit, edit_for_key, line_edit_for_key};
 
-/// The name in the temporary file of the editor: the app name of the pictures when the app set
-/// one, else the crate name.
+/// The name in the temporary file of the editor: the app name of the pictures module, else the
+/// crate name.
 #[cfg_attr(
     not(feature = "pictures"),
     expect(
@@ -120,8 +120,8 @@ impl TextField {
         true
     }
 
-    /// Adds a pasted text at the cursor. A paste carries a line break as `\r\n` or `\r` in many
-    /// terminals; both become `\n`. An empty text changes nothing.
+    /// Adds a pasted text at the cursor. Many terminals paste a line break as `\r\n` or `\r`. The
+    /// field changes both to `\n`. An empty text changes nothing.
     pub fn insert_text(&mut self, text: &str) -> bool {
         let text = text.replace("\r\n", "\n").replace('\r', "\n");
         if text.is_empty() {
@@ -244,8 +244,7 @@ impl TextField {
             self.apply(edit);
             return false;
         }
-        // Each text edit reports `true` only for a changed text: an insert always changes it, a
-        // delete and a clear change it when they remove a character.
+        // A text edit returns `true` only when it changes the text.
         self.apply(edit)
     }
 
@@ -271,7 +270,7 @@ impl TextField {
             Edit::DeleteToStart => self.delete_to_start(),
             Edit::DeleteToEnd => self.delete_to_end(),
             Edit::Clear => self.clear(),
-            // The app opens the editor; the field changes nothing by itself.
+            // The app opens the editor.
             Edit::OpenEditor => false,
         }
     }
@@ -280,8 +279,8 @@ impl TextField {
     ///
     /// Returns the visible text and the column of the cursor in it. The window starts at the
     /// character of the last `scroll_into_view`. It moves only as far as necessary to show the
-    /// cursor, and it moves left when free columns stay at the end. The cursor cell at the end
-    /// of the text takes one column. A line break shows as `⏎`.
+    /// cursor. If free columns stay at the end, it moves left. The cursor cell at the end of the
+    /// text takes one column. A line break shows as `⏎`.
     pub fn visible(&self, width: usize) -> (String, usize) {
         let columns = ColumnOffsets::of(&self.text);
         let starts = self.cluster_starts();
@@ -314,9 +313,9 @@ impl TextField {
     }
 
     /// Breaks the text into rows of at most `width` columns: at each line break, and before a
-    /// word that does not fit the rest of the row. A word longer than a row is cut. The spaces at
-    /// the end of a row that do not fit are dropped. A line break at the end gives an empty last
-    /// row, so the cursor after it has its row.
+    /// word that does not fit the rest of the row. The wrap cuts a word that is longer than a row,
+    /// and drops the spaces at the end of a row that do not fit. A line break at the end gives an
+    /// empty last row, so the cursor after it has its row.
     pub fn wrap(&self, width: usize) -> Wrapped {
         let width = width.max(1);
         let mut rows = vec![String::new()];
@@ -340,7 +339,7 @@ impl TextField {
                     let cluster_columns = cluster_width(cluster);
                     if column + cluster_columns > width {
                         if whitespace {
-                            // A space that does not fit the row is dropped: its cell is the end.
+                            // The row drops a space that does not fit. Its cell is the end.
                             cells.extend(cluster.chars().map(|_| (rows.len() - 1, column)));
                             continue;
                         }
@@ -520,8 +519,10 @@ pub struct Wrapped {
 }
 
 impl Wrapped {
-    /// The first row to show in a box of `height` rows: the end of the text stays in view,
-    /// unless the cursor is above it; then the row of the cursor is the first row.
+    /// The first row to show in a box of `height` rows.
+    ///
+    /// The end of the text stays in view. If the cursor is above it, the row of the cursor is the
+    /// first row.
     pub fn scroll(&self, height: usize) -> usize {
         let end_first = self.rows.len().saturating_sub(height.max(1));
         self.cursor.0.min(end_first)

@@ -2,7 +2,7 @@
 //!
 //! The app owns the id space: its stills and its other images take ids outside the range. The
 //! counter runs up through the range and wraps to its start. A run of ids skips the ids that
-//! the app still uses, which only matters after the counter wraps.
+//! the app still uses. This matters only after the counter wraps.
 
 use std::ops::Range;
 
@@ -20,10 +20,10 @@ impl LoopIds {
         Self { range, next_id }
     }
 
-    /// The first id of a free run of `count` ids. `used` is true when an id of the run belongs
-    /// to a loop that the app still shows or that waits for its delete.
+    /// The first id of a free run of `count` ids.
     ///
-    /// The run must fit the range, else the search never ends.
+    /// If an id of the run belongs to a shown loop or to a loop that waits for its delete, `used`
+    /// gives true. If the run does not fit the range, the search never ends.
     pub fn allocate(&mut self, count: u32, used: impl Fn(&Range<u32>) -> bool) -> u32 {
         loop {
             let first = self.next_id;

@@ -42,7 +42,7 @@ fn write_cache_file_with(
     }
 
     let sequence = temp_sequence.fetch_add(1, Ordering::Relaxed);
-    // The name of `files`, so `remove_stale_temp_file` and the sweep of `files` know it.
+    // The temp name of `files`: `remove_stale_temp_file` and the sweep of `files` know it.
     let temp_path = crate::files::temp_path(cache_path)?;
     if let Err(error) = write(&temp_path) {
         #[expect(
@@ -68,7 +68,7 @@ fn write_cache_file_with(
     Ok(())
 }
 
-/// Write 0 skips the prune: the first write of the session pruned the cache a moment before.
+/// Write 0 skips the prune: the first write of the session pruned the cache before it.
 const fn prunes_after_write(sequence: u64) -> bool {
     sequence != 0 && sequence.is_multiple_of(64)
 }
@@ -82,8 +82,8 @@ const STALE_TEMP_AGE: Duration = Duration::from_secs(3600);
 fn remove_stale_temp_file(entry: &std::fs::DirEntry) {
     let path = entry.path();
     let extension = path.extension().and_then(|ext| ext.to_str());
-    // The thumbnail temp files start with a dot, the partial cube files of the tone map end in
-    // `.partial` (`player/tone_map.rs`).
+    // A thumbnail temp file starts with a dot. A partial cube file of the tone map ends in
+    // `.partial` (`motion/tone_map`).
     let is_temp = (extension == Some("tmp")
         && entry.file_name().to_string_lossy().starts_with('.'))
         || extension == Some("partial");

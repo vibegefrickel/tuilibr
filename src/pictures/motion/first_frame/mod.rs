@@ -21,12 +21,12 @@ pub const VIDEO_EXTENSIONS: &[&str] = &["mp4", "mov", "mkv", "avi", "webm", "m4v
 /// takes about 240 ms. A file that hangs ffmpeg must not hold a thumbnail slot for longer.
 pub(in crate::pictures::motion) const FIRST_FRAME_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// True when the extension of `path` is one of [`VIDEO_EXTENSIONS`], in any case.
+/// True for a `path` with one of the [`VIDEO_EXTENSIONS`], in any case.
 pub fn is_video(path: &Path) -> bool {
     crate::pictures::decode::extensions::has_extension(path, VIDEO_EXTENSIONS)
 }
 
-/// `cache_dir`, else `$TMPDIR/<app>`.
+/// The cube folders: `cache_dir`, else `$TMPDIR/<app>`.
 #[derive(Debug, Clone)]
 pub struct CubeDirs([PathBuf; 2]);
 
@@ -81,7 +81,7 @@ pub(in crate::pictures::motion) fn first_frame_cube(
     info.hdr.and_then(|_| cube_for(info, target, dirs))
 }
 
-/// An SDR frame converts as a still image. An HDR frame left ffmpeg in the target already.
+/// An SDR frame converts as a still image. ffmpeg already gives an HDR frame in the target.
 pub(in crate::pictures::motion) fn convert_first_frame(
     image: RgbaImage,
     info: &VideoInfo,
@@ -101,8 +101,8 @@ pub(in crate::pictures::motion) fn convert_first_frame(
 
 /// The first frame of `path`, fitted into `target` pixels, for a grid thumbnail.
 ///
-/// ffmpeg runs the filter chain of the terminal player, with its software retry. A run
-/// without a frame after `timeout` is killed, and the error is `TimedOut`.
+/// ffmpeg runs the filter chain of the terminal player, with its software retry. If no frame
+/// comes within `timeout`, the function kills the run, and the error is `TimedOut`.
 pub fn decode_first_frame(
     decoder: &dyn Decoder,
     ffmpeg: &Path,

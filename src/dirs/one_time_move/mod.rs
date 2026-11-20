@@ -39,7 +39,7 @@ pub enum Moved {
     /// One rename moved the old entry to the new place.
     Renamed,
     /// The old entry is on another volume. The new place holds a copy that the compare found
-    /// equal. The old entry went, or it stays when the caller set `remove_old` to false.
+    /// equal. The old entry went. If the caller set `remove_old` to false, the old entry stays.
     Copied,
     /// The new place holds a copy that the compare found equal, but the removal of the old entry
     /// failed with this error. The app tells the user to remove the old entry.
@@ -59,7 +59,8 @@ pub enum Moved {
 /// compare, the part copy becomes `new`, and only then does `old` go. A failed copy removes the
 /// part copy and leaves `old` as it was. A part copy of an earlier run that stopped goes first.
 ///
-/// Only one process at a time must move to `new`: the app holds a lock for that, if it needs one.
+/// Only one process at a time must move to `new`. If the app needs a lock for that, the app holds
+/// it.
 pub fn move_once(old: &Path, new: &Path, other_volume: OtherVolume) -> io::Result<Moved> {
     move_once_with(old, new, other_volume, |from, to| fs::rename(from, to))
 }

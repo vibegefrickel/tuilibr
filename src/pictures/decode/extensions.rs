@@ -27,7 +27,7 @@ pub const SIPS_EXTENSIONS: &[&str] = &[
 #[cfg(feature = "heic")]
 pub const LIBHEIF_EXTENSIONS: &[&str] = &["heic", "heif", "hif", "avif"];
 
-/// It ignores ASCII case and allocates nothing.
+/// The extension of `path` is in `list`, in any ASCII case. The test allocates nothing.
 pub fn has_extension(path: &Path, list: &[&str]) -> bool {
     path.extension()
         .and_then(|e| e.to_str())

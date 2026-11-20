@@ -11,9 +11,9 @@ pub const NARROW_BELOW: u16 = 60;
 pub enum Split {
     /// The list is hidden: the main pane has the whole area.
     Hidden,
-    /// Beside the main pane, with a vertical divider (wide enough).
+    /// Beside the main pane, with a vertical divider.
     Beside(Rect),
-    /// Above the main pane, a third of the height, with a horizontal line (narrow).
+    /// Above the main pane, a third of the height, with a horizontal line.
     Above(Rect),
 }
 

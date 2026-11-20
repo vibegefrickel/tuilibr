@@ -14,8 +14,8 @@ use std::io::{self, Write};
 #[cfg(any(test, feature = "test-support"))]
 use std::sync::{Arc, Mutex, PoisonError};
 
-/// The terminal output for the Kitty sequences of `App`. A test app writes to a buffer and
-/// never touches the images of the real terminal.
+/// The terminal output for the Kitty sequences. A test app writes to a buffer and never touches
+/// the images of the real terminal.
 #[derive(Debug, Clone)]
 pub enum GraphicsOutput {
     /// The real terminal.

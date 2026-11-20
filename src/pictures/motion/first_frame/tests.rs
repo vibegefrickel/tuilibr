@@ -24,7 +24,7 @@ fn test_dir() -> TempDir {
     tempfile::tempdir().unwrap()
 }
 
-/// `false` when ffmpeg failed.
+/// `false` after a failed ffmpeg run.
 fn run_ffmpeg(program: &Path, args: &[&str]) -> bool {
     let status = Command::new(program)
         .args(["-hide_banner", "-loglevel", "error", "-y"])
@@ -37,7 +37,7 @@ fn run_ffmpeg(program: &Path, args: &[&str]) -> bool {
     false
 }
 
-/// A 64x48 clip of `seconds` at 10 fps, or `None` when ffmpeg fails.
+/// A 64x48 clip of `seconds` at 10 fps, or `None` after a failed ffmpeg run.
 fn test_clip(program: &Path, dir: &Path, seconds: &str) -> Option<PathBuf> {
     let path = dir.join("clip.mp4");
     let path_text = path.to_string_lossy();

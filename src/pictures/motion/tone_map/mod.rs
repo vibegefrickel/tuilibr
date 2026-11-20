@@ -70,8 +70,9 @@ impl Primaries {
         }
     }
 
-    /// For an animation whose profile ffprobe does not report. `None` for a source without a cube,
-    /// for example Adobe RGB.
+    /// The primaries of an animation whose profile ffprobe does not report.
+    ///
+    /// `None` for a source without a cube, for example Adobe RGB.
     pub(in crate::pictures::motion) fn of_source_color(source: &SourceColor) -> Option<Self> {
         match source {
             SourceColor::Srgb => Some(Self::Bt709),
@@ -207,7 +208,7 @@ impl Cube {
         Some(Self { source, target })
     }
 
-    /// Change [`CUBE_VERSION`] when the output of a cube changes.
+    /// If the output of a cube changes, raise [`CUBE_VERSION`].
     fn file_name(self) -> String {
         let source = match self.source {
             CubeSource::Sdr(primaries) => format!("color-{}", primaries.file_part()),
@@ -297,10 +298,11 @@ const HDR_PEAK_NITS: f64 = 1000.0;
 const SDR_WHITE_NITS: f64 = 500.0;
 const D65: [f64; 2] = [0.3127, 0.3290];
 
-/// The file of `cube` in the first of `dirs` that works. The module writes it when it is missing.
+/// The file of `cube` in the first of `dirs` that works.
 ///
-/// A directory fails when the app cannot write there, or when its path holds filter graph
-/// syntax. Without a directory that works, the video plays without the cube.
+/// If the file is missing, the module writes it. If the app cannot write to a directory or its
+/// path holds filter graph syntax, the directory fails. Without a directory that works, the video
+/// plays without the cube.
 pub(in crate::pictures::motion) fn cube_file(dirs: &[&Path], cube: Cube) -> Option<PathBuf> {
     dirs.iter().find_map(|dir| cube_file_in(dir, cube))
 }

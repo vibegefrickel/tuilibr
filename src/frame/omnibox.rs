@@ -51,8 +51,8 @@ pub enum OmniboxView<'a> {
     },
     /// The multi-line draft.
     ///
-    /// The rows wrap, the prompt shows on the first row while that row is in view and keeps its
-    /// columns as the indent of the other rows.
+    /// The rows wrap. The prompt shows on the first row while that row is in view, and its columns
+    /// are the indent of the other rows.
     Draft {
         /// The prompt of the first row. Dim while `cursor` is false.
         prompt: Span<'static>,
@@ -64,8 +64,6 @@ pub enum OmniboxView<'a> {
 }
 
 /// The tone of a status text, so no app writes the colour itself.
-///
-/// A note takes `frame::note` (the gray of the palette), an alert takes `frame::alert` (the red).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tone {
     /// A notice in gray.
@@ -149,8 +147,7 @@ fn shown_prompt(prompt: &Span<'static>, cursor: bool) -> Span<'static> {
     }
 }
 
-/// One typed row: the right text takes its cells first, one column apart, and the field gets
-/// the rest with the cursor in view.
+/// One typed row with the cursor in view.
 fn draw_typed(
     frame: &mut Frame<'_>,
     inner: Rect,

@@ -3,7 +3,7 @@
 //!
 //! The files then sit next to the dotfiles of the user. An `XDG_*_HOME` value that is empty or
 //! relative counts as unset, as the XDG specification says. An app can name a root variable, for
-//! example `YOUTR_HOME`: its value puts the four folders below one root, for a test or a second
+//! example `APP_HOME`: its value puts the four folders below one root, for a test or a second
 //! profile. The lookup of the variables is an argument, so a test never changes the environment
 //! of the process. `in_one_folder` puts the cache, the state and the data in one folder, for an
 //! app with one override variable for its data.

@@ -259,8 +259,6 @@ fn visible_shows_each_line_break_as_one_column() {
     assert_eq!(field.visible(10), ("a⏎b⏎c".to_owned(), 2));
 }
 
-// The grapheme cases of the schnattr composer.
-
 #[test]
 fn the_moves_and_the_deletes_step_over_a_grapheme_cluster() {
     let mut field = TextField::from("ab 👨‍👩‍👧 cd");
@@ -298,7 +296,7 @@ fn backspace_removes_a_whole_grapheme_and_a_heart_with_its_selector() {
 
 #[test]
 fn the_last_cells_stay_in_view_at_the_end() {
-    // The `tail_width` cases of the schnattr omnibox: the cursor cell takes the last column.
+    // The cursor cell takes the last column.
     assert_eq!(TextField::from(":abcdef").visible(4), ("def".to_owned(), 3));
     assert_eq!(TextField::from("日本語").visible(4), ("語".to_owned(), 2));
     assert_eq!(TextField::from("ab").visible(5), ("ab".to_owned(), 2));
@@ -390,8 +388,6 @@ fn the_scroll_keeps_the_end_in_view_unless_the_cursor_is_above() {
     );
     assert_eq!(TextField::from("a").wrap(10).scroll(3), 0);
 }
-
-// The key table of agendr.
 
 mod keys {
     use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};

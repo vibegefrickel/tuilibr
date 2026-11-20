@@ -96,7 +96,7 @@ pub(super) fn rgb_to_xyz(primaries: Primaries) -> Matrix {
     columns.map(|row| [0, 1, 2].map(|column| row[column] * scale[column]))
 }
 
-/// The Bradford cone response matrix of `player/tone_map.rs`.
+/// The Bradford cone response matrix, as in `motion::tone_map`.
 const BRADFORD: Matrix = [
     [0.8951, 0.2664, -0.1614],
     [-0.7502, 1.7135, 0.0367],
@@ -113,7 +113,7 @@ fn adaptation(source: [f64; 2], target: [f64; 2]) -> Matrix {
     multiply(&invert(&BRADFORD), &multiply(&gains, &BRADFORD))
 }
 
-/// Linear RGB of `source` to linear RGB of `target`, white to white, as in the player cubes.
+/// Linear RGB of `source` to linear RGB of `target`, white to white, as in the video cubes.
 pub(super) fn conversion(source: Primaries, target: Primaries) -> Matrix {
     let adapted = multiply(
         &adaptation(source.white(), target.white()),

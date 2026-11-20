@@ -7,8 +7,8 @@ use std::collections::HashSet;
 /// placement at 320 MB without a notice, and herdr stores each image twice.
 pub const TERMINAL_IMAGE_BUDGET: usize = 128 * 1024 * 1024;
 
-/// The images that the terminal stores, newest last, with their pixel bytes. A stored image
-/// can be placed again by its id (`a=p`).
+/// The images that the terminal stores, newest last, with their pixel bytes. The app can place a
+/// stored image again by its id (`a=p`).
 #[derive(Debug)]
 pub struct TerminalImages {
     stored: LruCache<u32, usize>,

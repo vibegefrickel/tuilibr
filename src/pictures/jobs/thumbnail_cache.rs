@@ -46,7 +46,6 @@ impl GridPicture {
     }
 }
 
-/// A picture of one cell, for the tests.
 #[cfg(any(test, feature = "test-support"))]
 impl From<RgbaImage> for GridPicture {
     fn from(image: RgbaImage) -> Self {
@@ -66,8 +65,8 @@ pub struct ParkKey {
     pub cell_px: (u32, u32),
 }
 
-/// The modification time and the length of a file. A parked picture of a changed file is not
-/// used.
+/// The modification time and the length of a file. The cache uses no parked picture of a changed
+/// file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct FileStamp {
     modified: Option<SystemTime>,
@@ -87,7 +86,7 @@ impl FileStamp {
 /// The LRU of the grid pictures by key, with their Kitty ids, the visible set and the parked set.
 pub struct ThumbnailCache<K = usize> {
     cache: LruCache<K, CachedThumb>,
-    /// The next Kitty id. The ids count up from 1 and never meet `kitty_output::VIDEO_IMAGE_ID`.
+    /// The next Kitty id of a grid picture.
     next_id: u32,
     /// The ids that the cache dropped. The next grid write deletes them in the terminal.
     evicted_ids: Vec<u32>,
@@ -104,7 +103,7 @@ pub struct ThumbnailCache<K = usize> {
 }
 
 impl<K> std::fmt::Debug for ThumbnailCache<K> {
-    /// The counts, not the pixels: a cache holds megabytes of them.
+    /// The type name only: a cache holds megabytes of pixels.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ThumbnailCache").finish_non_exhaustive()
     }
@@ -525,7 +524,7 @@ mod tests {
         cache.insert(0, picture((20, 4)));
         cache.insert(1, picture((20, 6)));
         cache.insert_preview(2, picture((20, 6)));
-        // An index without a path (a cell that left the list) is not parked.
+        // The park skips an index without a path (a cell that left the list).
         cache.insert(7, picture((20, 6)));
 
         cache.park(&paths, key);
@@ -640,7 +639,7 @@ mod tests {
         assert_eq!(cache.parked_count(), 0, "the stale pictures went too");
         assert_eq!(cache.bytes(), 0);
 
-        // A file that is gone at the park is not parked.
+        // The park skips a file that is gone.
         cache.insert(2, image::RgbaImage::new(2, 2));
         cache.park(&paths, key);
         assert_eq!(cache.parked_count(), 0);

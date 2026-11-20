@@ -332,7 +332,7 @@ impl<'a> Bytes<'a> {
         Some(version)
     }
 
-    /// 32 bits in the newer box versions, 16 bits in version 0.
+    /// 16 bits in box version 0, 32 bits in the later versions.
     fn item_id(&mut self, large: bool) -> Option<u32> {
         if large {
             self.u32()
@@ -515,7 +515,7 @@ mod tests {
         assert_eq!(read_meta(&mut Cursor::new(without)).unwrap(), None);
     }
 
-    /// The sizes 0 (to the end of the file) and 1 (64 bits), and sizes that cannot be right.
+    /// The sizes 0 (to the end of the file) and 1 (64 bits), and invalid sizes.
     #[test]
     fn meta_search_reads_every_size_form() {
         let body = meta(1, &[], &[1]);

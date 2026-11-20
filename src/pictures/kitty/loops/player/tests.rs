@@ -628,7 +628,7 @@ fn a_failure_lasts_one_visit() {
 #[test]
 fn the_budget_counts_every_stored_loop_before_a_send() {
     let (mut player, epoch) = player(LoopLimits::default());
-    // Each loop holds 3 frames of 16 bytes; 60 bytes hold one loop, not two.
+    // Each loop holds 3 frames of 16 bytes. 60 bytes hold one loop, not two.
     let mut screen = Screen::with_budget(60);
     show(&mut player, &[1, 2], epoch);
     let mut tickets = start(&mut player);

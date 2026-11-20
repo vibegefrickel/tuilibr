@@ -5,8 +5,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-/// How an app frames its two panes. The maximal frame is the default (the maintainer,
-/// 2026-11-19); the key `B` of each app switches it for one run.
+/// How an app frames its two panes. The key `B` of each app switches the frame for one run.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Layout {
     /// One line between the panes (`split` and `divider`), no boxes.

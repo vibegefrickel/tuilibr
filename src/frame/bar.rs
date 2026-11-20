@@ -1,6 +1,4 @@
-//! The status bar, as the status line of vim. From left to right: the mode block, the left
-//! group, the middle in the center of the free room, the right groups with the time last, and
-//! the icons at the right edge. Parts are set apart by two spaces, never by a divider.
+//! The status bar, as the status line of vim.
 
 use ratatui::{
     Frame,
@@ -19,7 +17,8 @@ use super::{
     text::{display_width, truncate_start, truncate_width},
 };
 
-/// Separates the parts of the middle and the groups at the right edge: room, no divider.
+/// Separates the parts of the middle and the groups at the right edge with room, never with a
+/// divider.
 pub const SEPARATOR: &str = "  ";
 
 /// The mode block at the left edge.
@@ -29,11 +28,11 @@ pub struct ModeView {
     pub name: String,
     /// The text on a screen narrower than `NARROW_BELOW`, often one letter.
     pub short_name: String,
-    /// The color of the block.
+    /// The colour of the block.
     pub color: Color,
 }
 
-/// One text of the middle: its parts, of which the last go first, in one style.
+/// One text of the middle in one style. If the text does not fit, its last parts drop first.
 #[derive(Debug)]
 pub struct BarText {
     /// The parts, set apart by the separator.
@@ -41,7 +40,7 @@ pub struct BarText {
     /// The style of the text.
     pub style: Style,
     /// A cut keeps the end of the text (`…long query`) instead of its start (`long text…`), for a
-    /// typed query that grows at its end. The first parts go first then.
+    /// typed query that grows at its end. The first parts then drop first.
     pub keep_end: bool,
 }
 
@@ -50,11 +49,11 @@ pub struct BarText {
 pub struct BarView {
     /// The mode block.
     pub mode: ModeView,
-    /// The left group after the mode block. A part that does not fit is left out.
+    /// The left group after the mode block. The bar leaves out a part that does not fit.
     pub left: Vec<Span<'static>>,
     /// The middle: each text gets the room that the texts before it leave.
     pub middle: Vec<BarText>,
-    /// The groups at the right, before the time. The first groups go first.
+    /// The groups at the right, before the time. The first groups drop first.
     pub right: Vec<String>,
     /// The time, the last group at the right. It stays whole while the bar has room.
     pub time: String,
@@ -65,11 +64,13 @@ pub struct BarView {
 /// The bar, left to right: the mode block, the left group, the middle centered in the free room,
 /// the right groups and the icons at the end.
 ///
-/// The right groups give up their first groups when the middle does not fit whole, and keep the
-/// time whole as long as the bar has room: the left group gives way to the icons and the time. When
-/// the left group does not fit, it starts late enough that its part `current` (the selected tab)
-/// shows, so `H` and `L` scroll through it. Returns where each part of the left group landed, one
-/// area per part in its order, for the mouse. The parts that do not fit have an empty area.
+/// If the middle does not fit whole, the right groups drop their first groups. The time stays
+/// whole while the bar has room, because the left group gives way to the icons and the time. If
+/// the left group does not fit, it starts late enough to show its part `current` (the selected
+/// tab), so `H` and `L` scroll through it.
+///
+/// Returns the area of each part of the left group in its order, for the mouse. A part that does
+/// not fit has an empty area.
 pub fn draw_bar(frame: &mut Frame<'_>, view: BarView, area: Rect, current: usize) -> Vec<Rect> {
     let block = mode_block(&view.mode, area.width);
     let cells = |spans: &[Span<'_>]| to_u16(spans.iter().map(Span::width).sum::<usize>());
@@ -179,8 +180,8 @@ fn padded(text: &str) -> String {
     }
 }
 
-/// The mode block: the background color of the terminal on the mode color (bold reverse
-/// video), one space of padding, the short name on a narrow screen.
+/// The mode block: the background colour of the terminal on the mode colour, in bold reverse
+/// video.
 fn mode_block(mode: &ModeView, width: u16) -> Span<'static> {
     let text = if width < NARROW_BELOW {
         &mode.short_name
@@ -197,8 +198,8 @@ fn mode_block(mode: &ModeView, width: u16) -> Span<'static> {
     )
 }
 
-/// The parts as they fit `room`: the last parts go first, then the rest is cut at its end. With
-/// `keep_end`, the first parts go first and the cut keeps the end.
+/// The parts as they fit `room`: the last parts drop first, then a cut shortens the end of the
+/// rest. With `keep_end`, the first parts drop first and the cut keeps the end.
 pub(super) fn fit_parts(parts: &[String], room: usize, keep_end: bool) -> String {
     let inner = room.saturating_sub(2);
     let mut kept = parts;
@@ -220,8 +221,8 @@ pub(super) fn fit_parts(parts: &[String], room: usize, keep_end: bool) -> String
     }
 }
 
-/// The groups at the right edge as they fit `room`: the first groups go first, and the last
-/// one (the time) stays, cut if it must.
+/// The groups at the right edge as they fit `room`: the first groups drop first. The last group
+/// (the time) stays and takes a cut if it does not fit.
 pub(super) fn fit_right(mut groups: Vec<String>, room: usize) -> String {
     while groups.len() > 1 && padded(&groups.join(SEPARATOR)).width() > room {
         groups.remove(0);

@@ -1,7 +1,7 @@
 //! The name of the app in the files, the threads and the variables of the module.
 //!
-//! The app sets its name one time at start, so two apps never share a cache key or a temp file
-//! name, and the module holds no app name of its own.
+//! The app sets its name one time at start. Thus two apps never share a cache key or a temp file
+//! name.
 
 use std::sync::OnceLock;
 
@@ -33,7 +33,7 @@ pub fn test_variable(name: &str) -> String {
     format!("{}_TEST_{name}", app_name().to_ascii_uppercase())
 }
 
-/// The file of the real-file test `name`. Without the variable the test skips with a note.
+/// The file of the real-file test `name`. Without the variable, the test skips with a note.
 #[cfg(any(test, feature = "test-support"))]
 pub fn test_file(name: &str) -> Option<std::path::PathBuf> {
     crate::pictures::decode::real_test_file(&test_variable(name))

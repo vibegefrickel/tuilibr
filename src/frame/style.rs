@@ -7,10 +7,10 @@ use ratatui::style::{Color, Modifier, Style};
 /// The accent of the frame: the colour of everything active, the ground of the selected row, the
 /// box of the pane with the focus and the pill.
 ///
-/// It is the bright white of the palette (slot 15), the foreground of a dark theme, so the block is
-/// the brightest thing on the screen and the dark text on it reads at full contrast. The terminal
-/// multiplexer draws its active tab in the same colour. The value is fixed: the theme of the
-/// terminal changes it, nothing else.
+/// It is the bright white of the palette (slot 15). On a dark theme, the block is the brightest
+/// thing on the screen, and the dark text on it has full contrast. The terminal multiplexer draws
+/// its active tab in the same colour. The value is fixed: only the theme of the terminal changes
+/// it.
 pub const fn accent() -> Color {
     Color::White
 }
@@ -47,30 +47,28 @@ pub const fn dim() -> Style {
     Style::new().fg(dim_color())
 }
 
-/// A status note in the omnibox: the gray of the palette (slot 7), readable but quiet.
+/// A status note in the omnibox.
 pub const fn note() -> Style {
     Style::new().fg(note_color())
 }
 
-/// An alert in the omnibox: the red of the palette (slot 1).
+/// An alert in the omnibox.
 pub const fn alert() -> Style {
     Style::new().fg(alert_color())
 }
 
-/// The selected row in a focused pane: the dark of the palette on the accent (`accent`, the bright
-/// white of the palette).
+/// The selected row in a focused pane: the dark of the palette on the accent.
 ///
-/// A terminal multiplexer draws its active tab in the same block, so the list and the tabs look the
-/// same. It is not reverse video: reverse video takes the bright text color as the ground, which is
+/// It is not reverse video: reverse video takes the bright text colour as the ground, which is
 /// brighter than the rest of the screen.
 pub const fn selection() -> Style {
     Style::new().fg(Color::Black).bg(accent())
 }
 
 /// The selected row in the pane without the focus: the dark gray of the palette (slot 8) as the
-/// ground with the normal text, so the row stays found but does not catch the eye.
+/// ground with the normal text, so that the row stays visible but does not catch the eye.
 ///
-/// The dim of the pane softens it further. The box of a pane without the focus takes the same dark
+/// The dim of the pane makes it fainter. The box of a pane without the focus takes the same dark
 /// gray.
 pub const fn unfocused_selection() -> Style {
     Style::new().bg(Color::DarkGray)
@@ -102,9 +100,11 @@ pub const fn selected_pill() -> Style {
     pill()
 }
 
-/// The ground of the bar, as the status line of vim: the black of the palette, which a theme
-/// sets a step above the background, with the secondary text color on it. Not the bright
-/// black: most palettes use it for dimmed text, and text on it has no contrast.
+/// The ground of the bar, as the status line of vim: the black of the palette with the secondary
+/// text colour on it.
+///
+/// A theme sets the black a step above the background. The bar does not take the bright black,
+/// because most palettes use it for dimmed text, and text on it has no contrast.
 pub(super) const fn bar() -> Style {
     Style::new().fg(Color::Gray).bg(Color::Black)
 }

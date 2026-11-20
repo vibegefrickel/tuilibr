@@ -26,8 +26,10 @@ pub enum Pipeline {
 }
 
 impl Pipeline {
-    /// An animation, and a stream that `VideoToolbox` does not decode, run in software only.
-    /// A GPU run of such a stream fails after 160 ms to 190 ms.
+    /// The first pipeline for `info`.
+    ///
+    /// An animation and a stream that `VideoToolbox` does not decode run in software only. A GPU
+    /// run of such a stream fails after 160 ms to 190 ms.
     pub fn first(info: &VideoInfo) -> Self {
         if info.is_animation() || !info.hardware {
             Self::Software
@@ -73,12 +75,13 @@ pub fn with_fallback<T>(
 pub trait Decoder {
     /// The header of `video`: the size, the rate, the colour and the decode path.
     fn probe(&self, video: &Path) -> io::Result<VideoInfo>;
-    /// False when ffprobe is missing. Each probe then fails.
+    /// False without ffprobe. Each probe then fails.
     fn has_ffprobe(&self) -> bool {
         true
     }
-    /// The GPU run of `video` failed and the software run gave a frame. Later probes of the
-    /// same file then answer `hardware: false`.
+    /// Marks `video` after a failed GPU run and a software run with a frame.
+    ///
+    /// Later probes of the same file answer `hardware: false`.
     fn remember_software(&self, _video: &Path) {}
     /// The probe of `video` from the session cache. A start ahead of Enter on the UI thread
     /// then runs no ffprobe.

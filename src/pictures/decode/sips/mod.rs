@@ -34,10 +34,10 @@ const VECTOR_EXTENSIONS: &[&str] = &["pdf", "svg"];
 /// sips writes a vector image at 72 dpi by default: a letter page is only 612x792 px.
 const VECTOR_ZOOM_SIDE: u32 = 4096;
 
-/// Side of the gray pictures that decide a flip: 32x32 keeps the compare below 1 ms.
+/// The side of the gray pictures that decide a flip. 32x32 keeps the compare below 1 ms.
 const COMPARE_SIDE: u32 = 32;
 
-/// Samples per row and column of one gray cell.
+/// The samples per row and column of one gray cell.
 const COMPARE_SAMPLES: u32 = 4;
 
 /// The oriented candidate must come closer to the preview by this many gray levels (mean over
@@ -208,8 +208,8 @@ pub fn decode(path: &Path, target: Option<(u32, u32)>) -> io::Result<Decoded> {
     Ok(decoded)
 }
 
-/// sips reads an argument that starts with `-` as a function name (`sips -s format tiff -x.cr2`). A
-/// relative path gets `./` in front.
+/// sips reads an argument that starts with `-` as a function name (`sips -s format tiff -x.cr2`).
+/// A relative path gets `./` in front.
 fn argument_path(path: &Path) -> PathBuf {
     if path.is_absolute() {
         path.to_path_buf()

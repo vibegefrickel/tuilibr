@@ -34,8 +34,7 @@ pub const TILE_INSET: u32 = 2;
 pub enum Kind {
     /// The picture of a chat or its stand-in: it fills its box and has rounded corners.
     Chat,
-    /// A picture of a message: it never grows and keeps its hard corners. An own message
-    /// (`right`) puts it at the right edge of its box, so it sits flush right.
+    /// A picture of a message: it never grows and keeps its hard corners.
     Message {
         /// True for an own message: the picture sits flush at the right edge of its box.
         right: bool,
@@ -235,7 +234,7 @@ fn fit(source: &DynamicImage, size: (u32, u32)) -> Bitmap {
 }
 
 /// `picture` at the top of a transparent box of `size`, at the left edge or at the `right` edge.
-/// The cells of the box are rounded up, so the picture keeps its size. A picture that fills the
+/// The cells of the box round up, so the picture keeps its size. A picture that fills the
 /// box keeps its format.
 fn padded(picture: Bitmap, (box_width, box_height): (u32, u32), right: bool) -> Bitmap {
     let (width, height) = picture.dimensions();

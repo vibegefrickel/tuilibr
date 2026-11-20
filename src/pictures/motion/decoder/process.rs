@@ -20,7 +20,7 @@ const FRAME_POOL: usize = FRAME_QUEUE + 3;
 /// The [`Decoder`] that starts the real ffmpeg and ffprobe.
 #[derive(Debug)]
 pub struct SystemDecoder {
-    /// `None` when PATH has no ffprobe.
+    /// `None` without ffprobe on PATH.
     ffprobe: Option<PathBuf>,
 }
 
@@ -99,7 +99,9 @@ impl Decoder for SystemDecoder {
     }
 }
 
-/// The channel ends when ffmpeg ends or the stream stops.
+/// The frames of one ffmpeg run.
+///
+/// If ffmpeg ends or the stream stops, the channel ends.
 #[derive(Debug)]
 pub struct FrameStream {
     frames: mpsc::Receiver<Vec<u8>>,
@@ -163,7 +165,9 @@ impl Drop for FrameStream {
     }
 }
 
-/// The drop returns the buffer to the reader of its run.
+/// A frame buffer from the pool of a run.
+///
+/// The drop returns the buffer to the reader of the run.
 #[derive(Debug)]
 pub struct PooledFrame {
     data: Vec<u8>,
@@ -205,7 +209,7 @@ impl Drop for PooledFrame {
     }
 }
 
-/// Wait for the exit of `child` on a thread, or here when the thread does not start.
+/// Wait for the exit of `child` on a thread. If the thread does not start, wait here.
 fn reap(child: Child) {
     let (send, receive) = mpsc::channel::<Child>();
     let reaper = thread::Builder::new()
@@ -233,7 +237,8 @@ fn wait_for_exit(child: &mut Child) {
     let _ = child.wait();
 }
 
-/// A buffer is zeroed once and then goes round: reader, channel, player and back.
+/// The pool zeroes a buffer one time. The buffer then goes round: reader, channel, player and
+/// back.
 struct FramePool {
     returned: mpsc::Receiver<Vec<u8>>,
     frame_bytes: usize,
@@ -251,7 +256,7 @@ impl FramePool {
         }
     }
 
-    /// A returned buffer, a new one below the limit, or a wait for a return. `None` when the
+    /// A returned buffer, a new one below the limit, or a wait for a return. `None` after the
     /// player is gone.
     fn take(&mut self) -> Option<Vec<u8>> {
         let mut buffer = match self.returned.try_recv() {

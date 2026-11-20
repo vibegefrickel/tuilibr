@@ -72,7 +72,7 @@ pub fn decode_heif_preview(path: &Path, target: (u32, u32)) -> io::Result<RgbaIm
 }
 
 /// The preview pixels in the source color space, with that color and the peak of the primary
-/// image, split from the conversion so that a test can map the same pixels with another peak.
+/// image. The conversion stays apart, so a test can map the same pixels with another peak.
 pub(super) fn preview_pixels(
     path: &Path,
     target: (u32, u32),

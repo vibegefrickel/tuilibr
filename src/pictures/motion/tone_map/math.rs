@@ -38,7 +38,7 @@ fn invert(matrix: &Matrix) -> Matrix {
     [0, 1, 2].map(|row| columns.map(|column| column[row] / determinant))
 }
 
-/// At Y = 1.
+/// The XYZ of a chromaticity, at Y = 1.
 fn xyz([x, y]: [f64; 2]) -> [f64; 3] {
     [x / y, 1.0, (1.0 - x - y) / y]
 }

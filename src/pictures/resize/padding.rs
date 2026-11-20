@@ -112,7 +112,7 @@ fn box_shaped_canvas(size: (u32, u32), target: (u32, u32)) -> (u32, u32) {
     (canvas.0.max(size.0), canvas.1.max(size.1))
 }
 
-/// `image` in the middle of a transparent canvas. An image of the canvas size is not copied.
+/// `image` in the middle of a transparent canvas. An image of the canvas size comes back as is.
 fn pad_centered(image: RgbaImage, canvas: (u32, u32)) -> RgbaImage {
     if image.dimensions() == canvas {
         return image;
@@ -172,7 +172,7 @@ mod tests {
         assert_eq!(*portrait.image.get_pixel(38, 30), red);
         assert_eq!(*portrait.image.get_pixel(39, 30), clear);
 
-        // An image of the box size is not copied, and never more cells than the box has.
+        // An image of the box size comes back as is. The cells never exceed the box.
         let full = pad_for_grid(
             RgbaImage::from_pixel(100, 60, red),
             (100, 60),

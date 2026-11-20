@@ -60,7 +60,7 @@ pub fn header_dimensions(path: &Path) -> Option<(u32, u32)> {
 }
 
 pub(super) fn decode_raster(path: &Path, target: Option<(u32, u32)>) -> io::Result<Decoded> {
-    // libjpeg-turbo rejects some JPEG variants that `image` accepts. When the fallback fails too,
+    // libjpeg-turbo rejects some JPEG variants that `image` accepts. If the fallback fails too,
     // the error names both.
     #[cfg(not(feature = "turbo"))]
     let _ = target;
@@ -161,7 +161,7 @@ fn jpeg_header(path: &Path) -> Option<Vec<u8>> {
     Some(header)
 }
 
-/// A broken profile block must not stop the decode. The image is then sRGB.
+/// If the profile block is broken, the image is sRGB and the decode goes on.
 fn icc_color(decoder: &mut impl ImageDecoder) -> SourceColor {
     decoder
         .icc_profile()

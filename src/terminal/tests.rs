@@ -1,6 +1,5 @@
 //! The tests of the terminal: the byte sequences of the session on a `Vec`, the repaint after a
-//! resume, the filter of the late answers with the cases of the apps, and the start
-//! query with a closure in place of the tty.
+//! resume, the filter of the late answers, and the start query with a closure in place of the tty.
 
 use std::cell::Cell;
 use std::io;
@@ -308,8 +307,6 @@ mod late_answers {
         assert!(!filter.owed().foreground);
     }
 
-    // The four cases of the first app that filtered the late answers on its reader thread.
-
     #[test]
     fn keys_of_the_user_pass_when_nothing_is_owed() {
         let now = Instant::now();
@@ -391,8 +388,8 @@ mod late_answers {
         );
     }
 
-    // The cases of the app with the self check. `AnswerKeys` reads a whole Kitty answer first, so
-    // the filter sees only the OSC answers and the cut Kitty answers.
+    // `AnswerKeys` reads a whole Kitty answer first, so the filter sees only the OSC answers and
+    // the cut Kitty answers.
 
     #[test]
     fn a_late_kitty_answer_pays_for_one_owed_answer() {
@@ -658,7 +655,7 @@ mod start {
             ssh: true,
         };
         let start = query_with(options, |sequence, _| {
-            // Over SSH no probe of the medium goes out, the loop probe still does.
+            // Over SSH, no probe of the medium goes out. The loop probe still goes out.
             assert!(sequence.starts_with(PLAIN_PROBE), "{sequence:?}");
             assert!(
                 !sequence.windows(3).any(|w| w == b"t=t"),

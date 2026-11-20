@@ -1,8 +1,8 @@
 //! The conversion of decoded pixels into the color space of the terminal.
 //!
 //! Ghostty copies the pixels of a Kitty image into its Display P3 surface without a conversion.
-//! The module converts every image into the target after the resize. A PQ or HLG source gets the tone
-//! map of `decode::hdr`, because `moxcms` does not tone-map.
+//! The module converts every image into the target after the resize. A PQ or HLG source gets the
+//! tone map of `decode::hdr`, because `moxcms` does not tone-map.
 
 mod jpeg;
 mod tags;
@@ -56,8 +56,6 @@ impl ColorTarget {
     }
 }
 
-/// `main` sets it before the first decode. The tests keep sRGB, where an untagged image keeps
-/// its values.
 static DISPLAY_P3: AtomicBool = AtomicBool::new(false);
 
 /// Set the target of every conversion. An app calls it once at start, before the first decode.
@@ -176,7 +174,7 @@ fn convert_pixels(
         let source = pixels.to_vec();
         transform.transform(&source, pixels)
     });
-    // The chunks hold whole pixels. A failed chunk keeps its source values.
+    // The chunks hold whole pixels.
     #[expect(
         clippy::let_underscore_must_use,
         reason = "a failed chunk keeps its source values"

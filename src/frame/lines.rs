@@ -70,9 +70,6 @@ pub fn join_rule(buffer: &mut Buffer, area: Rect, y: u16, active: bool) {
 }
 
 /// The colour of a box, so that an app that draws its own frame around a cell matches the panes.
-///
-/// It is the accent for the pane with the focus, the same accent as the selected row and the
-/// active tab of the multiplexer, else the dark gray of the lines.
 pub const fn box_color(active: bool) -> Color {
     if active { accent() } else { dim_color() }
 }
@@ -82,7 +79,6 @@ pub fn rule(buffer: &mut Buffer, row: Rect) {
     fill(buffer, row, "─");
 }
 
-/// Each cell of `area` gets `symbol` in the dim style.
 fn fill(buffer: &mut Buffer, area: Rect, symbol: &str) {
     for y in area.top()..area.bottom() {
         for x in area.left()..area.right() {

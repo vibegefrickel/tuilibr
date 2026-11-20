@@ -17,8 +17,8 @@ fn view() -> HelpView<'static> {
     }
 }
 
-/// The two columns, the gap, padding, border and the margin of the box: below this width, the
-/// help is narrow.
+/// The two columns, the gap, the padding, the border and the margin of the box. Below this width,
+/// the help is narrow.
 const TWO_COLUMNS: u16 = 2 * (6 + 18) + 2 + 6 + 4;
 
 /// The rows of the help box on a screen of `width` x `height` cells, without the spaces at the
@@ -185,12 +185,12 @@ fn a_low_screen_drops_the_padding_rows_first_and_then_the_margin() {
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 8)),
         Rect::new(8, 3, 24, 4)
     );
-    // One row too high for the margin: the padding rows go, the body keeps its rows.
+    // One row too high for the margin: the padding rows drop, and the body keeps its rows.
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 9)),
         Rect::new(8, 3, 24, 5)
     );
-    // Higher than the area: the margin goes too, and the body gets the whole height.
+    // Higher than the area: the margin drops too, and the body gets the whole height.
     assert_eq!(
         dialog_rect(Rect::new(0, 0, 40, 10), (30, 14)),
         Rect::new(8, 1, 24, 8)

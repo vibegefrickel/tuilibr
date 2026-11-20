@@ -143,7 +143,7 @@ struct Run<'a> {
     frame: (u32, u32),
     cube: Option<PathBuf>,
     cancel: &'a AtomicBool,
-    /// A GPU run of this job gave no frame and a software run did: the later runs skip the GPU.
+    /// If a GPU run of this job gave no frame and a software run did, the later runs skip the GPU.
     software: Cell<bool>,
 }
 
@@ -174,7 +174,7 @@ impl Run<'_> {
         Ok(pick_evenly(keyframes, VIDEO_LOOP_FRAMES))
     }
 
-    /// A seek point without a frame is left out.
+    /// The run skips a seek point that gives no frame.
     fn seek_frames(&self, duration: f64) -> io::Result<Vec<RgbaImage>> {
         let mut frames = Vec::new();
         for seconds in seek_points(duration) {
@@ -271,7 +271,7 @@ fn animation_fps(fps: f64, duration: f64) -> f64 {
     }
 }
 
-/// Evenly from the start: the first frame is the still of the cell.
+/// The points spread evenly from 0. The first point gives the still of the cell.
 fn seek_points(duration: f64) -> Vec<f64> {
     #[expect(
         clippy::cast_precision_loss,

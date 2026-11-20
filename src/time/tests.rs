@@ -98,7 +98,6 @@ fn the_clock_has_a_24_hour_and_a_12_hour_form() {
     assert_eq!(clock(&berlin(19, 12, 30), true), "12:30 PM");
 }
 
-/// The lengths of the test, in seconds.
 const SECONDS: [u64; 7] = [0, 5, 65, 3599, 3600, 3723, 36_000];
 
 fn lengths(style: LengthStyle) -> Vec<String> {

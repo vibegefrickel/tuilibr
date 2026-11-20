@@ -7,7 +7,6 @@ use super::super::{
     display_width, spread, truncate_width,
 };
 
-/// The text of a placed row.
 fn text(line: &Line<'_>) -> String {
     line.spans
         .iter()
@@ -15,7 +14,6 @@ fn text(line: &Line<'_>) -> String {
         .collect()
 }
 
-/// Spans of plain text.
 fn plain(texts: &[&'static str]) -> Vec<Span<'static>> {
     texts.iter().map(|&text| Span::raw(text)).collect()
 }
@@ -64,7 +62,6 @@ fn a_row_without_a_right_side_is_the_left_cut() {
     assert_eq!(text(&line), "via sou…");
 }
 
-/// Owned parts from `texts`.
 fn parts(texts: &[&str]) -> Vec<String> {
     texts.iter().map(|&text| text.to_owned()).collect()
 }

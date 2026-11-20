@@ -49,7 +49,7 @@ fn a_chat_copy_keeps_one_transparent_pixel_on_each_side() {
 
 #[test]
 fn a_chat_copy_shows_the_middle_of_the_picture() {
-    // Three bands from left to right: red, green, blue. The square cut keeps the green one.
+    // The square cut keeps the green band.
     let copy = boxed(&bands(), (40, 40), Kind::Chat).to_rgba8();
     assert_eq!(copy.get_pixel(20, 20).0, [0, 255, 0, 255]);
     assert_eq!(

@@ -25,9 +25,9 @@ pub enum Edit {
     WordLeft,
     /// To the end of the word after the cursor (Alt-F, Alt-Right).
     WordRight,
-    /// One line up; nothing in a text of one line.
+    /// One line up. On the first line, the cursor stays.
     Up,
-    /// One line down; nothing in a text of one line.
+    /// One line down. On the last line, the cursor stays.
     Down,
     /// To the start of the line (Home, Ctrl-A).
     LineStart,

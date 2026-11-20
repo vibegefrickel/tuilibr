@@ -7,7 +7,7 @@ pub const DOUBLE_CLICK: Duration = Duration::from_millis(400);
 
 /// The last click, so that the next click on the same target counts as a double click.
 ///
-/// `T` names the target. An id is better than a list index, because a refresh can reorder a list
+/// `T` names the target. Use an id, not a list index, because a refresh can reorder a list
 /// between the two clicks.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DoubleClick<T> {

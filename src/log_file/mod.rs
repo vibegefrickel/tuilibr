@@ -6,7 +6,7 @@
 //!
 //! Several processes can append to one path, for example a daemon and its TUIs. Each write
 //! appends whole lines. The size comes from the file, not from a count of the own writes. Under
-//! a `flock`, one writer moves the file aside; a second writer sees that the path holds a new
+//! a `flock`, one writer moves the file aside. A second writer sees that the path holds a new
 //! file (another inode) and only opens it. The log names accounts and chats, so the file is
 //! owner-only, for any umask of the process that made it.
 
@@ -33,8 +33,8 @@ pub struct CappedLog {
 }
 
 impl CappedLog {
-    /// Opens `path` for appending and makes the file and its folder if they are missing. A log at
-    /// its cap moves aside first.
+    /// Opens `path` for appending and makes a missing file and folder. A log at its cap moves
+    /// aside first.
     ///
     /// A failed move is no error: the log stays open and grows, as after a failed move of a write.
     /// The app loses no line for a log that cannot rotate. Only a failed folder or a failed open
@@ -69,7 +69,7 @@ impl CappedLog {
         self.file.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    /// Starts over before a write when the file is at its cap. The size is the size of the file,
+    /// Starts over before a write for a file at its cap. The size is the size of the file,
     /// so the writes of the other processes count too.
     fn keep_under_cap(&self, file: &mut File) -> io::Result<()> {
         if file.metadata()?.len() < self.cap {
@@ -105,8 +105,8 @@ impl CappedLog {
     }
 }
 
-/// Opens `path` for appending and makes the file if it is missing, owner-only, so that a second
-/// log file of the app gets the same mode.
+/// Opens or makes `path` for appending, owner-only, so that a second log file of the app gets the
+/// same mode.
 pub fn open_append(path: &Path) -> io::Result<File> {
     let file = OpenOptions::new().create(true).append(true).open(path)?;
     file.set_permissions(Permissions::from_mode(0o600))?;

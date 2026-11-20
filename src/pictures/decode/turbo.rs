@@ -19,14 +19,14 @@ fn side_u32(value: usize) -> u32 {
     u32::try_from(value).unwrap_or(u32::MAX)
 }
 
-/// The scales with SIMD code in libjpeg-turbo (NEON IDCTs of 8x8, 4x4 and 2x2). 3/8, 5/8, 6/8 and
-/// 7/8 run in plain C: 5/8 to 7/8 take 1.1 to 1.6 times the time of the full decode (12 MP,
-/// Apple Silicon), and 3/8 is slower than 1/2 (measured 2026-11-03).
+/// The scales with SIMD code in libjpeg-turbo (NEON IDCTs of 8x8, 4x4 and 2x2). The other scales
+/// run in plain C: 5/8 to 7/8 take 1.1 to 1.6 times the full decode (12 MP, Apple Silicon), and
+/// 3/8 is slower than 1/2 (measured 2026-11-03).
 const FAST_SCALES: [(usize, usize); 4] = [(1, 8), (2, 8), (4, 8), (8, 8)];
 
-/// The smallest fast DCT scale whose decode still covers the fit of the image into the box. The
-/// fit keeps the aspect, so a box of another aspect than the photo needs only the fit size, never
-/// the whole box. The decode is never smaller than the fit, so no upscale follows.
+/// The smallest fast DCT scale whose decode covers the fit of the image into the box. The fit
+/// keeps the aspect, so only the fit size counts, not the whole box. The decode is never smaller
+/// than the fit, so no upscale follows.
 fn pick_scaling_factor(
     orig_w: usize,
     orig_h: usize,
@@ -52,7 +52,6 @@ pub(super) fn decode_jpeg_turbo(path: &Path, target: Option<(u32, u32)>) -> io::
     decode_jpeg_turbo_bytes(&data, target, None)
 }
 
-/// The DCT scaling picks the smallest fast scale that covers the fit into `target`.
 /// `container_orientation` (of a RAW file) wins over the EXIF of the JPEG.
 pub(super) fn decode_jpeg_turbo_bytes(
     data: &[u8],
@@ -84,8 +83,9 @@ pub(super) fn decode_jpeg_turbo_bytes(
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     }
 
-    // libjpeg-turbo writes RGB and RGBA at the same speed. RGB without a resize or for a downscale
-    // to 1/2 or less, else RGBA without the alpha multiply.
+    // libjpeg-turbo writes RGB and RGBA at the same speed, so the resize picks the layout. RGB is
+    // faster without a resize or for a downscale to 1/2 or less. Else RGBA without the alpha
+    // multiply is faster.
     let scaled = header.scaled(scaling);
     let size = (side_u32(scaled.width), side_u32(scaled.height));
     let rgb =
@@ -166,8 +166,8 @@ mod tests {
 
     #[test]
     fn wider_box_needs_only_the_fit() {
-        // The fit of 4000x3000 into 2400x600 is 800x600: 1/4 gives 1000x750. The whole box
-        // (2400 wide) needed the full size.
+        // The fit of 4000x3000 into 2400x600 is 800x600: 1/4 gives 1000x750. A pick for the whole
+        // box (2400 wide) takes the full size.
         assert_eq!(picked((4000, 3000), (2400, 600)), (1000, 750));
     }
 
@@ -193,7 +193,7 @@ mod tests {
     #[test]
     fn quarter_turn_swaps_the_box_before_the_pick() {
         // Stored 4000x3000 with orientation 6 shows 3000x4000. The box 1000x3000 turns to
-        // 3000x1000 for the stored picture. Its fit is 1333x1000, so 1/2 is needed.
+        // 3000x1000 for the stored picture. Its fit is 1333x1000, so the pick is 1/2.
         let turned = turned_target((1000, 3000), Orientation::from_exif(6));
         assert_eq!(turned, (3000, 1000));
         assert_eq!(picked((4000, 3000), turned), (2000, 1500));
