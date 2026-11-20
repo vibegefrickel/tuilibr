@@ -2,7 +2,7 @@
 //! decode.
 
 use super::plane::heif_image_to_rgba;
-use super::{LibheifSlot, open_heif_context, source_color, thumbnail_color};
+use super::{LibheifSlot, invalid, open_heif_context, source_color, thumbnail_color};
 use crate::pictures::decode;
 use crate::pictures::decode::color::{self, SourceColor};
 use crate::pictures::decode::heif_boxes::HeifItems;
@@ -79,7 +79,6 @@ pub(super) fn preview_pixels(
 ) -> io::Result<(RgbaImage, SourceColor, decode::hdr::Peak)> {
     use libheif_rs::{ColorSpace, LibHeif, RgbChroma};
 
-    let invalid = |e: libheif_rs::HeifError| io::Error::new(io::ErrorKind::InvalidData, e);
     let mut ctx = open_heif_context(path)?;
     let _slot = LibheifSlot::take(&mut ctx);
     let primary = ctx.primary_image_handle().map_err(invalid)?;

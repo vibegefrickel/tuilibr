@@ -11,6 +11,36 @@ fn field_at(text: &str, cursor: usize) -> TextField {
 }
 
 #[test]
+fn the_cluster_bounds_around_an_index_match_the_full_list_of_starts() {
+    for text in ["", "abc", "e\u{301}x", "🇩🇪🇫🇷", "a👨‍👩‍👧b\n❤️", "\r\nz"]
+    {
+        let field = TextField::from(text.to_owned());
+        let starts = field.cluster_starts();
+        let count = field.character_count();
+        for index in 0..=count + 1 {
+            let before = starts.iter().rev().find(|&&start| start < index);
+            let after = starts.iter().find(|&&start| start > index);
+            let at_or_before = starts.iter().rev().find(|&&start| start <= index);
+            assert_eq!(
+                field.previous_cluster(index),
+                *before.unwrap_or(&0),
+                "{text:?} {index}"
+            );
+            assert_eq!(
+                field.next_cluster(index),
+                *after.unwrap_or(&count),
+                "{text:?} {index}"
+            );
+            assert_eq!(
+                field.cluster_start_at_or_before(index),
+                *at_or_before.unwrap_or(&0),
+                "{text:?} {index}"
+            );
+        }
+    }
+}
+
+#[test]
 fn from_puts_the_cursor_after_the_last_character() {
     let field = TextField::from("Grüße 🎉".to_owned());
 

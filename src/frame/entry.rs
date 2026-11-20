@@ -9,9 +9,11 @@ use ratatui::{
     widgets::Paragraph,
 };
 
+use crate::cells::clamp_to_u16;
+
 use super::{
     pictures::{CellSize, Pictures, Shade, place_centered},
-    style::{pill, secondary, selected_pill, selection, unfocused_selection},
+    style::{pill, secondary, selection, unfocused_selection},
     text::spread,
 };
 
@@ -23,7 +25,7 @@ pub const ENTRY_ROWS: u16 = 2;
 pub fn square_columns(cell: CellSize, rows: u16) -> u16 {
     let (width, height) = (u32::from(cell.width.max(1)), u32::from(cell.height.max(1)));
     let columns = (u32::from(rows) * height + width / 2) / width;
-    u16::try_from(columns).unwrap_or(u16::MAX).max(1)
+    clamp_to_u16(columns).max(1)
 }
 
 /// What one entry shows, filled by the caller.
@@ -107,12 +109,7 @@ fn title(entry: &EntryView, width: usize) -> Line<'static> {
     };
     let mut count = Vec::new();
     if entry.count > 0 {
-        let pill = if entry.selected && entry.focused {
-            selected_pill()
-        } else {
-            pill()
-        };
-        count.push(Span::styled(format!(" {} ", entry.count), pill));
+        count.push(Span::styled(format!(" {} ", entry.count), pill()));
     }
     // The selected name stays bold, so the open entry keeps its weight after its read.
     if entry.count > 0 || entry.selected {

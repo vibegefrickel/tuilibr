@@ -1,16 +1,12 @@
 //! Synthetic JPEG, TIFF RAW, ORF, CR3, RAF and PSD files.
 
-use super::{BLUE, RED};
+use super::{BLUE, RED, red_left_blue_right};
 use std::fs;
 use std::path::Path;
 
-/// A JPEG with a red left half and a blue right half: a mirror or a turn moves the colors.
+/// A JPEG of [`red_left_blue_right`].
 pub fn red_left_blue_right_jpeg(width: u32, height: u32) -> Vec<u8> {
-    let mut image = image::RgbImage::new(width, height);
-    for (x, _, pixel) in image.enumerate_pixels_mut() {
-        *pixel = image::Rgb(if x < width / 2 { RED } else { BLUE });
-    }
-    encode_jpeg(&image)
+    encode_jpeg(&red_left_blue_right(width, height))
 }
 
 /// A JPEG of one color `rgb`.

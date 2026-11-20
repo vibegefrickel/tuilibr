@@ -5,7 +5,7 @@ use super::transform::transform;
 use super::{ColorTarget, SourceColor, convert, convert_rgb};
 use crate::pictures::decode::hdr::Peak;
 use crate::pictures::decode::{EmbeddedThumbnail, decode_image};
-use crate::pictures::test_support::fixture;
+use crate::pictures::test_support::{fixture, patch_means};
 use image::{Rgba, RgbaImage};
 
 const P3_ICC: &str = "/System/Library/ColorSync/Profiles/Display P3.icc";
@@ -166,26 +166,6 @@ fn reference_fixtures() -> Vec<(&'static str, &'static str)> {
     fixtures
 }
 
-/// The mean of the 4x4 center of each 8x8 patch. The center skips the lossy edge ringing.
-fn patch_means(image: &RgbaImage) -> Vec<[f64; 3]> {
-    let mut means = Vec::new();
-    for patch_y in (0..image.height()).step_by(8) {
-        for patch_x in (0..image.width()).step_by(8) {
-            let mut sum = [0.0; 3];
-            for y in patch_y + 2..patch_y + 6 {
-                for x in patch_x + 2..patch_x + 6 {
-                    let pixel = image.get_pixel(x, y).0;
-                    for (total, value) in sum.iter_mut().zip(pixel) {
-                        *total += f64::from(value) / 16.0;
-                    }
-                }
-            }
-            means.push(sum);
-        }
-    }
-    means
-}
-
 /// CIELAB (D65) of 8-bit values in `space`.
 fn lab(rgb: [f64; 3], space: ColorTarget) -> [f64; 3] {
     let matrix = match space {
@@ -225,11 +205,12 @@ fn lab(rgb: [f64; 3], space: ColorTarget) -> [f64; 3] {
 
 /// The mean and the largest CIE76 difference per patch.
 fn delta_e(image: &RgbaImage, reference: &RgbaImage, space: ColorTarget) -> (f64, f64) {
+    let rgb = |mean: [f32; 4]| [mean[0], mean[1], mean[2]].map(f64::from);
     let differences: Vec<f64> = patch_means(image)
         .into_iter()
         .zip(patch_means(reference))
         .map(|(a, b)| {
-            let (a, b) = (lab(a, space), lab(b, space));
+            let (a, b) = (lab(rgb(a), space), lab(rgb(b), space));
             a.iter()
                 .zip(b)
                 .map(|(a, b)| (a - b).powi(2))

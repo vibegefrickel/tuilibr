@@ -5,7 +5,7 @@
 
 use super::Tools;
 use super::decoder::{Decoder, SystemDecoder, cube_for, first_frame_args, with_fallback};
-use super::frame_box::frame_box;
+use super::frame_box::{frame_box, rgba_bytes};
 use super::probe::VideoInfo;
 use crate::pictures::decode::color::{self, ColorTarget};
 use image::RgbaImage;
@@ -115,7 +115,7 @@ pub fn decode_first_frame(
     let frame = frame_box((info.width, info.height), target);
     let color_target = color::target();
     let cube = first_frame_cube(&info, color_target, cube_dirs);
-    let frame_bytes = frame.0 as usize * frame.1 as usize * 4;
+    let frame_bytes = rgba_bytes(frame);
     let pixels = with_fallback(decoder, path, &info, |pipeline| {
         let args = first_frame_args(path, &info, frame, cube.as_deref(), pipeline);
         // The drop of the stream kills ffmpeg after a timeout.

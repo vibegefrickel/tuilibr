@@ -11,7 +11,7 @@ use super::decoder::{Decoder, LoopSampling, Pipeline, loop_args, with_fallback};
 use super::first_frame::{
     FIRST_FRAME_TIMEOUT, convert_first_frame, cube_dirs, decoder_of, first_frame_cube,
 };
-use super::frame_box::frame_box;
+use super::frame_box::{frame_box, rgba_bytes};
 use super::probe::VideoInfo;
 use crate::pictures::decode::color;
 use image::RgbaImage;
@@ -218,7 +218,7 @@ impl Run<'_> {
             pipeline,
             sampling,
         );
-        let frame_bytes = self.frame.0 as usize * self.frame.1 as usize * 4;
+        let frame_bytes = rgba_bytes(self.frame);
         let limit = match sampling {
             LoopSampling::Keyframes => KEPT_KEYFRAMES,
             // ffmpeg stops after `count` frames. These runs keep every frame.
@@ -366,7 +366,7 @@ mod tests {
         MAX_ANIMATION_FRAMES, MAX_LOOP_FPS, Spread, VIDEO_FRAME_INTERVAL, VIDEO_LOOP_FRAMES,
         animation_fps, decode_loop, loop_box, merge_repeats, pick_evenly, seek_points,
     };
-    use crate::pictures::motion::frame_box::frame_box;
+    use crate::pictures::motion::frame_box::{frame_box, rgba_bytes};
     use crate::pictures::motion::probe::VideoInfo;
     use crate::pictures::test_support::video::{animation_info, fake_decoder, info_of};
     use image::RgbaImage;
@@ -380,7 +380,7 @@ mod tests {
     /// `count` frames of the loop size, each filled with its own index.
     fn frames_for(info: &VideoInfo, count: usize) -> Vec<Vec<u8>> {
         let frame = frame_box((info.width, info.height), loop_box(TARGET));
-        let bytes = frame.0 as usize * frame.1 as usize * 4;
+        let bytes = rgba_bytes(frame);
         (0..count)
             .map(|index| vec![u8::try_from(index % 256).unwrap(); bytes])
             .collect()

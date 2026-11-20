@@ -10,7 +10,7 @@ use std::io;
 use std::path::Path;
 
 pub(super) fn is_jpeg(path: &Path) -> bool {
-    extensions::has_extension(path, &["jpg", "jpeg"])
+    extensions::has_extension(path, extensions::JPEG_EXTENSIONS)
 }
 
 /// A side that libjpeg-turbo reports as `u32`. A JPEG side is at most 65535, so the cap never
@@ -33,8 +33,8 @@ fn pick_scaling_factor(
     target_w: u32,
     target_h: u32,
 ) -> turbojpeg::ScalingFactor {
-    let size = |side: usize| u32::try_from(side).unwrap_or(u32::MAX);
-    let Some((fit_w, fit_h)) = scaled_down_size((size(orig_w), size(orig_h)), (target_w, target_h))
+    let Some((fit_w, fit_h)) =
+        scaled_down_size((side_u32(orig_w), side_u32(orig_h)), (target_w, target_h))
     else {
         return turbojpeg::ScalingFactor::ONE;
     };

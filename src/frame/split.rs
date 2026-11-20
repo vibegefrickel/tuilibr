@@ -2,6 +2,8 @@
 
 use ratatui::layout::{Constraint, Layout, Rect};
 
+use crate::cells::clamp_to_u16;
+
 /// Below this width, the list sits above the main pane instead of beside it, and the mode block
 /// shrinks to one letter.
 pub const NARROW_BELOW: u16 = 60;
@@ -63,6 +65,6 @@ pub fn split_boxed(area: Rect, list_shown: bool) -> (Rect, Rect) {
 /// Three tenths of the width, at least 36 columns (room for the tabs and the two rows of an
 /// entry). The list is never wider than the main pane: below 72 columns, both get half.
 pub fn list_width(total: u16) -> u16 {
-    let share = u16::try_from(u32::from(total) * 3 / 10).unwrap_or(u16::MAX);
+    let share = clamp_to_u16(u32::from(total) * 3 / 10);
     share.max(36).min(total / 2)
 }

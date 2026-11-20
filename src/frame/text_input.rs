@@ -49,8 +49,10 @@ pub fn text_field_width(area: Rect, prefix: &Span<'_>) -> usize {
 }
 
 /// Draws `view` into `area` and puts the terminal cursor at the cursor of the field when the
-/// field has the focus. Returns the cell of the cursor, or `None` when it is out of view or the
-/// area has no cell.
+/// field has the focus.
+///
+/// Returns the cell of the terminal cursor, or `None` when the field has no focus, the cursor row
+/// is out of view or the area has no cell.
 pub fn draw_text_field(
     frame: &mut Frame<'_>,
     area: Rect,
@@ -125,9 +127,8 @@ pub fn draw_text_field(
                 })
         }
     };
-    if view.cursor
-        && let Some(position) = cursor
-    {
+    let cursor = cursor.filter(|_| view.cursor);
+    if let Some(position) = cursor {
         frame.set_cursor_position(position);
     }
     cursor

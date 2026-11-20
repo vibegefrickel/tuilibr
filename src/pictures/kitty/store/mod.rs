@@ -78,6 +78,8 @@ impl<K: Eq + Hash> Loader<K> {
 pub struct PictureStore<K: Hash + Eq> {
     backend: KittyBackend,
     ready: LruCache<K, Ready>,
+    /// The key of each Kitty id in `ready`, so a flush finds the pixels of an id in one lookup.
+    keys: HashMap<u32, K>,
     next_id: u32,
     /// The Kitty ids of the pictures that left the store. The next flush deletes them.
     evicted: Vec<u32>,
@@ -116,6 +118,7 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
         Self {
             backend,
             ready: LruCache::unbounded(),
+            keys: HashMap::new(),
             next_id: 1,
             evicted: Vec::new(),
             frame: Placements::default(),
@@ -201,6 +204,7 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
             bitmap,
             placed: 0,
         };
+        self.keys.insert(id, key.clone());
         if let Some((_, old)) = self.ready.push(key, ready)
             && old.id != id
         {
@@ -228,10 +232,7 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
             .frame
             .cells()
             .into_iter()
-            .filter_map(|(id, cells)| {
-                let (key, _) = self.ready.iter().find(|(_, ready)| ready.id == id)?;
-                Some((key.clone(), cells))
-            })
+            .filter_map(|(id, cells)| Some((self.keys.get(&id)?.clone(), cells)))
             .collect();
         placed.sort_by_key(|(_, cells)| (cells.y, cells.x));
         placed
@@ -277,18 +278,16 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
         self.frame_number += 1;
         let Self {
             ready,
+            keys,
             frame,
             evicted,
             screen,
             backend,
             ..
         } = self;
-        // The ids are unique, so the order of the search does not matter.
         let pixels = |id: u32| {
-            ready
-                .iter()
-                .find(|(_, ready)| ready.id == id)
-                .map(|(_, ready)| Pixels::from(&ready.bitmap))
+            let key = keys.get(&id)?;
+            ready.peek(key).map(|ready| Pixels::from(&ready.bitmap))
         };
         // The flush empties `frame`.
         let result = screen.flush(out, *backend, frame, evicted, pixels);
@@ -355,6 +354,7 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
 
     /// Marks the picture for the delete of the next flush.
     fn forget(&mut self, ready: &Ready) {
+        self.keys.remove(&ready.id);
         self.refused.remove(&ready.id);
         self.evicted.push(ready.id);
     }

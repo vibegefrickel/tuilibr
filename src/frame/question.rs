@@ -12,6 +12,7 @@ use ratatui::{
 };
 
 use super::{
+    SEPARATOR,
     style::dim,
     text::{display_width, truncate_width},
 };
@@ -117,7 +118,7 @@ pub fn draw_question(frame: &mut Frame<'_>, area: Rect, view: &QuestionView<'_>)
 }
 
 fn push_answer(spans: &mut Vec<Span<'static>>, key: &str, label: &str) {
-    spans.push(Span::raw("  "));
+    spans.push(Span::raw(SEPARATOR));
     spans.push(Span::styled(
         key.to_owned(),
         Style::default().add_modifier(Modifier::BOLD),

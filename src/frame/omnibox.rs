@@ -13,6 +13,7 @@ use ratatui::{
     widgets::Paragraph,
 };
 
+use crate::cells::to_u16;
 use crate::text_field::TextField;
 
 use super::{
@@ -81,7 +82,7 @@ pub fn omnibox_rows(view: &OmniboxView<'_>, width: u16) -> u16 {
     };
     let inner = padded(Rect::new(0, 0, width, 1));
     let text_width = text_field_width(inner, prompt).max(1);
-    u16::try_from(field.wrap(text_width).rows.len().max(1)).unwrap_or(u16::MAX)
+    to_u16(field.wrap(text_width).rows.len().max(1))
 }
 
 /// Draws `view` into `area` with one column of right padding.
@@ -125,7 +126,7 @@ pub fn draw_omnibox(frame: &mut Frame<'_>, area: Rect, view: &OmniboxView<'_>) -
                 cursor: *cursor,
                 rows: Rows::Wrapped,
             };
-            draw_text_field(frame, inner, &view).filter(|_| *cursor)
+            draw_text_field(frame, inner, &view)
         }
     }
 }
@@ -158,9 +159,7 @@ fn draw_typed(
 ) -> Option<Position> {
     let row = Rect { height: 1, ..inner };
     let right_width = right.map_or(0, |span| {
-        u16::try_from(display_width(&span.content))
-            .unwrap_or(u16::MAX)
-            .min(row.width)
+        to_u16(display_width(&span.content)).min(row.width)
     });
     let gap = u16::from(right_width > 0 && right_width < row.width);
     let field_area = Rect {
@@ -189,7 +188,7 @@ fn draw_typed(
         cursor,
         rows: Rows::One,
     };
-    draw_text_field(frame, field_area, &view).filter(|_| cursor)
+    draw_text_field(frame, field_area, &view)
 }
 
 /// The status text in its tone, cut to the row from the end or from the start.

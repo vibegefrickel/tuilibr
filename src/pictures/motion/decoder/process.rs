@@ -20,7 +20,7 @@ const FRAME_POOL: usize = FRAME_QUEUE + 3;
 /// The [`Decoder`] that starts the real ffmpeg and ffprobe.
 #[derive(Debug)]
 pub struct SystemDecoder {
-    /// `None` without ffprobe on PATH.
+    /// `None` when the app found no ffprobe program.
     ffprobe: Option<PathBuf>,
 }
 
@@ -38,10 +38,7 @@ impl Decoder for SystemDecoder {
 
     fn probe(&self, video: &Path) -> io::Result<VideoInfo> {
         let Some(program) = self.ffprobe.as_deref() else {
-            return Err(io::Error::new(
-                io::ErrorKind::NotFound,
-                "ffprobe not found on PATH",
-            ));
+            return Err(io::Error::new(io::ErrorKind::NotFound, "ffprobe not found"));
         };
         crate::pictures::motion::probe::probe_cached(program, video)
     }
@@ -392,7 +389,7 @@ mod tests {
             .probe(Path::new("clip.mp4"))
             .unwrap_err();
         assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
-        assert_eq!(error.to_string(), "ffprobe not found on PATH");
+        assert_eq!(error.to_string(), "ffprobe not found");
     }
 
     #[test]

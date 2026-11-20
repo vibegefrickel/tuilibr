@@ -21,7 +21,7 @@
 //! `Edit::OpenEditor`: the app suspends its terminal session, runs `editor::edit_text` and puts
 //! the result back with `set_text`.
 
-use unicode_segmentation::UnicodeSegmentation as _;
+use unicode_segmentation::{GraphemeCursor, UnicodeSegmentation as _};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[cfg(unix)]
@@ -430,31 +430,58 @@ impl TextField {
         starts
     }
 
-    /// The start of the cluster before `cursor`, or 0.
+    /// The byte offset of the character `index`, or `None` past the end of the text.
+    fn checked_byte_index(&self, index: usize) -> Option<usize> {
+        self.text
+            .char_indices()
+            .map(|(byte, _)| byte)
+            .chain(std::iter::once(self.text.len()))
+            .nth(index)
+    }
+
+    /// The characters between the byte offsets `from` and `to`.
+    fn characters_between(&self, from: usize, to: usize) -> usize {
+        self.text
+            .get(from..to)
+            .map_or(0, |part| part.chars().count())
+    }
+
+    /// The start of the cluster before `cursor`, or 0. The search starts at the cursor, so it
+    /// segments only the cluster before it.
     fn previous_cluster(&self, cursor: usize) -> usize {
-        self.cluster_starts()
-            .into_iter()
-            .rev()
-            .find(|&start| start < cursor)
-            .unwrap_or(0)
+        let Some(byte) = self.checked_byte_index(cursor) else {
+            return self.character_count();
+        };
+        match GraphemeCursor::new(byte, self.text.len(), true).prev_boundary(&self.text, 0) {
+            Ok(Some(start)) => cursor.saturating_sub(self.characters_between(start, byte)),
+            _ => 0,
+        }
     }
 
     /// The start of the cluster after `cursor`, or the end.
     fn next_cluster(&self, cursor: usize) -> usize {
-        let count = self.character_count();
-        self.cluster_starts()
-            .into_iter()
-            .find(|&start| start > cursor)
-            .unwrap_or(count)
+        let Some(byte) = self.checked_byte_index(cursor) else {
+            return self.character_count();
+        };
+        match GraphemeCursor::new(byte, self.text.len(), true).next_boundary(&self.text, 0) {
+            Ok(Some(end)) => cursor + self.characters_between(byte, end),
+            _ => cursor,
+        }
     }
 
     /// The start of the cluster that holds `index`, so a line move never lands inside one.
     fn cluster_start_at_or_before(&self, index: usize) -> usize {
-        self.cluster_starts()
-            .into_iter()
-            .rev()
-            .find(|&start| start <= index)
-            .unwrap_or(0)
+        let Some(byte) = self.checked_byte_index(index) else {
+            return self.character_count();
+        };
+        let mut graphemes = GraphemeCursor::new(byte, self.text.len(), true);
+        if graphemes.is_boundary(&self.text, 0).unwrap_or(true) {
+            return index;
+        }
+        match graphemes.prev_boundary(&self.text, 0) {
+            Ok(Some(start)) => index.saturating_sub(self.characters_between(start, byte)),
+            _ => 0,
+        }
     }
 
     /// The character index after the line break before `index`, or 0.

@@ -13,6 +13,10 @@ pub const TICKS_PER_SECOND: u64 = 12;
 /// cells change frames in the same tick.
 const START_ALIGN: u64 = 4;
 
+/// The milliseconds of one tick, the gap of a frame without a delay.
+#[expect(clippy::cast_possible_truncation, reason = "the tick is 83 ms")]
+const TICK_MS: u32 = (1000 / TICKS_PER_SECOND) as u32;
+
 /// The shared clock of the loops of a screen: the ticks since its start.
 ///
 /// Every loop of a screen reads the same clock, so the cells change their frames in the same tick.
@@ -105,10 +109,7 @@ impl CellLoop {
 
     /// The gap of `frame` in milliseconds. A frame without a delay shows for one tick.
     pub fn gap_ms(&self, frame: usize) -> u32 {
-        self.gaps_ms
-            .get(frame)
-            .copied()
-            .unwrap_or_else(|| u32::try_from(1000 / TICKS_PER_SECOND).unwrap_or(1))
+        self.gaps_ms.get(frame).copied().unwrap_or(TICK_MS)
     }
 
     /// The whole cells of each frame: the cells of the still.
@@ -116,7 +117,8 @@ impl CellLoop {
         self.frames.first().map_or((1, 1), |frame| frame.cells)
     }
 
-    /// If the clock does not run, start it at the next multiple of [`START_ALIGN`] after `tick`.
+    /// If the clock does not run, start it at the first multiple of [`START_ALIGN`] at or after
+    /// `tick`.
     ///
     /// Until then, the first frame shows.
     pub const fn start_at(&mut self, tick: u64) {

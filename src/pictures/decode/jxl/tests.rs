@@ -4,8 +4,8 @@ use super::{
 };
 use crate::pictures::decode::color::{ColorTarget, SourceColor};
 use crate::pictures::decode::{EmbeddedThumbnail, decode_image_with_hint};
-use crate::pictures::test_support::{assert_close, fixture};
-use image::{DynamicImage, RgbaImage};
+use crate::pictures::test_support::{assert_close, fixture, patch_means};
+use image::DynamicImage;
 use jxl_oxide::image::BitDepth;
 use jxl_oxide::{AlignedGrid, PixelFormat};
 
@@ -15,26 +15,6 @@ const REFERENCE_TOLERANCE: f32 = 4.0;
 fn decode_fixture(name: &str) -> DynamicImage {
     let path = fixture(&format!("jxl/{name}.jxl"));
     decode_image_with_hint(&path, None, EmbeddedThumbnail::Deny).unwrap()
-}
-
-/// The mean of the 4x4 center of each 8x8 patch. The center skips the lossy edge ringing.
-fn patch_means(image: &RgbaImage) -> Vec<[f32; 4]> {
-    let (width, height) = image.dimensions();
-    let mut means = Vec::new();
-    for patch_y in (0..height).step_by(8) {
-        for patch_x in (0..width).step_by(8) {
-            let mut sum = [0.0f32; 4];
-            for y in patch_y + 2..patch_y + 6 {
-                for x in patch_x + 2..patch_x + 6 {
-                    for (total, value) in sum.iter_mut().zip(image.get_pixel(x, y).0) {
-                        *total += f32::from(value) / 16.0;
-                    }
-                }
-            }
-            means.push(sum);
-        }
-    }
-    means
 }
 
 #[test]

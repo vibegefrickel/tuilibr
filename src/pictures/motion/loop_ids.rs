@@ -20,23 +20,33 @@ impl LoopIds {
         Self { range, next_id }
     }
 
-    /// The first id of a free run of `count` ids.
+    /// The first id of a free run of `count` ids, or `None` when the range has no free run.
     ///
     /// If an id of the run belongs to a shown loop or to a loop that waits for its delete, `used`
-    /// gives true. If the run does not fit the range, the search never ends.
-    pub fn allocate(&mut self, count: u32, used: impl Fn(&Range<u32>) -> bool) -> u32 {
+    /// gives true. The search stops after one full pass through the range.
+    pub fn allocate(&mut self, count: u32, used: impl Fn(&Range<u32>) -> bool) -> Option<u32> {
+        if count > self.range.end.saturating_sub(self.range.start) {
+            return None;
+        }
+        let mut wrapped = false;
         loop {
             let first = self.next_id;
             let end = first
                 .checked_add(count)
                 .filter(|end| *end <= self.range.end);
             let Some(end) = end else {
+                // The first wrap can come from a counter in the middle of the range, so only the
+                // second wrap ends a full pass.
+                if wrapped {
+                    return None;
+                }
+                wrapped = true;
                 self.next_id = self.range.start;
                 continue;
             };
             self.next_id = end;
             if !used(&(first..end)) {
-                return first;
+                return Some(first);
             }
         }
     }
@@ -53,15 +63,29 @@ mod tests {
     #[test]
     fn runs_follow_each_other() {
         let mut ids = LoopIds::new(RANGE);
-        assert_eq!(ids.allocate(3, |_| false), 1 << 31);
-        assert_eq!(ids.allocate(2, |_| false), (1 << 31) + 3);
+        assert_eq!(ids.allocate(3, |_| false), Some(1 << 31));
+        assert_eq!(ids.allocate(2, |_| false), Some((1 << 31) + 3));
+    }
+
+    #[test]
+    fn a_run_without_room_gives_none() {
+        let mut ids = LoopIds::new(10..14);
+        assert_eq!(
+            ids.allocate(5, |_| false),
+            None,
+            "the run is larger than the range"
+        );
+        assert_eq!(ids.allocate(2, |_| true), None, "every run is used");
+        assert_eq!(ids.allocate(4, |_| false), Some(10));
     }
 
     #[test]
     fn wrapped_ids_skip_live_loops() {
         let mut ids = LoopIds::new(RANGE);
-        let live: Vec<u32> = (ids.allocate(3, |_| false)..).take(3).collect();
-        let other = ids.allocate(1, |_| false);
+        let live: Vec<u32> = (ids.allocate(3, |_| false).expect("a run")..)
+            .take(3)
+            .collect();
+        let other = ids.allocate(1, |_| false).expect("a run");
         let stale = live[live.len() - 1] + 2;
         let used = |run: &std::ops::Range<u32>| {
             live.iter().any(|id| run.contains(id)) || run.contains(&other) || run.contains(&stale)
@@ -70,7 +94,7 @@ mod tests {
         // `MAX`, which the range refuses because `MAX - 1` is the video frame.
         for start in [u32::MAX - 2, u32::MAX - 3] {
             ids.next_id = start;
-            let first = ids.allocate(3, used);
+            let first = ids.allocate(3, used).expect("a free run");
             let fresh = first..first + 3;
             assert!(fresh.start >= RANGE.start && fresh.end <= RANGE.end);
             for id in fresh {

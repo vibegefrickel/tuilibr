@@ -17,8 +17,8 @@ use super::{
     text::{display_width, truncate_start, truncate_width},
 };
 
-/// Separates the parts of the middle and the groups at the right edge with room, never with a
-/// divider.
+/// Separates the parts of a row with room, never with a divider: the parts of the middle and the
+/// groups at the right edge of the bar, and the answers of the question row.
 pub const SEPARATOR: &str = "  ";
 
 /// The mode block at the left edge.

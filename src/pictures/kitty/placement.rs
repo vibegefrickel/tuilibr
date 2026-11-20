@@ -26,11 +26,6 @@ pub const fn centered(outer: Rect, cols: u16, rows: u16) -> Rect {
 
 /// `img`, or a copy shrunk until its payload fits [`MAX_PAYLOAD_BYTES`]: Ghostty 1.4.0 refuses
 /// a larger payload. The decode box keeps the image below the cap, and this is a fallback.
-#[expect(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    reason = "`scale` is below 1, so the side stays in 0..=u32::MAX"
-)]
 pub fn within_payload_cap(img: &ScreenImage) -> Cow<'_, ScreenImage> {
     let (width, height) = img.dimensions();
     let pixels = u64::from(width) * u64::from(height);
@@ -39,15 +34,10 @@ pub fn within_payload_cap(img: &ScreenImage) -> Cow<'_, ScreenImage> {
         && pixels * 4 > MAX_PAYLOAD_BYTES as u64
         && super::Pixels::from(img).opaque_rgb().is_none();
     let bytes_per_pixel = if transparent { 4 } else { 3 };
-    let wire_bytes = pixels * bytes_per_pixel;
-    if wire_bytes <= MAX_PAYLOAD_BYTES as u64 {
+    let Some(shrunk) = super::shrunk_box((width, height), bytes_per_pixel) else {
         return Cow::Borrowed(img);
-    }
-    // The side scales with the square root of the area.
-    let scale = (MAX_PAYLOAD_BYTES as f64 / wire_bytes as f64).sqrt();
-    let side = |value: u32| ((f64::from(value) * scale) as u32).max(1);
-    let (width, height) = (side(width), side(height));
-    Cow::Owned(img.crop_resized((0, 0, img.width(), img.height()), (width, height)))
+    };
+    Cow::Owned(img.crop_resized((0, 0, width, height), shrunk))
 }
 
 /// The cells of the fullscreen image and the one side that the terminal scales it to.

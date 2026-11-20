@@ -285,9 +285,11 @@ pub fn spawn_foreground<T: Send + 'static>(
 #[cfg(test)]
 mod tests {
     use super::{EmbeddedThumbnail, decode_image_with_hint};
-    use crate::pictures::test_support::{BLUE, RED, assert_close, test_dir};
+    use crate::pictures::test_support::{
+        BLUE, EXIF_ORIENTATION_6, RED, assert_close, red_left_blue_right, test_dir,
+    };
     use image::metadata::Orientation;
-    use image::{DynamicImage, ImageDecoder, ImageEncoder, Rgb, RgbImage};
+    use image::{DynamicImage, ImageDecoder, ImageEncoder};
     use std::fs;
 
     use super::Route;
@@ -305,16 +307,6 @@ mod tests {
         assert_eq!(route("no-extension"), Route::Raster);
         #[cfg(all(feature = "sips", target_os = "macos"))]
         assert_eq!(route("a.CR2"), Route::Sips);
-    }
-
-    /// A little-endian TIFF block with one IFD entry: Orientation = 6 (rotate 90 CW).
-    const EXIF_ORIENTATION_6: [u8; 26] = [
-        b'I', b'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x12, 0x01, 0x03, 0x00, 0x01,
-        0x00, 0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ];
-
-    fn red_left_blue_right() -> RgbImage {
-        RgbImage::from_fn(32, 16, |x, _| Rgb(if x < 16 { RED } else { BLUE }))
     }
 
     /// Orientation 6 turns the stored 32x16 into 16x32 with red on top.
@@ -347,7 +339,7 @@ mod tests {
         encoder
             .set_exif_metadata(EXIF_ORIENTATION_6.to_vec())
             .unwrap();
-        let stored = red_left_blue_right();
+        let stored = red_left_blue_right(32, 16);
         encoder
             .write_image(stored.as_raw(), 32, 16, image::ExtendedColorType::Rgb8)
             .unwrap();
@@ -364,7 +356,7 @@ mod tests {
         encoder
             .set_exif_metadata(EXIF_ORIENTATION_6.to_vec())
             .unwrap();
-        let stored = red_left_blue_right();
+        let stored = red_left_blue_right(32, 16);
         encoder
             .write_image(stored.as_raw(), 32, 16, image::ExtendedColorType::Rgb8)
             .unwrap();
@@ -454,10 +446,11 @@ mod tests {
 
     /// Synthetic QOI, TGA, EXR and HDR files in the grid and in fullscreen.
     mod formats {
-        use super::red_left_blue_right;
         use crate::pictures::decode::{EmbeddedThumbnail, decode_image_with_hint};
         use crate::pictures::resize::load_and_resize_px;
-        use crate::pictures::test_support::{BLUE, RED, assert_close, test_dir};
+        use crate::pictures::test_support::{
+            BLUE, RED, assert_close, red_left_blue_right, test_dir,
+        };
         use image::{ImageEncoder, Rgb};
         use std::fs::File;
         use std::path::Path;
@@ -480,7 +473,7 @@ mod tests {
         #[test]
         fn qoi_and_tga_open() {
             let dir = test_dir();
-            let pixels = red_left_blue_right();
+            let pixels = red_left_blue_right(32, 16);
             let qoi = dir.path().join("synthetic.qoi");
             image::codecs::qoi::QoiEncoder::new(File::create(&qoi).unwrap())
                 .write_image(pixels.as_raw(), 32, 16, image::ExtendedColorType::Rgb8)

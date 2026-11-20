@@ -64,11 +64,13 @@ pub fn copy(program: impl AsRef<OsStr>, text: &str) -> io::Result<()> {
         .stderr(Stdio::null())
         .spawn()
         .map_err(|error| named("start", program, &error))?;
-    // The stdin closes at the end of the block, so the program sees the end of the text.
-    let written = match child.stdin.take() {
-        Some(mut stdin) => stdin.write_all(text.as_bytes()),
-        None => Err(io::Error::other("the program has no stdin")),
-    };
+    // A piped stdin is always there. It closes at the end of the closure, so the program sees
+    // the end of the text.
+    let written = child
+        .stdin
+        .take()
+        .map(|mut stdin| stdin.write_all(text.as_bytes()))
+        .transpose();
     let status = child
         .wait()
         .map_err(|error| named("wait for", program, &error))?;

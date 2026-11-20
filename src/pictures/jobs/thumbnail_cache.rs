@@ -2,6 +2,7 @@
 //!
 //! It counts the bytes of the pixels and never evicts a picture on the screen. The app sets the
 //! limits and the key of a picture.
+use super::disk_cache::FileStamp;
 use image::RgbaImage;
 use lru::LruCache;
 use std::borrow::Borrow;
@@ -9,7 +10,6 @@ use std::collections::HashSet;
 use std::hash::Hash;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
 
 /// The limits of a cache, set by the app.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,24 +63,6 @@ pub struct ParkKey {
     pub target: (u32, u32),
     /// The cell size in pixels at the time of the decode.
     pub cell_px: (u32, u32),
-}
-
-/// The modification time and the length of a file. The cache uses no parked picture of a changed
-/// file.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct FileStamp {
-    modified: Option<SystemTime>,
-    len: u64,
-}
-
-impl FileStamp {
-    fn of(path: &Path) -> Option<Self> {
-        let metadata = std::fs::metadata(path).ok()?;
-        Some(Self {
-            modified: metadata.modified().ok(),
-            len: metadata.len(),
-        })
-    }
 }
 
 /// The LRU of the grid pictures by key, with their Kitty ids, the visible set and the parked set.
@@ -268,7 +250,7 @@ impl<K: Clone + Eq + Hash> ThumbnailCache<K> {
     pub fn take_parked(&mut self, path: &Path, key: ParkKey) -> Option<GridPicture> {
         let (stamp, picture) = self.parked.pop(&(path.to_path_buf(), key))?;
         self.bytes -= picture.bytes();
-        (FileStamp::of(path) == Some(stamp)).then_some(picture)
+        (FileStamp::read(path).ok() == Some(stamp)).then_some(picture)
     }
 
     /// The count of parked pictures, for a test.
@@ -314,7 +296,7 @@ impl ThumbnailCache<usize> {
                 continue;
             };
             self.evicted_ids.push(thumb.image_id);
-            let Some(stamp) = FileStamp::of(path) else {
+            let Ok(stamp) = FileStamp::read(path) else {
                 self.bytes -= thumb.picture.bytes();
                 continue;
             };

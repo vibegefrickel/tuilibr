@@ -25,7 +25,7 @@ use tlottie::{CPURenderer, Composition, Limits, RenderOptions};
 const MAX_TGS_BYTES: usize = 64 << 10;
 
 /// The largest JSON, from a TGS file or plain. The largest real sticker of the tests holds 324 KB.
-const MAX_JSON_BYTES: u64 = 4 << 20;
+const MAX_JSON_BYTES: usize = 4 << 20;
 
 /// The time that one loop can take. The largest real sticker of the tests takes 8 ms. A slower
 /// sticker keeps its still.
@@ -108,7 +108,7 @@ fn loop_within(
 fn parse(tgs_or_json: &[u8]) -> io::Result<Composition> {
     let json = unpack(tgs_or_json)?;
     let limits = Limits {
-        max_input_bytes: usize::try_from(MAX_JSON_BYTES).unwrap_or(usize::MAX),
+        max_input_bytes: MAX_JSON_BYTES,
         ..Limits::default()
     };
     Composition::parse(&json, &limits).map_err(invalid)
@@ -127,9 +127,9 @@ fn unpack(data: &[u8]) -> io::Result<Cow<'_, [u8]>> {
     }
     let mut json = Vec::new();
     GzDecoder::new(data)
-        .take(MAX_JSON_BYTES + 1)
+        .take(MAX_JSON_BYTES as u64 + 1)
         .read_to_end(&mut json)?;
-    if u64::try_from(json.len()).unwrap_or(u64::MAX) > MAX_JSON_BYTES {
+    if json.len() > MAX_JSON_BYTES {
         return Err(io::Error::new(
             io::ErrorKind::InvalidData,
             "the Lottie JSON is too large",
@@ -158,11 +158,12 @@ fn plan(composition: &Composition) -> io::Result<(Vec<u32>, Duration)> {
 /// The largest frame count that keeps [`MAX_LOOP_FPS`] and [`MAX_ANIMATION_FRAMES`]. It is at
 /// least one.
 fn loop_count(source: u32, rate: f64) -> u32 {
-    let frame_cap = u32::try_from(MAX_ANIMATION_FRAMES).unwrap_or(1);
+    #[expect(clippy::cast_possible_truncation, reason = "the cap is 48 frames")]
+    const FRAME_CAP: u32 = MAX_ANIMATION_FRAMES as u32;
     let wanted_rate = MAX_LOOP_FPS.min(rate);
     // A count `c` keeps the rate if `c / duration <= wanted_rate`, with duration = source / rate.
     let budget = f64::from(source) * wanted_rate;
-    (1..=frame_cap.min(source))
+    (1..=FRAME_CAP.min(source))
         .take_while(|&count| f64::from(count) * rate <= budget)
         .last()
         .unwrap_or(1)

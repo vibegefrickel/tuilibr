@@ -143,3 +143,31 @@ fn a_refusal_is_new_once_per_error() {
         "the screen does not hold id 7"
     );
 }
+
+#[test]
+fn a_flush_of_many_pictures_sends_the_pixels_of_each_id() {
+    use base64::Engine as _;
+    let capacity = NonZeroUsize::new(150).expect("150");
+    let mut store = PictureStore::new(DIRECT, false).with_capacity(capacity);
+    for level in 0..200_u8 {
+        store.insert(level.to_string(), bitmap(level));
+    }
+    for level in 0..200_u8 {
+        let cells = Rect::new(u16::from(level % 20) * 2, u16::from(level / 20), 2, 1);
+        store.place(&level.to_string(), cells);
+    }
+    let bytes = flushed(&mut store);
+    for level in 0..200_u8 {
+        let payload = base64::engine::general_purpose::STANDARD.encode([level; 12]);
+        if level < 50 {
+            assert!(!bytes.contains(&payload), "the store evicted {level}");
+        } else {
+            let id = u32::from(level) + 1;
+            let sent = format!("s=2,v=2,i={id},p=1,c=2,r=1,m=0;{payload}");
+            assert!(
+                bytes.contains(&sent),
+                "the pixels of {level} go under id {id}"
+            );
+        }
+    }
+}

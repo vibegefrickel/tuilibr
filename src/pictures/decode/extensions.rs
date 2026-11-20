@@ -9,6 +9,10 @@ pub const IMAGE_EXTENSIONS: &[&str] = &[
     "tga",
 ];
 
+/// The extensions of the libjpeg-turbo route, a part of [`IMAGE_EXTENSIONS`].
+#[cfg(feature = "turbo")]
+pub const JPEG_EXTENSIONS: &[&str] = &["jpg", "jpeg"];
+
 /// The one extension of the jxl-oxide route.
 #[cfg(feature = "jxl")]
 pub const JXL_EXTENSIONS: &[&str] = &["jxl"];

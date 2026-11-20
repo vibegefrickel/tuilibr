@@ -33,6 +33,11 @@ pub fn libheif_dimensions(path: &Path) -> Option<(u32, u32)> {
     Some((handle.width(), handle.height()))
 }
 
+/// An error of libheif as an error of the decode: the file holds data that libheif refuses.
+fn invalid(error: libheif_rs::HeifError) -> io::Error {
+    io::Error::new(io::ErrorKind::InvalidData, error)
+}
+
 /// libheif reads only the boxes and the decoded item from the stream.
 /// `HeifContext::read_from_file` copies the whole file first.
 fn open_heif_context(path: &Path) -> io::Result<libheif_rs::HeifContext<'static>> {
@@ -40,8 +45,7 @@ fn open_heif_context(path: &Path) -> io::Result<libheif_rs::HeifContext<'static>
     let size = file.metadata()?.len();
     let reader =
         libheif_rs::StreamReader::new(io::BufReader::with_capacity(HEIF_READ_BUFFER, file), size);
-    libheif_rs::HeifContext::read_from_reader(Box::new(reader))
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    libheif_rs::HeifContext::read_from_reader(Box::new(reader)).map_err(invalid)
 }
 
 /// The image data of a 24 MP photo is a few MB.
@@ -54,7 +58,6 @@ pub(super) fn decode_with_libheif(
 ) -> io::Result<Decoded> {
     use libheif_rs::{ColorSpace, LibHeif, RgbChroma};
 
-    let invalid = |e: libheif_rs::HeifError| io::Error::new(io::ErrorKind::InvalidData, e);
     let mut ctx = open_heif_context(path)?;
     let _slot = LibheifSlot::take(&mut ctx);
     let primary = ctx.primary_image_handle().map_err(invalid)?;
@@ -111,7 +114,7 @@ fn decode_deep(
     };
     let image = LibHeif::new()
         .decode(handle, ColorSpace::Rgb(chroma), None)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        .map_err(invalid)?;
     let bits = image
         .planes()
         .interleaved

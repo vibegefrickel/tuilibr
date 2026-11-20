@@ -111,21 +111,27 @@ pub const MAX_PAYLOAD_BYTES: usize = 64 << 20;
 pub const EMIT_PASS_BYTES: usize = 4 * 1024 * 1024;
 
 /// `size`, or the largest box of its aspect ratio whose RGB payload fits [`MAX_PAYLOAD_BYTES`].
+pub fn capped_box(size: (u32, u32)) -> (u32, u32) {
+    shrunk_box(size, 3).unwrap_or(size)
+}
+
+/// The largest box of the aspect ratio of `size` whose payload at `bytes_per_pixel` fits
+/// [`MAX_PAYLOAD_BYTES`], or `None` when `size` fits already.
 #[expect(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
     reason = "`scale` is below 1, so the side stays in 0..=u32::MAX"
 )]
-pub fn capped_box(size: (u32, u32)) -> (u32, u32) {
+fn shrunk_box(size: (u32, u32), bytes_per_pixel: u64) -> Option<(u32, u32)> {
     let (width, height) = size;
-    let bytes = u64::from(width) * u64::from(height) * 3;
+    let bytes = u64::from(width) * u64::from(height) * bytes_per_pixel;
     if bytes <= MAX_PAYLOAD_BYTES as u64 {
-        return size;
+        return None;
     }
     // The side scales with the square root of the area.
     let scale = (MAX_PAYLOAD_BYTES as f64 / bytes as f64).sqrt();
     let side = |value: u32| ((f64::from(value) * scale) as u32).max(1);
-    (side(width), side(height))
+    Some((side(width), side(height)))
 }
 
 /// The pixels per step of [`Pixels::opaque_rgb`]: 16 KB of RGBA stay in the L1 cache.

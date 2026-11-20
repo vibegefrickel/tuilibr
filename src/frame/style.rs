@@ -78,7 +78,8 @@ pub const fn unfocused_selection() -> Style {
 /// tone of the ground on a selected row.
 ///
 /// There the weight makes the hierarchy, because a dimmed or gray second tone has no contrast on
-/// the ground.
+/// the ground. The focus of the pane does not change the style. The parameter stays, so the
+/// call sites of the apps keep their form.
 pub const fn secondary(selected: bool, _focused: bool) -> Style {
     if selected { Style::new() } else { dim() }
 }
@@ -94,8 +95,8 @@ pub const fn pill() -> Style {
         .add_modifier(Modifier::BOLD)
 }
 
-/// The count as a pill on the selected row of a focused pane. The green differs from the accent
-/// ground of the row, so the pill keeps its look there.
+/// The count as a pill on the selected row of a focused pane: the same style as `pill`. The green
+/// differs from the accent ground of the row, so the pill keeps its look there.
 pub const fn selected_pill() -> Style {
     pill()
 }

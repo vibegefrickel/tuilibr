@@ -3,42 +3,24 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 64e0aa4
-- Done: one lint table in all six repos; the duplication review in all five apps (the picture
-  store, the loop player, batches A, B and C, the plumbing on std, the gap fixes); the XDG
-  folders in every app.
+- Commit: 85e0f79
+- Done: one lint table in the crate and its five built apps; the duplication review in the five
+  apps (the picture store, the loop player, batches A, B and C, the plumbing on std, the gap
+  fixes); the XDG folders in every app.
 - Done: `dirs::move_once` (the shared folder move core); the late-answer filter forgets the owed
   answers after `OWED_FOR` (5 s); phewr uses both.
 - Done: the docs hold no finished history (`docs/plan.md` 1226 to 140 lines); the comments of all
   86 changed files follow STE and name no app.
-- Open (agent): agendr and schnattr switch to `move_once` in their next sessions, from
-  `docs/briefs/` (delete each brief when it merges).
-- Open (user): push tuilibr and phewr; `just install` in each app; decide the code notes below.
+- Done: glisr is the sixth app (`apps`, `[app.glisr]`, the docs); `glisr-6f` has the crate rules.
+- Done: the code notes of the cleanup: an id index in `PictureStore::flush`, `LoopIds::allocate`
+  gives `None` without room, true ffprobe and cursor results, shared helpers, cluster moves
+  without a full scan. agendr (`0d6e6ea`) and schnattr (`5bbee11`) moved their folder moves to
+  `move_once`.
+- Open (agent): glisr starts on the crate at milestone 0; answer its crate requests.
+- Open (user): push tuilibr and phewr; `just install` in each app.
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
 - Health: `just check` green (723, 210 and 613 tests); `just lints-diff` clean; no worker and no
   extra worktree in any repo.
-
-## Code notes from the cleanup (2026-11-20)
-
-Findings of the comment cleanup, not fixed. The maintainer decides which to fix.
-
-- `kitty/store/mod.rs:290`: the pixel lookup of `flush` searches every stored picture per id, so
-  a flush is quadratic in the stored pictures (`PictureStore` of youtr and wettr).
-- `motion/loop_ids.rs:27`: `allocate` loops for ever when `count` is larger than the range.
-- `motion/decoder/process.rs:43`: the error "ffprobe not found on PATH" is wrong (the module does
-  no PATH lookup). A public text: search the apps before a change.
-- `frame/text_input.rs:52`: the doc says `None` when the cursor is out of view, but `Rows::One`
-  always gives `Some`, and the omnibox filters again.
-- `text_field/mod.rs:422`: each cursor move builds all grapheme starts again (O(n) and one
-  allocation per move).
-- `programs/mod.rs:70`: the "no stdin" branch cannot run.
-- `frame/style.rs:82,99`: `secondary` ignores `_focused`, and `selected_pill` only returns
-  `pill`, so `entry.rs:110` has two equal branches.
-- `motion/animation.rs:6,51`: the module doc and the doc of `is_animated` name different threads.
-- Duplicates in the crate: two `FileStamp` types (`jobs/disk_cache`, `jobs/thumbnail_cache`), the
-  payload cap math (`kitty/mod.rs:126`, `kitty/placement.rs:47`), `u16::try_from(..).unwrap_or`
-  next to `cells::to_u16` (`frame/entry.rs`, `split.rs`, `omnibox.rs`), the question separator
-  next to `frame::SEPARATOR`, test helpers (`patch_means` three times, `red_left_blue_right`).
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This

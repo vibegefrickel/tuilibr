@@ -2,8 +2,9 @@
 //!
 //! A still file of these formats stays an image. An animated file opens in the terminal
 //! player. The check reads the file headers only: the chunk list of a PNG or a WebP, the
-//! `ftyp` box of an AVIF, and the block list of a GIF up to its second image descriptor. The
-//! thumbnail job runs the check off the UI thread, and an app keeps the answer.
+//! `ftyp` box of an AVIF, and the block list of a GIF up to its second image descriptor. A
+//! thumbnail job or a loop job runs the check off the UI thread, and an app keeps the answer.
+//! The UI thread runs the check only for one file after a key press.
 
 use super::tone_map::Primaries;
 use crate::pictures::decode::color::SourceColor;
@@ -48,7 +49,8 @@ pub(in crate::pictures::motion) fn embedded_primaries(path: &Path) -> Option<Pri
 
 /// True for an animated file. A broken file is not animated.
 ///
-/// Each call reads the file header. The UI thread calls it only for one file after a key press.
+/// Each call reads the file header. A job calls it off the UI thread, and the UI thread calls it
+/// only for one file after a key press.
 pub fn is_animated(path: &Path) -> bool {
     has_animation_extension(path) && read_is_animated(path).unwrap_or(false)
 }

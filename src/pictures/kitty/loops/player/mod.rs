@@ -544,7 +544,7 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
     }
 
     /// A loop of `frames` under a free run of ids. The run skips the ids of the loops and the
-    /// ids that wait for their delete.
+    /// ids that wait for their delete. If the range has no free run, the loop fails.
     fn insert(&mut self, key: K, frames: Vec<GridPicture>, delays: &[Duration], animation: bool) {
         let count = u32::try_from(CellLoop::id_count(animation, frames.len())).unwrap_or(u32::MAX);
         let (loops, stale) = (&self.loops, &self.stale);
@@ -555,6 +555,10 @@ impl<K: Clone + Eq + Hash> LoopPlayer<K> {
                 .chain(stale)
                 .any(|id| run.contains(id))
         });
+        let Some(first_id) = first_id else {
+            self.failed.insert(key);
+            return;
+        };
         let cell = CellLoop::new(frames, delays, first_id, animation);
         if let Some(old) = self.loops.insert(key, cell) {
             self.stale.extend(old.ids);

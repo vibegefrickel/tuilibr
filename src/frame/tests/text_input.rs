@@ -83,7 +83,7 @@ fn wrapped_rows_follow_the_cursor_above_the_end_and_show_the_prefix_on_the_first
 }
 
 #[test]
-fn a_field_without_the_focus_sets_no_terminal_cursor_but_reports_the_cell() {
+fn a_field_without_the_focus_sets_no_terminal_cursor() {
     let field = TextField::from("hi");
     let mut cursor = None;
     drawn(10, 1, |frame| {
@@ -91,5 +91,5 @@ fn a_field_without_the_focus_sets_no_terminal_cursor_but_reports_the_cell() {
         view.cursor = false;
         cursor = draw_text_field(frame, frame.area(), &view);
     });
-    assert_eq!(cursor, Some(Position::new(4, 0)));
+    assert_eq!(cursor, None);
 }

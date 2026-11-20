@@ -8,6 +8,7 @@
 mod parse;
 
 use super::tone_map::{Hdr, Primaries};
+use crate::pictures::jobs::disk_cache::FileStamp;
 use lru::LruCache;
 use parse::{parse, parse_frame_peak};
 use std::collections::HashSet;
@@ -18,7 +19,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output, Stdio};
 use std::sync::{Condvar, LazyLock, Mutex, MutexGuard, PoisonError};
 use std::thread;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 /// The header facts of a video. The size is the size on the screen, after the rotation.
 #[derive(Debug, Clone, PartialEq)]
@@ -267,8 +268,6 @@ struct CacheState {
     probing: HashSet<PathBuf>,
 }
 
-type FileStamp = (Option<SystemTime>, u64);
-
 impl ProbeCache {
     fn new(capacity: usize) -> Self {
         let capacity = NonZeroUsize::new(capacity).unwrap_or(NonZeroUsize::MIN);
@@ -288,8 +287,7 @@ impl ProbeCache {
         path: &Path,
         run: impl FnOnce() -> io::Result<VideoInfo>,
     ) -> io::Result<VideoInfo> {
-        let metadata = std::fs::metadata(path)?;
-        let stamp = (metadata.modified().ok(), metadata.len());
+        let stamp = FileStamp::read(path)?;
         let mut state = self.lock();
         loop {
             let cached = state
@@ -322,8 +320,7 @@ impl ProbeCache {
     /// The entry of `path` for a file that still has the stamp of the entry. The cache keeps its
     /// order.
     fn peek(&self, path: &Path) -> Option<VideoInfo> {
-        let metadata = std::fs::metadata(path).ok()?;
-        let stamp = (metadata.modified().ok(), metadata.len());
+        let stamp = FileStamp::read(path).ok()?;
         let state = self.lock();
         let (cached_stamp, info) = state.entries.peek(path)?;
         (*cached_stamp == stamp).then(|| info.clone())
@@ -331,10 +328,9 @@ impl ProbeCache {
 
     /// If the file still has the stamp of the entry, clears `hardware` of the entry.
     fn mark_software(&self, path: &Path) {
-        let Ok(metadata) = std::fs::metadata(path) else {
+        let Ok(stamp) = FileStamp::read(path) else {
             return;
         };
-        let stamp = (metadata.modified().ok(), metadata.len());
         if let Some((cached_stamp, info)) = self.lock().entries.peek_mut(path)
             && *cached_stamp == stamp
         {

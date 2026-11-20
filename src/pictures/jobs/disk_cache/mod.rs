@@ -6,7 +6,7 @@ pub use self::write::write_cache_file;
 use image::RgbaImage;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
+use std::time::SystemTime;
 
 /// When the thumbnail output changes, change the number. The app name keeps the keys of two apps
 /// apart.
@@ -37,24 +37,22 @@ pub fn thumbnail_dir_below(cache_root: &Path) -> PathBuf {
     cache_root.join(THUMBNAIL_FOLDER)
 }
 
-/// The length and the modification time of a source file, hashed into the cache key.
+/// The length and the modification time of a source file. The disk cache hashes it into the
+/// key, and the caches in memory use no entry of a changed file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FileStamp {
     len: u64,
-    mtime: Duration,
+    /// `None` when the modification time does not read.
+    mtime: Option<SystemTime>,
 }
 
 impl FileStamp {
-    /// `None` when the modification time does not read.
-    fn of(metadata: &std::fs::Metadata) -> Option<Self> {
-        let mtime = metadata
-            .modified()
-            .ok()?
-            .duration_since(std::time::SystemTime::UNIX_EPOCH)
-            .ok()?;
-        Some(Self {
+    /// The stamp of the file at `path`. An error when the metadata does not read.
+    pub(crate) fn read(path: &Path) -> io::Result<Self> {
+        let metadata = std::fs::metadata(path)?;
+        Ok(Self {
             len: metadata.len(),
-            mtime,
+            mtime: metadata.modified().ok(),
         })
     }
 }
@@ -167,7 +165,8 @@ fn cache_entry(
 
     #[cfg(any(test, feature = "test-support"))]
     KEY_COMPUTATIONS.add(path);
-    let stamp = FileStamp::of(&fs::metadata(path).ok()?)?;
+    let stamp = FileStamp::read(path).ok()?;
+    let mtime = stamp.mtime?.duration_since(SystemTime::UNIX_EPOCH).ok()?;
     let canonical_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
     let mut hasher = DefaultHasher::new();
@@ -175,8 +174,8 @@ fn cache_entry(
     crate::pictures::decode::color::target().hash(&mut hasher);
     canonical_path.hash(&mut hasher);
     stamp.len.hash(&mut hasher);
-    stamp.mtime.as_secs().hash(&mut hasher);
-    stamp.mtime.subsec_nanos().hash(&mut hasher);
+    mtime.as_secs().hash(&mut hasher);
+    mtime.subsec_nanos().hash(&mut hasher);
     target.0.hash(&mut hasher);
     target.1.hash(&mut hasher);
     let filename = format!("{:016x}.{extension}", hasher.finish());

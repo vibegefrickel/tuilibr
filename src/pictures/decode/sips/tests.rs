@@ -8,8 +8,8 @@ use crate::pictures::decode::embedded_jpeg::find;
 use crate::pictures::decode::{Decoded, EmbeddedThumbnail, decode_image_with_hint};
 use crate::pictures::resize::load_and_resize_px;
 use crate::pictures::test_support::{
-    encode_jpeg, quadrant_image, test_dir, write_psd, write_raf_with_thumbnail, write_tiff_raw,
-    write_tiff_raw_with_jpeg,
+    EXIF_ORIENTATION_6, encode_jpeg, quadrant_image, red_left_blue_right, test_dir, write_psd,
+    write_raf_with_thumbnail, write_tiff_raw, write_tiff_raw_with_jpeg,
 };
 use image::metadata::Orientation;
 use image::{DynamicImage, GenericImageView, ImageBuffer, LumaA, Rgb, RgbImage, Rgba, RgbaImage};
@@ -17,22 +17,9 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-/// A little-endian TIFF block with one IFD entry: Orientation = 6 (rotate 90 CW).
-const EXIF_ORIENTATION_6: [u8; 26] = [
-    b'I', b'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x12, 0x01, 0x03, 0x00, 0x01, 0x00,
-    0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-];
-
-/// 64x32 pixels, red on the left and blue on the right.
-fn red_left_blue_right() -> RgbImage {
-    RgbImage::from_fn(64, 32, |x, _| {
-        Rgb(if x < 32 { [255, 0, 0] } else { [0, 0, 255] })
-    })
-}
-
 fn sips_file(dir: &Path, format: &str) -> PathBuf {
     let png = dir.join("source.png");
-    red_left_blue_right().save(&png).unwrap();
+    red_left_blue_right(64, 32).save(&png).unwrap();
     convert(&png, format)
 }
 
@@ -130,7 +117,7 @@ fn psd_opens_in_grid_and_fullscreen() {
 fn sixteen_bit_psd_opens_both_sizes() {
     let dir = tempfile::tempdir().unwrap();
     let png = dir.path().join("source16.png");
-    let wide = red_left_blue_right();
+    let wide = red_left_blue_right(64, 32);
     ImageBuffer::<Rgb<u16>, _>::from_fn(64, 32, |x, y| {
         Rgb(wide.get_pixel(x, y).0.map(|c| u16::from(c) * 257))
     })
@@ -164,7 +151,7 @@ fn sips_exif_orientation_applies() {
         .unwrap();
     encoder
         .write_image(
-            red_left_blue_right().as_raw(),
+            red_left_blue_right(64, 32).as_raw(),
             64,
             32,
             image::ExtendedColorType::Rgb8,
@@ -274,7 +261,7 @@ fn unturned_develop_turns_once() {
     let path = dir.path().join("photo.nef");
     write_tiff_raw(&path, 6);
     let jpeg = find(&path).unwrap();
-    let unturned = DynamicImage::ImageRgb8(red_left_blue_right());
+    let unturned = DynamicImage::ImageRgb8(red_left_blue_right(64, 32));
     let shown = corrected(&path, developed(unturned.clone()), &jpeg, None).image;
     // Orientation 6 turns the stored image 90 degrees clockwise, and red goes to the top.
     assert_eq!(shown.dimensions(), (32, 64));

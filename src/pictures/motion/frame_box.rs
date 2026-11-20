@@ -16,6 +16,11 @@ pub fn frame_limit(rect: Rect, cell_px: (u32, u32)) -> (u32, u32) {
     (width.min(MAX_FRAME.0), height.min(MAX_FRAME.1))
 }
 
+/// The bytes of one RGBA frame of `frame` pixels, the size of one read from ffmpeg.
+pub(crate) const fn rgba_bytes(frame: (u32, u32)) -> usize {
+    frame.0 as usize * frame.1 as usize * 4
+}
+
 /// The largest even size with the aspect of `video` inside `limit`, never above the video size.
 /// The hardware scaler and the 4:2:0 formats want even sizes.
 pub fn frame_box(video: (u32, u32), limit: (u32, u32)) -> (u32, u32) {
