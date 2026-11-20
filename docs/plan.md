@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 96e85d9
+- Commit: 7d92cee
 - Done: phase 4 steps 1 to 4 and phase 4d in the crate (`terminal`, `TextField` with the editor,
   the question row, `Layout`, the omnibox, `time` on jiff, `pictures::motion`); the stricter lints
   and the shared audit of the repositories; rule 10 "one update per frame".
@@ -12,13 +12,15 @@
   repository is a private backup, and the apps keep the path dependency.
 - Later: the TGS stickers, the test run of the maintainer (seven checks) and the other waiting
   items, see `## Later`.
-- Open (agent): follow the schnattr timeline workers of 4d and the agendr omnibox; answer the
-  crate requests of the five apps; ask ListAgents for the name of the wettr session.
+- Done (2026-11-20): schnattr 4d (`c67eb7d`, the Live Photo loops) and the agendr omnibox
+  (`fad65c9`) landed; `just apps-check` passed in the five apps (4 min 14 s); wettr-fc knows the
+  crate rules.
+- Open (agent): answer the crate requests of the five apps. No crate work waits.
 - Open (user): remove the four landed agent worktrees (`agent-a5be…`, `agent-a774…`,
   `agent-aa91…`, `stateful-shimmying-tulip`); keep `agent-ae079fd3ff597b1d9`. Push `main` to
   `origin` after each commit.
-- Health: `just check` green (489 tests in the main set, audit clean); `just lints-diff` shows
-  no drift in the five apps; no live herdr worker in tuilibr.
+- Health: `just check` green (489 tests in the main set, audit clean); `just apps-check` and
+  `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
