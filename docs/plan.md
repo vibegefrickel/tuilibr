@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 803c249
+- Commit: 0e158d0
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -25,10 +25,11 @@
 - Open (agent): the lint match (the maintainer, 2026-11-20, "full match in all 6 + schnattr
   exceptions", brief `/tmp/tuilibr-brief-lints.md`): schnattr, youtr, agendr and wettr take the
   six lints, schnattr also `unreachable_pub` and `let_underscore_must_use`. Done: phewr
-  (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`). `lints-allow.toml` lists the
+  (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`), youtr (21 hits, 20 fixes, 1
+  `expect`, uncommitted). `lints-allow.toml` lists the
   open lines per app; drop each app's lines when its worker merges (`unsafe_code` stays). Collect the
   PictureStore reports: wettr done (435 tests, 104 lines less), youtr done (292 tests, 148
-  lines less, no `lru`), both uncommitted; schnattr: no adoption (2026-11-20). The parts that
+  lines less, no `lru`, `e0a5a79`), tuilibr `0e158d0`; schnattr: no adoption (2026-11-20). The parts that
   match are one-line forwards in schnattr already. The rest needs an id range, frame pins, box
   copy groups, load generations, the loop `Update` and more: a medium refactor for no gain,
   unless a second app grows loops and box copies.

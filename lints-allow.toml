@@ -2,8 +2,8 @@
 # `just lints-diff`. A key is `<group>.<lint>`, the value is the reason. A difference that is not
 # listed here is drift: the recipe lists it and fails.
 #
-# The maintainer decided on 2026-11-20 that every app takes the table of the crate. phewr and
-# agendr have it. The lines of schnattr, youtr and wettr go when their lint workers merge; only
+# The maintainer decided on 2026-11-20 that every app takes the table of the crate. phewr,
+# agendr and youtr have it. The lines of schnattr and wettr go when their lint workers merge; only
 # `unsafe_code` of schnattr stays.
 
 [all]
@@ -20,12 +20,6 @@
 "rust.unsafe_code" = "schnattr warns, because it calls libc; the crate denies"
 
 [app.youtr]
-"clippy.cast_possible_truncation" = "until the lint worker of 2026-11-20 merges"
-"clippy.cast_possible_wrap" = "until the lint worker of 2026-11-20 merges"
-"clippy.cast_sign_loss" = "until the lint worker of 2026-11-20 merges"
-"clippy.missing_const_for_fn" = "until the lint worker of 2026-11-20 merges"
-"clippy.or_fun_call" = "until the lint worker of 2026-11-20 merges"
-"clippy.too_long_first_doc_paragraph" = "until the lint worker of 2026-11-20 merges"
 
 [app.phewr]
 
