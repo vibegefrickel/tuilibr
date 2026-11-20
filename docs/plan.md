@@ -3,100 +3,27 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 7a30b15
-- Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
-  omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
-- Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
-  keep the path dependency); phewr starts maximal on the info screen only.
-- Done (2026-11-20): the dialog box pads its body by two columns (`DIALOG_FRAME_COLUMNS`,
-  `DIALOG_FRAME_ROWS`), and the five apps follow it.
-- Done (2026-11-20): the TGS stickers in `pictures::motion::lottie` behind the feature `lottie`
-  (a git source), with limits against hostile stickers (64 KiB TGS, 4 MiB JSON, a 500 ms loop
-  budget); schnattr shows them (`4ad2048`, `21b6d9c`).
-- Done (2026-11-20): the fixture `make.sh` scripts and the cube writer test are gone; the
-  fixtures are static files, and nothing needs jpeg-xl.
-- Later: the test run of the maintainer (seven checks) and the other waiting items, see
-  `## Later`.
-- Done (2026-11-20): the stale texts are current: the crate description, the crate doc, the
-  README and the phase rows 4, 4d and 5.
-- Done (2026-11-20): `pictures::kitty::store::PictureStore<K>` for the picture caches of wettr
-  and youtr (the request of wettr-ec); the briefs are `/tmp/wettr-brief-picture-store.md` and
-  `/tmp/youtr-brief-picture-store.md`, for the next session of each app.
-- Open (agent): the lint match (the maintainer, 2026-11-20, "full match in all 6 + schnattr
-  exceptions", brief `/tmp/tuilibr-brief-lints.md`): schnattr, youtr, agendr and wettr take the
-  six lints, schnattr also `unreachable_pub` and `let_underscore_must_use`. Done: phewr
-  (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`), youtr (21 hits, 20 fixes, 1
-  `expect`), wettr (58 hits, 59 fixes, 2 `expect`s in its new `numbers.rs`), schnattr (`69b15f4`,
-  `d470760`: the six lints, `let_underscore_must_use` 127, `unreachable_pub` 788). All six repos
-  share one table; only `unsafe_code` of schnattr differs. `lints-diff` fails on a stale entry. `lints-allow.toml` lists the
-  open lines per app; drop each app's lines when its worker merges (`unsafe_code` stays). Collect the
-  PictureStore reports: wettr done (435 tests, 104 lines less), youtr done (292 tests, 148
-  lines less, no `lru`, `e0a5a79`), tuilibr `0e158d0`; schnattr: no adoption (2026-11-20). The parts that
-  match are one-line forwards in schnattr already. The rest needs an id range, frame pins, box
-  copy groups, load generations, the loop `Update` and more: a medium refactor for no gain,
-  unless a second app grows loops and box copies.
-- Open (agent, 2026-11-20): the duplication review (three read-only reviews and a loop player
-  comparison). Decisions: Alt plus a letter types it, Ctrl-U clears the input, XDG folders
-  everywhere, std-only app plumbing allowed in the crate. Streams:
-  - the loop player `pictures::kitty::loops::player` is in the main tree; phewr and schnattr
-    switch (`/tmp/<app>-brief-loop-player.md`);
-  - batch A (switches to existing exports): agendr, phewr, schnattr, youtr
-    (`/tmp/<app>-brief-crate-switch-a.md`);
-  - batches B and C are in the main tree: `frame::{buffer, DoubleClick, scroll_to_show,
-    byte_size, heading, accent_bold, box_color, *_color}`, `text_field::{line_edit_for_key,
-    TextField::edit_text}`, `terminal::{spawn_reader, spawn_filtered_reader, ReaderPause,
-    Session::lend, synchronized, draw_synchronized}`, `cells::{round_to_*, trunc_to_*,
-    clamp_to_u16}`, and the std-only modules `programs`, `files`, `log_file`, `dirs`. The apps
-    adopt them (`/tmp/<app>-brief-crate-bc.md`, with the one-time XDG folder moves).
-  - the loop player got three fixes from phewr: `clear()` empties the boxes, a failure lasts
-    one visit, the budget counts every stored loop first.
-  - adopted: wettr (`43cd358`, `b1d403a`), youtr (`ce0bf52`, `c929f95`), agendr (`c7f8913`,
-    `e00f416`), schnattr B (`9954a9c`), phewr B (`a5be1ea`). Crate gaps to fix
-    after all B/C merges (the API stays stable until then, agendr asked): `programs::{open,
-    copy}` keep the program name in the error (wettr and youtr add it at the call),
-    `CappedLog::open` creates its folder, `AppDirs::below` without the unused `home`, and the doc
-    of `write_atomic` tells the app to call `remove_stale_temps` at start. Player gaps from
-    schnattr (`ad11ee7`, `loops.rs` 544 to 329 lines): a per-key `is_decoding`, no zero
-    `next_wake` while `send_frames` holds the loops back for waiting stills, and a
-    `run_caught` variant that hands the panic text to the app for its log. From agendr
-    (`c7f8913`, `e00f416`): `buffer::joined`, a single-folder override in `AppDirs`,
-    `CappedLog::open` keeps logging when the start rotation fails, `programs::open` tells a
-    failed start from an exit with an error, and the crate panic hook skips the app log while
-    `log_file::writing()` is true. From phewr (`b81f40c`): a `Session::set_mouse_to(out, on)` twin, so
-    an app can test the mouse bytes. From schnattr (`9954a9c`, batch B, about 680 lines less): a test of the
-    reader poll bound, a public idle mark of `ReaderPause`, no unreaped child in
-    `programs::launch`, a name filter for `remove_stale_temps`, `write_atomic` without
-    `sync_all` for caches, and `Session::lend` that returns the value of `run` with a failed
-    take-back. Candidate: a shared one-time folder move in `dirs` (agendr,
-    phewr and schnattr each wrote one); compare the three after their merges.
-- Done (2026-11-20, late): the gaps of the apps are fixed in the crate (18 of 19; `AppDirs::below`
-  keeps its two arguments, because a running phewr worker uses them): program names in the
-  `programs` errors, `CappedLog` makes its folder and survives a failed start rotation,
-  `in_one_folder`, `buffer::joined`, the panic hook skips the app log in the log writer,
-  `is_decoding`, the stills hold of the player, `run_caught_with`, `set_mouse_to` and
-  `Session::detached`, `ReaderPause::is_idle`, the launch reaper, `remove_stale_temps_of`,
-  `write_atomic_unsynced`, `Session::lend_keeping`. youtr, wettr and agendr got the forced
-  error-text edits in the same step (uncommitted). The shared folder move: a small
-  `dirs::move_once(old, new, OtherVolume)` when schnattr builds its move.
-- Done: phewr batches B and C (`a5be1ea`, `58ed2b8`, it uses `remove_stale_temps_of`, so it
-  needs this crate state committed). Open gap from phewr: `AppDirs::from_vars` fails on an empty
-  HOME (phewr falls back to a temp folder itself). schnattr: `xdg-move` runs; `move_once` comes
-  from its rename-or-copy core after its merge, if a second app needs it.
-- Done: the duplication review is complete in all five apps (2026-11-20, late): batches A, B and
-  C, the loop player, the gap fixes and their follow-ups; schnattr last with `f8a616d`.
-- Done: schnattr moved to XDG (`c9ea646`: move lock, daemon stop, store backup, data and cache
-  as a pair, one-transaction path rewrite, Time Machine exclusion of the new cache). A new
-  `programs::launch` error text broke four schnattr tests for a while: AGENTS.md now says that a
-  public text is interface. `dirs::move_once` stays a candidate; agendr and schnattr hold the
-  same rename-or-copy core.
-- Done: phewr has batches A, B and C and the gap follow-up (`87278c8`); agendr dropped its
-  workarounds (`9acfad3`). From agendr: `lend_keeping` repaints in every case, and
-  `Session::is_active()` shows a failed take-back.
-- Open (agent): answer the crate requests of the five apps. Every other open item needs the
-  maintainer at a terminal (the test run, the test matrix, the RGBA measure).
-- Open (user): push `main` (8 commits ahead of `origin`). No worktree is left.
-- Health: `just check` green (600, 125 and 490 tests, audit clean); `just lints-diff` shows no
-  drift in the five apps; no live herdr worker in tuilibr.
+- Commit: cbbfed3
+- Done: phases 4 and 4d; the dialog padding of two columns; wettr is the fifth app; no phase 5
+  (codeberg is a private backup, the apps keep the path dependency).
+- Done: one lint table in all six repos (only `unsafe_code` of schnattr differs), and
+  `just lints-diff` fails on a stale allow entry.
+- Done: the duplication review in all five apps: batch A (switches to existing exports),
+  `kitty::store::PictureStore` (wettr, youtr), `kitty::loops::player::LoopPlayer` (phewr,
+  schnattr), batches B and C (`frame::{buffer, DoubleClick, scroll_to_show, byte_size, heading,
+  accent_bold, box_color, *_color}`, `text_field::{line_edit_for_key, edit_text}`, `terminal::{
+  spawn_reader, spawn_filtered_reader, ReaderPause, Session::lend, lend_keeping, is_active,
+  synchronized, draw_synchronized}`, `cells` conversions, and the std-only `programs`, `files`,
+  `log_file`, `dirs`), and the gap fixes that the apps reported.
+- Done: the XDG folders in every app; agendr, phewr and schnattr moved their old folders once.
+- Rule (AGENTS.md): a public text (an error or any string an app can parse) is interface.
+- Later: the test run of the maintainer (seven checks) and the other items of `## Later`.
+- Open (agent): answer the crate requests of the five apps. Candidates: `dirs::move_once` if a
+  third app needs a folder move (agendr and schnattr hold the core); `AppDirs::from_vars` fails
+  on an empty HOME (phewr falls back to a temp folder itself).
+- Open (user): push `main` (16 commits ahead of `origin`).
+- Health: `just check` green; `just lints-diff` clean in the five apps; no worker and no extra
+  worktree in any repo.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
   `apps-check` only on request; brief files `/tmp/<repo>-brief-<topic>.md`.
 
@@ -1241,11 +1168,11 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
   repository (`"--release"` in schnattr and agendr, `""` elsewhere), so the insta step builds no
   second profile. `.taplo.toml` and `_typos.toml` keep one shape, with the words of each
   repository. schnattr has the text in its tree. The tuilibr session sends it to the others.
-- Open in the crate: the docs of the picture module items. The module carries a `missing_docs`
-  expect with a reason until a step of its own writes them.
-- Measured in tuilibr for later: `cast_possible_truncation` 54, `cast_sign_loss` 21,
-  `cast_possible_wrap` 5, `indexing_slicing` 193 (stays off), `too_long_first_doc_paragraph` 50,
-  `or_fun_call` 6, `missing_const_for_fn` 41.
+- Done: every public item of the picture module has its doc; no `missing_docs` exception is
+  left.
+- Done (2026-11-20): the measured lints (`cast_*`, `too_long_first_doc_paragraph`,
+  `or_fun_call`, `missing_const_for_fn`) are on in the crate and in the five apps.
+  `indexing_slicing` stays off (193 hits in the crate).
 
 ## Rules for the code of the crate
 
