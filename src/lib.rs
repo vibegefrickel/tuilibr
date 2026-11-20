@@ -18,7 +18,8 @@
 //! minute clock.
 //!
 //! The plumbing modules use std only and build without a feature. `dirs` gives the XDG folders of
-//! an app. `files` writes a file atomically and sweeps the temp files that a crash left.
+//! an app and moves an old folder or file of an app to its new place one time. `files` writes a
+//! file atomically and sweeps the temp files that a crash left.
 //! `log_file` holds the log file with a cap on its size. `programs` finds a program on PATH, opens
 //! a link, copies a text to the clipboard and launches a player.
 

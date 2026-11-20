@@ -228,7 +228,7 @@ mod late_answers {
     use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 
     use crate::pictures::kitty::{answers::ANSWER_WAIT, query::LateAnswers};
-    use crate::terminal::answers::LateAnswerFilter;
+    use crate::terminal::answers::{LateAnswerFilter, OWED_FOR};
 
     /// The OSC 10 answer with a BEL end.
     const OSC_BEL: &str = "\x1b]10;rgb:e6e6/d5d5/c2c2\x07";
@@ -283,6 +283,29 @@ mod late_answers {
             .collect();
         out.extend(filter.release_stale(now + ANSWER_WAIT).events);
         out
+    }
+
+    #[test]
+    fn an_answer_that_never_comes_is_owed_no_more_after_owed_for() {
+        let start = Instant::now();
+        let owed = LateAnswers {
+            kitty: 0,
+            foreground: true,
+        };
+        let mut filter = LateAnswerFilter::owed_from(owed, start);
+        // Inside the window, Alt+] and the keys after it count as the OSC 10 answer.
+        let early = passed(
+            &mut filter,
+            vec![alt(']'), plain(KeyCode::Char('j'))],
+            start,
+        );
+        assert!(early.is_empty(), "{early:?}");
+        // After the window, the same keys of the user pass: the terminal never answered.
+        let mut filter = LateAnswerFilter::owed_from(owed, start);
+        let late = start + OWED_FOR;
+        let keys = vec![alt(']'), plain(KeyCode::Char('j'))];
+        assert_eq!(passed(&mut filter, keys.clone(), late), keys);
+        assert!(!filter.owed().foreground);
     }
 
     // The four cases of the first app that filtered the late answers on its reader thread.

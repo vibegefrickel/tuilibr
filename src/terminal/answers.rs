@@ -27,33 +27,56 @@ pub struct Filtered {
     pub answers: Vec<Answer>,
 }
 
+/// The time in which a late answer of the start queries can still come.
+///
+/// After it, nothing is owed: a terminal that never answers OSC 10 would else eat Alt+`]` and the
+/// keys after it for the whole run. A late answer comes well inside this time.
+pub const OWED_FOR: Duration = Duration::from_secs(5);
+
 /// The filter of the terminal events.
 ///
 /// Every event passes it once, in its order. `AnswerKeys` reads the Kitty answers first and holds
 /// the keys that can start one for at most `ANSWER_WAIT`; then the owed late answers of the start
-/// go.
-#[derive(Debug, Default)]
+/// go, for at most `OWED_FOR` after the start.
+#[derive(Debug)]
 pub struct LateAnswerFilter {
     keys: AnswerKeys,
     /// The owed answers. Each one ends with Alt+`\`, an OSC answer also with Ctrl+`g`.
     owed: LateAnswers,
     /// The opener of the answer in progress: `_` for Kitty, `]` for OSC.
     inside: Option<char>,
+    /// After this time nothing is owed, unless an answer is in progress.
+    owed_until: Instant,
+}
+
+/// A filter that owes nothing: every key of the user passes.
+impl Default for LateAnswerFilter {
+    fn default() -> Self {
+        Self::new(LateAnswers::default())
+    }
 }
 
 impl LateAnswerFilter {
-    /// A filter for the `owed` late answers of the start queries.
+    /// A filter for the `owed` late answers of the start queries, which can come within
+    /// `OWED_FOR` from now.
     pub fn new(owed: LateAnswers) -> Self {
+        Self::owed_from(owed, Instant::now())
+    }
+
+    /// `new` with the start at `start`, for a test that pins the time.
+    pub fn owed_from(owed: LateAnswers, start: Instant) -> Self {
         Self {
             keys: AnswerKeys::default(),
             owed,
             inside: None,
+            owed_until: start + OWED_FOR,
         }
     }
 
     /// Reads one event at `now`. Each whole Kitty answer that the read ended pays for one owed
     /// Kitty answer, never for the OSC 10 answer.
     pub fn read(&mut self, event: Event, now: Instant) -> Filtered {
+        self.expire(now);
         let read = self.keys.read(event, now);
         self.owed.kitty = self.owed.kitty.saturating_sub(read.ends);
         Filtered {
@@ -64,6 +87,7 @@ impl LateAnswerFilter {
 
     /// Gives the held events back when they waited `ANSWER_WAIT` at `now` and no answer ended.
     pub fn release_stale(&mut self, now: Instant) -> Filtered {
+        self.expire(now);
         let events = self.keys.release_stale(now);
         Filtered {
             events: self.pass(events),
@@ -89,6 +113,13 @@ impl LateAnswerFilter {
     /// The answers that are still owed.
     pub const fn owed(&self) -> LateAnswers {
         self.owed
+    }
+
+    /// Nothing is owed after `OWED_FOR`, unless an answer is in progress.
+    fn expire(&mut self, now: Instant) {
+        if now >= self.owed_until && self.inside.is_none() {
+            self.owed = LateAnswers::default();
+        }
     }
 
     /// The `events` that are no part of an owed late answer.

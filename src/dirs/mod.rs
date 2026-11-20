@@ -7,13 +7,23 @@
 //! profile. The lookup of the variables is an argument, so a test never changes the environment
 //! of the process. `in_one_folder` puts the cache, the state and the data in one folder, for an
 //! app with one override variable for its data.
+//!
+//! `move_once` moves an old folder or file of an app to its new place one time: one rename on
+//! one volume, else a copy, a compare and a delete, or no move for a cache. It returns `Moved`,
+//! and the app logs the step. The app keeps its own policy: the lock, the stop of a daemon, the
+//! backup and the rewrite of stored paths.
 
 use std::ffi::OsString;
 use std::io;
 use std::path::{Path, PathBuf};
 
+#[cfg(unix)]
+mod one_time_move;
 #[cfg(test)]
 mod tests;
+
+#[cfg(unix)]
+pub use one_time_move::{Moved, OtherVolume, move_once, move_once_with};
 
 /// The XDG base folders of the user, before an app adds its name.
 #[derive(Debug, Clone, PartialEq, Eq)]
