@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 78ea187
+- Commit: 79391e4
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -18,8 +18,7 @@
 - Later: the test run of the maintainer (seven checks) and the other waiting items, see
   `## Later`.
 - Open (agent): answer the crate requests of the five apps. No crate work waits.
-- Open (user): push `main` (6 commits ahead of `origin`); remove the worktrees `tgs-lottie` and
-  `agent-ae079fd3ff597b1d9`, both landed.
+- Open (user): push `main` (7 commits ahead of `origin`). No worktree is left.
 - Health: `just check` green (600, 125 and 490 tests, audit clean); `just lints-diff` shows no
   drift in the five apps; no live herdr worker in tuilibr.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
