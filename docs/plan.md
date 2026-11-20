@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: 08bd7ba
+- Commit: 4ce00fa
 - Done: phases 4 and 4d; the dialog padding of two columns; wettr is the fifth app; no phase 5
   (codeberg is a private backup, the apps keep the path dependency).
 - Done: one lint table in all six repos (only `unsafe_code` of schnattr differs), and
@@ -18,10 +18,11 @@
 - Done: the XDG folders in every app; agendr, phewr and schnattr moved their old folders once.
 - Rule (AGENTS.md): a public text (an error or any string an app can parse) is interface.
 - Later: the test run of the maintainer (seven checks) and the other items of `## Later`.
-- Open (agent): answer the crate requests of the five apps. Candidates: `dirs::move_once` if a
-  third app needs a folder move (agendr and schnattr hold the core); `AppDirs::from_vars` fails
-  on an empty HOME (phewr falls back to a temp folder itself).
-- Open (user): push `main` to `origin`.
+- Open (agent): answer the crate requests of the five apps. Candidate: `dirs::move_once` when a
+  third app needs a folder move (agendr and schnattr hold the core; phewr only renames a cache).
+- Decided (2026-11-20): `AppDirs::from_vars` keeps the `NotFound` error for an unset or empty
+  HOME, as its doc says: every fallback sits below HOME, so the app picks its own fallback.
+  phewr uses a temp folder, the other four apps stop with the error.
 - Health: `just check` green; `just lints-diff` clean in the five apps; no worker and no extra
   worktree in any repo.
 - Rules: a multi-step crate change runs in a worktree and lands in one compiling step;
