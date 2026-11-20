@@ -6,6 +6,11 @@
 //! `Screen::write_frame`: the update saves the cursor before its first byte and restores it at its
 //! end, so a placement does not move the cursor of a typed field, and the loops and the stills
 //! land in one synchronized frame.
+//!
+//! [`player::LoopPlayer`] does this bookkeeping for an app: the order, the jobs, the caps, the
+//! budget and the wake.
+
+pub mod player;
 
 use super::screen::{Placements, Screen};
 use super::{DisplayOptions, KittyBackend, protocol};

@@ -139,11 +139,17 @@ src/pictures/motion/
   first_frame/  the first frame of a video as the still of its cell, the video extensions
   loop_frames.rs  the frames of a loop: `LoopFrames`, `decode_loop`, `loop_of`
   lottie.rs     the TGS stickers and Lottie JSON: `lottie_still`, `lottie_loop`, no ffmpeg
-  loop_file.rs  the loop file of the disk cache
+  loop_file.rs  the loop file of the disk cache, and `load_or_decode`
   clock.rs      `CellLoop` and `TICKS_PER_SECOND`, the frame of a cell at a tick
   loop_ids.rs   `LoopIds`, the Kitty ids of the loops inside a range of the app
-src/pictures/kitty/loops.rs  the write of the frames of one loop, and the frame at a tick
+src/pictures/kitty/loops/
+  mod.rs        the write of the frames of one loop, and the frame at a tick
+  player/       `LoopPlayer`: the loops of a screen, their jobs, their frames and the wake
+                job.rs: `LoopTicket`, `LoopOutcome`, `LoopResult`, `run_caught`
 ```
+
+The player lives below `kitty`, because it sends and places frames. The direction of the
+imports stays `kitty` to `motion`. The motion module imports nothing of `kitty`.
 
 An app passes these inputs:
 
@@ -194,6 +200,55 @@ The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The 
 start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*` and
 `tests/fixtures/video/`. The Lottie tests build their animation in the test.
 `<APP>_TEST_TGS_DIR=<folder>` with `-- --ignored` renders each `.tgs` file of a folder.
+
+### The loop player
+
+`kitty::loops::player::LoopPlayer<K>` replaces the loop players of phewr and schnattr
+(2026-11-20). The key `K` is a box of the app. The app owns the threads, the result channel
+and the decode. Each frame, the app does these steps:
+
+1. Call `begin_frame(now)`, then `show(key, play)` for each box that can loop, in the order of
+   the screen.
+2. Call `drop_hidden()`. If no still decodes, call `start_jobs(spawn)`.
+3. Call `send_frames(..)`, then give `take_stale()` to `Screen::write_frame` as the deletes.
+4. Call `place(key, ..)` for each box, and give `pixels_of` to the pixel lookup of the frame.
+
+A job runs `run_caught`, maps its load with `LoopOutcome::of(load_or_decode(..), shape)`, and
+sends `ticket.finish(outcome)` to the app. The app gives the result to `ready(result, loops)`.
+The run loop sleeps for `next_wake(now)`.
+
+The rules of the player:
+
+1. **The caps.** `LoopLimits::max_jobs` caps the running jobs, 4 by default. `max_loops` caps
+   the loops that play or decode together. It is `None` by default, and then every box on screen
+   loops. 30 loops of the phewr grid took about 3 % of one core. schnattr sets `Some(4)`.
+2. **On screen only.** A box that the frame does not show is hidden. `drop_hidden` cancels its
+   job and moves its ids to the stale list. The call costs one hash lookup per loop and job, so
+   it runs every frame.
+3. **The results.** A loop needs at least 2 frames. A loop with fewer frames fails, and its box
+   keeps the still. A result of a job that no longer runs goes away. `clear` starts a new
+   generation, and a result of an older generation goes away.
+4. **The budget.** A loop above the budget of the terminal moves its ids to the stale list. Its
+   box keeps the still until it leaves the screen.
+5. **The wake.** `next_wake` gives the exact time of the next frame change through
+   `LoopClock::instant_of`. It gives zero when a loop waits for its transfer or shows an old
+   frame. The player has no fixed poll.
+6. **The terminal player.** With `Loops::Animation`, the terminal plays each loop as one Kitty
+   animation under one id, with `N=1` (rule 2 of the loops). An animation needs no wake.
+7. **The focus gain.** `pixels_of` gives the pixels of a tick frame for the new transfer.
+   `focus_gained` marks each animation lost, and the next send gives it again whole.
+8. **The order.** The jobs start in the order of `show`, the order of the screen.
+
+Two gates keep the cores for the stills. The app calls `start_jobs` only when no still decodes.
+When new stills wait, `cancel_jobs` stops the running jobs, and they keep their slots until
+their results come back. While stills of the last pass wait, no loop frame goes out. A `show`
+with `play` false keeps the loop and shows the still, for a dimmed pane or an overlay. Such a
+box starts no job and sends no frame.
+
+The player takes the base of phewr: the job cap without a loop cap, the exact wake, the
+animation path, the panic guard, the generation and the gates for the stills. It takes the
+fixes of schnattr: the cancel of a hidden job, the minimum of 2 frames, the stale ids above the
+budget, `pixels_of` and the `play` flag of each box.
 
 ## The rules of the work
 

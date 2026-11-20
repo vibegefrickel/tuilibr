@@ -52,6 +52,25 @@ pub fn try_save_loop(
     write_cache_file(&cache_path, |temp_path| std::fs::write(temp_path, &bytes))
 }
 
+/// The loop frames of `path` from the loop file, else from `decode`, whose frames go into a new
+/// loop file. The second value is the result of that save.
+///
+/// A failed save costs only a new decode at the next visit, so the app logs it and goes on. An
+/// error of `decode` returns as it is, so an `Interrupted` stays a cancel.
+pub fn load_or_decode(
+    cache_dir: &Path,
+    path: &Path,
+    target: (u32, u32),
+    decode: impl FnOnce() -> io::Result<LoopFrames>,
+) -> io::Result<(LoopFrames, io::Result<()>)> {
+    if let Some(frames) = try_load_loop(cache_dir, path, target) {
+        return Ok((frames, Ok(())));
+    }
+    let frames = decode()?;
+    let saved = try_save_loop(cache_dir, path, target, &frames);
+    Ok((frames, saved))
+}
+
 /// A loop file: [`LOOP_MAGIC`], the frame count and the size of the still, then the time in
 /// microseconds, the length and the QOI bytes of each frame. All numbers are little-endian
 /// `u32` values.
@@ -171,6 +190,43 @@ mod tests {
         fs::write(&file, &bytes[..bytes.len() - 5]).unwrap();
         assert!(try_load_loop(&cache, &source, (8, 4)).is_none());
         assert!(!file.exists());
+    }
+
+    #[test]
+    fn load_or_decode_fills_the_loop_file_and_returns_the_save_error() {
+        use super::load_or_decode;
+        use std::io;
+        let dir = test_dir();
+        let cache = dir.path().join("cache");
+        let source = dir.path().join("clip.mp4");
+        fs::write(&source, b"synthetic").unwrap();
+        let frames = LoopFrames {
+            frames: vec![RgbaImage::new(4, 2), RgbaImage::new(4, 2)],
+            delays: vec![Duration::from_millis(333); 2],
+            shown: (8, 4),
+        };
+        let (decoded, saved) =
+            load_or_decode(&cache, &source, (8, 4), || Ok(frames.clone())).unwrap();
+        assert_eq!(decoded, frames);
+        saved.unwrap();
+        let (loaded, saved) = load_or_decode(&cache, &source, (8, 4), || {
+            Err(io::Error::other("the loop file serves, no decode runs"))
+        })
+        .unwrap();
+        assert_eq!(loaded, frames);
+        saved.unwrap();
+
+        let cancelled = load_or_decode(&cache, &source, (16, 8), || {
+            Err(io::Error::from(io::ErrorKind::Interrupted))
+        });
+        assert_eq!(cancelled.unwrap_err().kind(), io::ErrorKind::Interrupted);
+
+        // A file without a cache key still gives its frames, and the save error goes back.
+        let missing = dir.path().join("gone.mp4");
+        let (decoded, saved) =
+            load_or_decode(&cache, &missing, (8, 4), || Ok(frames.clone())).unwrap();
+        assert_eq!(decoded, frames);
+        assert_eq!(saved.unwrap_err().kind(), io::ErrorKind::NotFound);
     }
 
     #[test]

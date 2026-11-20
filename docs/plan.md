@@ -26,13 +26,22 @@
   exceptions", brief `/tmp/tuilibr-brief-lints.md`): schnattr, youtr, agendr and wettr take the
   six lints, schnattr also `unreachable_pub` and `let_underscore_must_use`. Done: phewr
   (`e1e8ea2`), agendr (`b2bf0ad`, 108 hits, 113 fixes, no `expect`), youtr (21 hits, 20 fixes, 1
-  `expect`, uncommitted). `lints-allow.toml` lists the
+  `expect`), wettr (58 hits, 59 fixes, 2 `expect`s in its new `numbers.rs`). `lints-allow.toml` lists the
   open lines per app; drop each app's lines when its worker merges (`unsafe_code` stays). Collect the
   PictureStore reports: wettr done (435 tests, 104 lines less), youtr done (292 tests, 148
   lines less, no `lru`, `e0a5a79`), tuilibr `0e158d0`; schnattr: no adoption (2026-11-20). The parts that
   match are one-line forwards in schnattr already. The rest needs an id range, frame pins, box
   copy groups, load generations, the loop `Update` and more: a medium refactor for no gain,
   unless a second app grows loops and box copies.
+- Open (agent, 2026-11-20): the duplication review (three read-only reviews and a loop player
+  comparison). Decisions: Alt plus a letter types it, Ctrl-U clears the input, XDG folders
+  everywhere, std-only app plumbing allowed in the crate. Streams:
+  - the loop player `pictures::kitty::loops::player` is in the main tree; phewr and schnattr
+    switch (`/tmp/<app>-brief-loop-player.md`);
+  - batch A (switches to existing exports): agendr, phewr, schnattr, youtr
+    (`/tmp/<app>-brief-crate-switch-a.md`);
+  - batches B and C (new UI helpers and std-only plumbing: atomic write, capped log, XDG dirs)
+    build in a tuilibr worktree; then one brief per app.
 - Open (agent): answer the crate requests of the five apps. Every other open item needs the
   maintainer at a terminal (the test run, the test matrix, the RGBA measure).
 - Open (user): push `main` (8 commits ahead of `origin`). No worktree is left.
