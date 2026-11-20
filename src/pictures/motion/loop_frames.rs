@@ -45,9 +45,11 @@ const LONG_CLIP_SECONDS: f64 = 60.0;
 /// Up to this length, a clip with few keyframes decodes at a constant rate (10 s of 4K: 1 s).
 const SHORT_CLIP_SECONDS: f64 = 20.0;
 
-const MAX_ANIMATION_FRAMES: usize = 48;
+/// The most frames of an animation loop.
+pub(super) const MAX_ANIMATION_FRAMES: usize = 48;
 
-const MAX_LOOP_FPS: f64 = 12.0;
+/// The highest frame rate of an animation loop.
+pub(super) const MAX_LOOP_FPS: f64 = 12.0;
 
 /// The most keyframes that a keyframe run keeps in memory, see [`Spread`].
 const KEPT_KEYFRAMES: usize = 4 * VIDEO_LOOP_FRAMES;
@@ -77,7 +79,7 @@ pub fn loop_of(
 }
 
 /// Half the sides of the grid picture.
-fn loop_box(target: (u32, u32)) -> (u32, u32) {
+pub(super) fn loop_box(target: (u32, u32)) -> (u32, u32) {
     ((target.0 / 2).max(2), (target.1 / 2).max(2))
 }
 
@@ -304,7 +306,10 @@ fn pick_evenly<T>(items: Vec<T>, want: usize) -> Vec<T> {
 
 /// One frame per run of equal frames, with the summed delay. A constant-rate animation
 /// repeats a frame with a long delay, and two seeks can give the same keyframe.
-fn merge_repeats(frames: Vec<RgbaImage>, delay: Duration) -> (Vec<RgbaImage>, Vec<Duration>) {
+pub(super) fn merge_repeats(
+    frames: Vec<RgbaImage>,
+    delay: Duration,
+) -> (Vec<RgbaImage>, Vec<Duration>) {
     let mut kept: Vec<RgbaImage> = Vec::with_capacity(frames.len());
     let mut delays: Vec<Duration> = Vec::with_capacity(frames.len());
     for frame in frames {

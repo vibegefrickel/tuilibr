@@ -53,8 +53,10 @@ The module sits behind the feature `pictures`, which is on by default. An app wi
 libheif, `jxl` adds jxl-oxide, and `sips` adds the macOS `sips` route with its temp file. `sips`
 follows no external reference of an SVG (a file, a relative path, HTTP, an external entity, a CSS
 import, `feImage`, `xi:include`); it draws a red box for an external image (schnattr, checked on
-macOS 26 against a local HTTP server). So a received SVG is safe to decode. Each of them turns
-`pictures` on. `test-support` builds
+macOS 26 against a local HTTP server). So a received SVG is safe to decode. `lottie` adds the TGS
+stickers with `tlottie`, which is not on crates.io: the feature keeps the git source out of the
+apps without stickers, and an app that turns it on allows the source in its `deny.toml` (youtr,
+2026-11-20). Each of them turns `pictures` on. `test-support` builds
 `pictures::test_support` for the tests of an app. The former `kitty-*` features of phewr are gone:
 a library has no dead code for a public item, and they saved no dependency and no build time.
 
@@ -135,6 +137,7 @@ src/pictures/motion/
   frame_box.rs  the size of a frame for a box of pixels or cells
   first_frame/  the first frame of a video as the still of its cell, the video extensions
   loop_frames.rs  the frames of a loop: `LoopFrames`, `decode_loop`, `loop_of`
+  lottie.rs     the TGS stickers and Lottie JSON: `lottie_still`, `lottie_loop`, no ffmpeg
   loop_file.rs  the loop file of the disk cache
   clock.rs      `CellLoop` and `TICKS_PER_SECOND`, the frame of a cell at a tick
   loop_ids.rs   `LoopIds`, the Kitty ids of the loops inside a range of the app
@@ -177,10 +180,17 @@ The rules of the loops:
 8. **No loops.** When the app turns its loops off, the still keeps its play stamp.
 9. **On screen only.** An app decodes the first frame and the loop of a video or an animation only
    when its box is on screen, never ahead for a loaded window (the maintainer, 2026-11-19).
+10. **A TGS sticker.** Behind the feature `lottie`, `lottie_loop` renders the gzip Lottie JSON
+    with `tlottie` (pure Rust, a git pin of version 1.0.6) under the caps of rule 6, with
+    straight alpha, at half the grid picture size. `lottie_still` gives the first frame at the
+    full size. A sticker needs no `Tools`, so an app shows it also without ffmpeg. 11 real
+    stickers of the schnattr cache take 0.09 s in total in a release build (2026-11-20).
 
 The tests use `FakeDecoder` of `test_support::video` and start no `ffmpeg`. The tests that
 start the real programs from PATH are `#[ignore]`. The fixtures are `tests/fixtures/anim.*`
-(the root `make.sh`) and `tests/fixtures/video/` (its own `make.sh`).
+(the root `make.sh`) and `tests/fixtures/video/` (its own `make.sh`). The Lottie tests build
+their animation in the test. `<APP>_TEST_TGS_DIR=<folder>` with `-- --ignored` renders each
+`.tgs` file of a folder.
 
 ## The rules of the work
 
@@ -333,10 +343,10 @@ away, no key is lost, and the start takes no longer than in plain Ghostty.
    dead and the item closes.
 7. **The loops after the move to `pictures::motion`** (phase 4d), in Ghostty and in herdr. In
    phewr, repeat steps 9, 10 and 14 of `~/Pictures/phewr-test/TESTS.md`: every video, animated
-   and Live cell must loop after its still. In schnattr, open a chat with a GIF, a video and an
-   animated WebP sticker (not TGS, see `## Later` in the plan): each preview must loop, and `l`
-   or `o` must open the file in phewr. herdr can run
-   the loops slower than plain Ghostty, but no loop may stop or leave a picture away.
+   and Live cell must loop after its still. In schnattr, open a chat with a GIF, a video, an
+   animated WebP sticker and a TGS sticker: each preview must loop, and `l` or `o` must open the
+   file in phewr. herdr can run the loops slower than plain Ghostty, but no loop may stop or
+   leave a picture away.
 
 ### Decisions of the maintainer about the module
 

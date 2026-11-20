@@ -19,7 +19,10 @@
 - Done (2026-11-20): the five apps follow the dialog padding (`c28a41b`): youtr (293 tests),
   phewr (706), schnattr (1 411, the command page shows its last two lines again), wettr
   (`4729a24`, 430), agendr (`f3c31c1`, 1 303). Each `just check` passed against the crate.
-- Open (agent): answer the crate requests of the five apps. No crate work waits.
+- Done (2026-11-20): the TGS stickers: `pictures::motion::lottie` (`lottie_still`, `lottie_loop`)
+  with `tlottie`; the 11 real stickers of the schnattr cache pass.
+- Open (agent): schnattr-2b shows the TGS stickers through `motion::lottie`; answer the crate
+  requests of the five apps.
 - Open (user): push `main` to `origin` after each commit.
 - Health: `just check` green (588, 124 and 489 tests, audit clean); `just apps-check` (4 min 14 s)
   and `just lints-diff` green in the five apps; no live herdr worker in tuilibr.
@@ -40,11 +43,6 @@ the apps.
 The work that waits, by the decision of the maintainer (2026-11-19). Each item names what it
 waits for.
 
-- **TGS stickers (Telegram animated stickers).** The `tlottie` spike passed on test animations
-  (worktree `agent-ae079fd3ff597b1d9`, module `pictures::lottie`, git `rev` `92df98dc…`, 2.7 ms
-  per sticker, +0.63 MB). Waits for a folder of about 10 real `.tgs` stickers and the run
-  `TUILIBR_TEST_TGS_DIR=<dir> cargo test --lib lottie -- --ignored`; then the module lands under
-  `pictures::motion` and schnattr shows the stickers.
 - **The test run of the maintainer.** Seven checks in a real terminal: the start in herdr, the grid
   icons in herdr, the late OSC 10 answer, the loss limit, the phase 7 scenarios of phewr and
   schnattr, the RGBA fast path (measure first), the loops after phase 4d. The checklist is in
@@ -56,9 +54,6 @@ waits for.
   when its session wants to.
 - **`unreachable_pub` and `let_underscore_must_use` in schnattr.** Off by the decision of
   2026-11-11 (775 and 126 hits); a new decision of the maintainer turns them on.
-- **The landed agent worktrees.** `agent-a5be42f24bf332ef7`, `agent-a7746d970e208b2c6`,
-  `agent-aa9151f5671745d4e` and `stateful-shimmying-tulip` hold landed work and can go; keep
-  `agent-ae079fd3ff597b1d9` for the TGS item.
 
 ## Decisions of the maintainer (2026-11-19)
 
@@ -1226,8 +1221,5 @@ The maintainer decided on the research report of the tuilibr session. tuilibr ha
 
 ## Open questions for the maintainer
 
-- A shared `age`: on plain numbers only, because the crate takes no time crate. Nobody needs it
-  today.
-- crossterm in the crate: a shared key map for `TextField` needs the `KeyEvent` type. All four
-  apps use crossterm 0.29, so a plain dependency costs no build time. A feature does not fit the
-  feature rule. The question comes when two apps want the same map.
+- None open. The shared `age` exists on jiff (`time::age`), and crossterm is a plain dependency
+  with the shared key map `text_field::edit_for_key` (both 2026-11-19).

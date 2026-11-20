@@ -32,10 +32,10 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 - **The frame imports `ratatui`, `crossterm`, `unicode-width`, `unicode-segmentation` and `std`;
   the time module adds `jiff`.** The picture module sits behind the default feature `pictures`
   with `image`, `fast_image_resize`, `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru` and
-  `rustix`, and its decoders behind the features `turbo`, `heic`, `jxl` and `sips`. An app that
-  uses the frame only sets `default-features = false`. A feature gates a native library or a
-  measured build cost, nothing else. `test-support` is the one exception: it builds the test
-  helpers for the tests of an app.
+  `rustix`, its decoders behind the features `turbo`, `heic`, `jxl` and `sips`, and the TGS
+  stickers behind `lottie`. An app that uses the frame only sets `default-features = false`. A
+  feature gates a native library, a git source or a measured build cost, nothing else.
+  `test-support` is the one exception: it builds the test helpers for the tests of an app.
 - **The lint tables of the apps follow this one.** `just lints-diff` compares each app table with
   the table of this crate; an intended difference has a line with its reason in
   `lints-allow.toml`, every other difference is drift. Run it on demand, not in `check`.

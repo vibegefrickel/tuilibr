@@ -1,6 +1,9 @@
 //! The animated previews: the video probe, the ffmpeg runs, the tone map cubes, the first frame,
 //! the loop frames, the loop file of the disk cache, the loop clock and the loop image ids.
 //!
+//! The `lottie` module, behind the feature `lottie`, renders the TGS stickers and plain Lottie
+//! JSON in pure Rust, without ffmpeg.
+//!
 //! The module links no `FFmpeg` library and holds no PATH lookup. The app finds `ffmpeg` and
 //! `ffprobe` one time at start and passes them in [`Tools`]. The app also passes the cache
 //! folder, the box of a cell in pixels, the cancel flag of a job and the range of the loop ids.
@@ -15,6 +18,8 @@ pub mod frame_box;
 pub mod loop_file;
 pub mod loop_frames;
 pub mod loop_ids;
+#[cfg(feature = "lottie")]
+pub mod lottie;
 pub mod probe;
 pub mod tone_map;
 

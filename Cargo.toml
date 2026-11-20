@@ -156,6 +156,8 @@ unicode-width = "0.2"
 # The picture module, behind the feature `pictures`. The versions are the versions of phewr.
 base64 = { version = "0.23", optional = true }
 fast_image_resize = { version = "6.1", optional = true }
+# The gzip of a TGS sticker. `png` and `tiff` of `image` already build flate2 1.
+flate2 = { version = "1", optional = true }
 # Only the decoders for the formats that the apps list. AVIF goes through libheif.
 image = { version = "0.25.10", default-features = false, optional = true, features = [
   "bmp",
@@ -194,6 +196,9 @@ serde = { version = "1", features = ["derive"], optional = true }
 serde_json = { version = "1", optional = true }
 # The temp TIFF of the `sips` route, and the temp folders of the test support.
 tempfile = { version = "3.27", optional = true }
+# The Lottie renderer of the TGS stickers, in pure Rust. It is not on crates.io: the pin is the
+# commit of version 1.0.6, and the version field keeps cargo-deny from a wildcard error.
+tlottie = { git = "https://github.com/dkaraush/tlottie", rev = "92df98dc209bc39b1e567ec74a8c86a0af5239de", version = "1.0.6", optional = true }
 # Without the default feature `cmake`, turbojpeg-sys finds the Homebrew libjpeg-turbo through
 # pkgconf and never builds it from source.
 turbojpeg = { version = "1.5", default-features = false, features = [
@@ -229,6 +234,9 @@ turbo = ["pictures", "dep:turbojpeg"]
 heic = ["pictures", "dep:libheif-rs"]
 # JPEG XL in pure Rust (jxl-oxide).
 jxl = ["pictures", "dep:jxl-oxide", "dep:jxl-render"]
+# The TGS stickers through the Lottie renderer `tlottie`, in pure Rust. The feature gates a git
+# source: an app without stickers keeps a build from crates.io only.
+lottie = ["pictures", "dep:flate2", "dep:tlottie"]
 # Camera RAW, PSD, PDF, SVG and the other ImageIO formats through macOS `/usr/bin/sips`. The
 # feature has no effect on other systems.
 sips = ["pictures", "dep:tempfile"]

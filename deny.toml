@@ -45,3 +45,5 @@ skip = [
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+# The Lottie renderer of the TGS stickers is not on crates.io. Cargo.toml pins one commit.
+allow-git = ["https://github.com/dkaraush/tlottie"]

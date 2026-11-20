@@ -36,6 +36,7 @@ turns on the ones that it needs:
 | `heic` | libheif 1.19 or later, for HEIC, HEIF and AVIF | `brew install libheif` |
 | `jxl` | JPEG XL in pure Rust (jxl-oxide) | none |
 | `sips` | Camera RAW, PSD, PDF, SVG and the other ImageIO formats through macOS `sips` | none |
+| `lottie` | TGS stickers through `tlottie` in pure Rust, a git source that `deny.toml` must allow | none |
 | `test-support` | `pictures::test_support` for the tests of an app | none, dev-dependency only |
 
 `just check` builds with every feature, so a checkout that runs it needs libjpeg-turbo and
