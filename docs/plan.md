@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-20
-- Commit: d1e71d3
+- Commit: 7a30b15
 - Done: phases 4 and 4d in the crate (`terminal`, `TextField`, the question row, `Layout`, the
   omnibox, `time` on jiff, `pictures::motion`); the stricter lints and the shared audit.
 - Done (2026-11-20): wettr is the fifth app; no phase 5 (codeberg is a private backup, the apps
@@ -82,6 +82,13 @@
   needs this crate state committed). Open gap from phewr: `AppDirs::from_vars` fails on an empty
   HOME (phewr falls back to a temp folder itself). schnattr: `xdg-move` runs; `move_once` comes
   from its rename-or-copy core after its merge, if a second app needs it.
+- Done: the duplication review is complete in all five apps (2026-11-20, late): batches A, B and
+  C, the loop player, the gap fixes and their follow-ups; schnattr last with `f8a616d`.
+- Done: schnattr moved to XDG (`c9ea646`: move lock, daemon stop, store backup, data and cache
+  as a pair, one-transaction path rewrite, Time Machine exclusion of the new cache). A new
+  `programs::launch` error text broke four schnattr tests for a while: AGENTS.md now says that a
+  public text is interface. `dirs::move_once` stays a candidate; agendr and schnattr hold the
+  same rename-or-copy core.
 - Done: phewr has batches A, B and C and the gap follow-up (`87278c8`); agendr dropped its
   workarounds (`9acfad3`). From agendr: `lend_keeping` repaints in every case, and
   `Session::is_active()` shows a failed take-back.

@@ -194,9 +194,10 @@ impl Session {
         }
     }
 
-    /// Whether the session holds the terminal in raw mode on the alternate screen now. After a
-    /// failed `resume` that stopped before raw mode, it is false: the app runs on the main screen
-    /// in cooked mode, and can exit or try `resume` again.
+    /// Whether raw mode is on, so the keys reach the app. After a failed `resume` that stopped
+    /// before raw mode, it is false: the app runs on the main screen in cooked mode, and can exit
+    /// or try `resume` again. An active session can lack the alternate screen or the modes after
+    /// a failed write of the enter sequence; the next draw after `lend_keeping` paints every cell.
     pub const fn is_active(&self) -> bool {
         self.active
     }

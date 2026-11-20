@@ -58,6 +58,9 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 - **No `unwrap` or `expect` outside tests. No `unsafe`.** Format with rustfmt.
 - **After a change, run `just check`, then `just apps-check`.** If a change breaks the interface,
   change each app in the same step and tell the other sessions.
+- **A public text is interface too.** The text of a public error or of any string an app can read
+  or parse is part of the API. Before it changes, search all five apps for the old text (also in
+  their tests), fix each hit in the same step, and tell every app session.
 
 ## Layout
 
