@@ -82,9 +82,10 @@ readline edits. An edit steps over a grapheme cluster. `visible` gives one row w
 break. `wrap` gives a box of rows with the cursor cell, and its scroll keeps the cursor row or the
 end in view. `text_field::edit_for_key` is the one readline key map. Enter, Esc and Tab stay with
 the app. `frame::draw_text_field` draws a field as one row with a prefix and a suffix, or as
-wrapped rows. Ctrl-G is `Edit::OpenEditor`: the app suspends its terminal session and runs
-`text_field::editor::edit_text`. It opens `$VISUAL`, `$EDITOR` or `nvim` with the text, a vim in
-insert mode at the end of the text. Then it gives the edited text back.
+wrapped rows. Ctrl-G is `Edit::OpenEditor`: the app calls `text_field::editor::edit_field`. It
+lends the terminal with `Session::lend_keeping` to `text_field::editor::edit_text`. That function
+opens `$VISUAL`, `$EDITOR` or `nvim` with the text, a vim in insert mode at the end of the text.
+`edit_field` puts the edited text into the field and gives the error text for the status row.
 
 ## The terminal
 

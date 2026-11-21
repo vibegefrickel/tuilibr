@@ -3,21 +3,18 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: 837c211
-- Done: one lint table in the crate and its six apps. The duplication review (the picture store,
-  the loop player, batches A, B and C, the plumbing on std). The XDG folders in every app.
-- Done: the Phosphor icons. `837c211` adds `Package`, `GitDiff`, `CoatHanger` and `ListChecks`
-  (37 icons). glisr shows the last two on its Closet and Lists entries.
-- Done (uncommitted): the zen key. `frame::Panes` and `frame::is_list_key` in the crate.
-  `Ctrl-B` in schnattr, youtr, wettr and glisr, and as a second `Tab` in phewr (decision 6).
-- Done (uncommitted): the three optimizations of the icon review. `IconKey` holds the palette,
-  OSC 4 adds no owed answer, `Start` is `#[non_exhaustive]`.
+- Commit: 951ebf3
+- Done: the zen key (`frame::Panes`, `frame::is_list_key`, decision 6) and the three icon review
+  optimizations, in `bcab8a4`.
+- Done: `951ebf3` adds `text_field::editor::edit_field` (Ctrl-G for one `TextField`, with
+  `FieldEdit` and `Edited`) and `PictureStore::cleared`. schnattr and glisr use them, uncommitted.
 - Open (agent): none.
-- Open (user): commit tuilibr first, then schnattr, youtr, phewr, wettr and glisr. glisr also holds
-  the uncommitted work of its own session. Push all repositories. Test item 8 (OSC 4 in herdr).
+- Open (user): commit the moves to `edit_field` in schnattr and glisr. Commit the doc edits in
+  tuilibr (README, plan). Push tuilibr (`951ebf3` is not pushed) and the apps. Test item 8 (OSC 4
+  in herdr).
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
-- Health: `just check` green in the crate (761, 230 and 651 tests) and in all six apps: schnattr
-  1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 429. No worker and no extra worktree.
+- Health: `just check` green in the crate (767, 235 and 657 tests) and in all six apps: schnattr
+  1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 443. No worker and no extra worktree.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
@@ -76,7 +73,7 @@ The work that waits, by the decision of the maintainer (2026-11-19):
 9. **The keys of a text field.** `text_field::edit_for_key` is the one readline map. Enter, Esc
    and Tab stay with the app. Ctrl-U clears the whole text. Alt-B and Alt-F move one word, and
    every other character with Alt types the character. Ctrl-G opens the text in the editor of the
-   user.
+   user through `editor::edit_field`. Each field that can hold a line break has Ctrl-G.
 10. **The XDG folders.** Every app keeps its files below the XDG base folders through `dirs`, also
     on macOS.
 11. **The plumbing uses std only.** `dirs`, `files`, `log_file` and `programs` build without a
