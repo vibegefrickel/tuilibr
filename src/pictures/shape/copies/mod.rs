@@ -163,14 +163,21 @@ pub fn dimmed(bitmap: &Bitmap) -> Bitmap {
 /// exact size, rounded, and put in the middle of a transparent box. The soft edge of the corners
 /// is one pixel of the screen. A box too small for the inset gets none.
 fn chat_copy(source: &DynamicImage, (box_width, box_height): (u32, u32)) -> RgbaImage {
-    let inset = if box_width > 4 * CHAT_INSET && box_height > 4 * CHAT_INSET {
-        CHAT_INSET
-    } else {
-        0
-    };
+    let inset = chat_inset((box_width, box_height));
     let inner = (box_width - 2 * inset, box_height - 2 * inset);
     let picture = round_corners(cover(source, inner).into_rgba8());
     inset_in(picture, (box_width, box_height), inset)
+}
+
+/// The transparent inset of a chat picture in a box of `size`: `CHAT_INSET`, or 0 for a box too
+/// small for it. The icons of the crate take the same inset, so a square icon looks like a chat
+/// picture.
+pub(crate) const fn chat_inset((box_width, box_height): (u32, u32)) -> u32 {
+    if box_width > 4 * CHAT_INSET && box_height > 4 * CHAT_INSET {
+        CHAT_INSET
+    } else {
+        0
+    }
 }
 
 /// A tile: cut to the shape of the box less `TILE_INSET` on each side, sized to that exact size,
@@ -184,8 +191,13 @@ fn tile_copy(source: &DynamicImage, (box_width, box_height): (u32, u32)) -> Bitm
     Bitmap::Rgba(inset_in(picture, (box_width, box_height), TILE_INSET))
 }
 
-/// `picture` in the middle of a transparent box of `size`, `inset` pixels from each edge.
-fn inset_in(picture: RgbaImage, (box_width, box_height): (u32, u32), inset: u32) -> RgbaImage {
+/// `picture` in the middle of a transparent box of `size`, `inset` pixels from each edge. The
+/// icons of the crate use it for the square of a `Look` with a ground.
+pub(crate) fn inset_in(
+    picture: RgbaImage,
+    (box_width, box_height): (u32, u32),
+    inset: u32,
+) -> RgbaImage {
     if inset == 0 {
         return picture;
     }

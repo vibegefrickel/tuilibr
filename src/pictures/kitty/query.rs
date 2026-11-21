@@ -1,9 +1,12 @@
-//! The tty queries at the start and after a resize: the cell size (`CSI 16 t`), the foreground
-//! color (OSC 10), the Kitty probe and the device attributes (DA1), and the read of the answers.
+//! The tty queries at the start and after a resize, and the read of the answers.
+//!
+//! The queries are the cell size (`CSI 16 t`), the 16 palette colors (OSC 4), the foreground color
+//! (OSC 10), the Kitty probe and the device attributes (DA1).
 //!
 //! Most terminals answer in the order of the queries, so DA1 comes last. Ghostty 1.4 sends DA1
 //! before the OSC 10 answer and before the Kitty answers. The start read then waits a short grace
-//! after DA1 for the missing answers.
+//! after DA1 for the missing answers. The OSC 4 query goes out before the OSC 10 query, so the
+//! palette answers are complete when the OSC 10 answer is there. The read never waits for them.
 
 use std::io::{self, Write};
 use std::time::{Duration, Instant};
@@ -33,9 +36,21 @@ pub struct StartAnswers {
 pub struct LateAnswers {
     /// The owed Kitty answers. After a device attributes answer, no Kitty answer is owed.
     pub kitty: usize,
-    /// The OSC 10 answer is owed. It stays owed after DA1.
+    /// An OSC answer is owed: the OSC 10 answer, or an OSC 4 answer of the palette. It stays
+    /// owed after DA1. Only the OSC 10 answer pays for it, else `OWED_FOR` of the filter ends it.
     pub foreground: bool,
 }
+
+/// The palette colors of the OSC 4 answers, slot 0 to 15. `None` for a slot without an answer.
+pub type PaletteAnswers = [Option<[u8; 3]>; 16];
+
+/// The number of palette slots that the OSC 4 query asks for.
+const PALETTE_SLOTS: usize = 16;
+
+/// OSC 4 asks for the palette slots 0 to 15 in one sequence. The terminal answers each slot as
+/// one sequence, `ESC ] 4 ; n ; rgb:RRRR/GGGG/BBBB`, with the end of the query.
+const PALETTE_QUERY: &[u8] =
+    b"\x1b]4;0;?;1;?;2;?;3;?;4;?;5;?;6;?;7;?;8;?;9;?;10;?;11;?;12;?;13;?;14;?;15;?\x07";
 
 /// The primary device attributes query (DA1). Every terminal answers it.
 const DEVICE_ATTRIBUTES_QUERY: &[u8] = b"\x1b[c";
@@ -44,8 +59,8 @@ const DEVICE_ATTRIBUTES_QUERY: &[u8] = b"\x1b[c";
 /// counts as a Kitty answer.
 const FOREGROUND_QUERY: &[u8] = b"\x1b]10;?\x07";
 
-/// Send the cell size query, the foreground query, the Kitty `probe` and DA1 in one write, and
-/// wait for the cell size, the OSC 10 answer and `answers` Kitty answers.
+/// Send the cell size query, the palette query, the foreground query, the Kitty `probe` and DA1
+/// in one write, and wait for the cell size, the OSC 10 answer and `answers` Kitty answers.
 ///
 /// The DA1 answer ends the wait even when the terminal skips an answer. After DA1, the read waits
 /// at most `LATE_ANSWER_GRACE` for the missing answers. Only a terminal that answers neither the
@@ -54,6 +69,14 @@ const FOREGROUND_QUERY: &[u8] = b"\x1b]10;?\x07";
 /// The answers must not reach crossterm: it reads them as key presses. The function runs before
 /// the first `event::poll` and reads the tty itself.
 pub fn query_cell_size_and_probe(probe: &[u8], answers: usize) -> StartAnswers {
+    query_cell_size_palette_and_probe(probe, answers).0
+}
+
+/// `query_cell_size_and_probe` with the palette colors of the OSC 4 answers.
+pub fn query_cell_size_palette_and_probe(
+    probe: &[u8],
+    answers: usize,
+) -> (StartAnswers, PaletteAnswers) {
     let mut answer = Vec::new();
     // After a timeout, `answer` holds the answers that came in time.
     if let Some(mut tty) = send_to_tty(&start_sequence(probe)) {
@@ -64,7 +87,16 @@ pub fn query_cell_size_and_probe(probe: &[u8], answers: usize) -> StartAnswers {
             Instant::now() + PROBE_TIMEOUT,
         );
     }
-    start_answers(&answer, answers)
+    start_and_palette(&answer, answers)
+}
+
+/// The start answers and the palette of the bytes `answer`. A palette answer that did not come
+/// can come late, as an OSC answer, so it counts as owed.
+fn start_and_palette(answer: &[u8], answers: usize) -> (StartAnswers, PaletteAnswers) {
+    let palette = parse_palette(answer);
+    let mut start = start_answers(answer, answers);
+    start.late_answers.foreground |= palette.iter().any(Option::is_none);
+    (start, palette)
 }
 
 /// Read the start answers until `deadline`. A separate function, so that a test can drive the
@@ -92,10 +124,11 @@ fn read_start_answers(
     }
 }
 
-/// The cell size query, the foreground query, the Kitty `probe` and DA1, in the order of the
-/// answers of most terminals.
+/// The cell size query, the palette query, the foreground query, the Kitty `probe` and DA1, in
+/// the order of the answers of most terminals.
 fn start_sequence(probe: &[u8]) -> Vec<u8> {
     let mut sequence = CELL_SIZE_QUERY.to_vec();
+    sequence.extend_from_slice(PALETTE_QUERY);
     sequence.extend_from_slice(FOREGROUND_QUERY);
     sequence.extend_from_slice(probe);
     sequence.extend_from_slice(DEVICE_ATTRIBUTES_QUERY);
@@ -208,7 +241,34 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 fn parse_foreground(answer: &[u8]) -> Option<[u8; 3]> {
     const HEAD: &[u8] = b"\x1b]10;rgb:";
     let start = find(answer, HEAD)? + HEAD.len();
-    let body = &answer[start..];
+    parse_rgb(&answer[start..])
+}
+
+/// The colors of the OSC 4 answers, `ESC ] 4 ; n ; rgb:RRRR/GGGG/BBBB`, by slot. A slot outside
+/// 0 to 15 or a bad color gives nothing.
+fn parse_palette(answer: &[u8]) -> PaletteAnswers {
+    const HEAD: &[u8] = b"\x1b]4;";
+    let mut palette = [None; PALETTE_SLOTS];
+    let mut from = 0;
+    while let Some(at) = find(&answer[from..], HEAD) {
+        let body = &answer[from + at + HEAD.len()..];
+        from += at + HEAD.len();
+        let digits = body.iter().take_while(|byte| byte.is_ascii_digit()).count();
+        let slot = std::str::from_utf8(&body[..digits])
+            .ok()
+            .and_then(|digits| digits.parse::<usize>().ok());
+        let color = body[digits..].strip_prefix(b";rgb:").and_then(parse_rgb);
+        if let (Some(slot), Some(color)) = (slot, color)
+            && let Some(entry) = palette.get_mut(slot)
+        {
+            *entry = Some(color);
+        }
+    }
+    palette
+}
+
+/// The color `RRRR/GGGG/BBBB` at the start of `body`, with 1 to 4 hex digits per channel.
+fn parse_rgb(body: &[u8]) -> Option<[u8; 3]> {
     let end = body
         .iter()
         .position(|byte| !byte.is_ascii_hexdigit() && *byte != b'/')?;
@@ -350,9 +410,9 @@ fn cell_pixel_size(ws: &crossterm::terminal::WindowSize) -> (u32, u32) {
 mod tests {
     use super::{
         CELL_SIZE_QUERY, DEVICE_ATTRIBUTES_QUERY, FOREGROUND_QUERY, LATE_ANSWER_GRACE, LateAnswers,
-        PROBE_TIMEOUT, all_answers_end, cell_pixel_size, cell_size_report_end, foreground_end,
-        parse_cell_size_report, parse_foreground, read_answer, read_start_answers, start_answers,
-        start_answers_end, start_sequence,
+        PALETTE_QUERY, PROBE_TIMEOUT, all_answers_end, cell_pixel_size, cell_size_report_end,
+        foreground_end, parse_cell_size_report, parse_foreground, parse_palette, read_answer,
+        read_start_answers, start_and_palette, start_answers, start_answers_end, start_sequence,
     };
     use crossterm::terminal::WindowSize;
     use std::io::Write;
@@ -361,6 +421,62 @@ mod tests {
 
     /// The OSC 10 answer of a terminal with a light gray foreground.
     const FOREGROUND: &[u8] = b"\x1b]10;rgb:e6e6/d5d5/c2c2\x1b\\";
+
+    /// The 16 OSC 4 answers of a terminal: slot `n` has the gray `n * 16`, with BEL ends for the
+    /// even slots and ST ends for the odd slots.
+    fn palette_answers() -> Vec<u8> {
+        (0..16_u8)
+            .flat_map(|slot| {
+                let end = if slot % 2 == 0 { "\x07" } else { "\x1b\\" };
+                let gray = slot * 16;
+                format!("\x1b]4;{slot};rgb:{gray:02x}{gray:02x}/{gray:02x}{gray:02x}/{gray:02x}{gray:02x}{end}")
+                    .into_bytes()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn the_osc_4_answers_parse() {
+        let palette = parse_palette(&palette_answers());
+        for (slot, color) in (0..16_u8).zip(palette) {
+            assert_eq!(color, Some([slot * 16; 3]), "slot {slot}");
+        }
+        let short =
+            parse_palette(b"\x1b]4;3;rgb:ff/80/00\x07\x1b]4;16;rgb:ff/ff/ff\x07\x1b]4;5;bad\x07");
+        assert_eq!(short[3], Some([255, 128, 0]), "two hex digits per channel");
+        assert_eq!(
+            short.iter().flatten().count(),
+            1,
+            "slot 16 and a bad colour give nothing"
+        );
+    }
+
+    #[test]
+    fn a_missing_palette_answer_is_owed_as_an_osc_answer() {
+        let cell = b"\x1b[6;43;18t".as_slice();
+        let attributes = b"\x1b[?62;22;52c".as_slice();
+        let palette = palette_answers();
+        let whole = [cell, palette.as_slice(), FOREGROUND, attributes].concat();
+        let (answers, colors) = start_and_palette(&whole, 0);
+        assert!(colors.iter().all(Option::is_some));
+        assert_eq!(answers.late_answers, LateAnswers::default());
+        assert!(
+            answers.foreground.is_some(),
+            "the OSC 4 answers leave OSC 10 alone"
+        );
+
+        let without = [cell, FOREGROUND, attributes].concat();
+        let (answers, colors) = start_and_palette(&without, 0);
+        assert!(colors.iter().all(Option::is_none));
+        assert_eq!(
+            answers.late_answers,
+            LateAnswers {
+                kitty: 0,
+                foreground: true
+            },
+            "the palette answers can still come"
+        );
+    }
 
     #[test]
     fn cell_size_query_follows_xterm() {
@@ -661,9 +777,15 @@ mod tests {
     #[test]
     fn start_sequence_keeps_answer_order() {
         let sequence = start_sequence(b"PROBE");
-        let probe_at = CELL_SIZE_QUERY.len() + FOREGROUND_QUERY.len();
+        let foreground_at = CELL_SIZE_QUERY.len() + PALETTE_QUERY.len();
+        let probe_at = foreground_at + FOREGROUND_QUERY.len();
         assert!(sequence.starts_with(CELL_SIZE_QUERY));
-        assert_eq!(&sequence[CELL_SIZE_QUERY.len()..probe_at], FOREGROUND_QUERY);
+        assert_eq!(
+            &sequence[CELL_SIZE_QUERY.len()..foreground_at],
+            PALETTE_QUERY,
+            "the palette answers come before the OSC 10 answer"
+        );
+        assert_eq!(&sequence[foreground_at..probe_at], FOREGROUND_QUERY);
         assert_eq!(&sequence[probe_at..probe_at + 5], b"PROBE");
         assert!(sequence.ends_with(DEVICE_ATTRIBUTES_QUERY));
     }

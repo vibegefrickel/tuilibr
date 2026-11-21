@@ -24,4 +24,5 @@ clli = "clli"
 grammers = "grammers"
 
 [files]
-extend-exclude = ["tests/fixtures/**", "Cargo.lock", "target/**"]
+# The path data of an SVG icon is no text.
+extend-exclude = ["tests/fixtures/**", "assets/icons/**", "Cargo.lock", "target/**"]

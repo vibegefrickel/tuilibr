@@ -8,7 +8,7 @@ use ratatui::{
 
 use super::{
     lines::rule,
-    pictures::{Pictures, Shade, place_stand_in_centered},
+    pictures::{GLYPH_COLUMNS, Glyph, Pictures, Shade, draw_glyph, place_stand_in_centered},
     square_columns,
 };
 
@@ -37,6 +37,9 @@ pub struct HeaderAreas {
 /// The picture needs `HEADER_ROWS` rows and the rows below it, so a header lower than `min_height`
 /// gets one row without a picture: Kitty cannot clip. With no `picture` or in a terminal without
 /// pictures, the header has one row too. Below 8 x 3 cells, there is no header.
+///
+/// In a terminal without pictures, a glyph of `Pictures::glyph` keeps the `HEADER_ROWS` rows. The
+/// glyph sits on the second row, in a box of `GLYPH_COLUMNS`.
 pub fn draw_header(
     frame: &mut Frame<'_>,
     picture: Option<&mut dyn Pictures>,
@@ -70,11 +73,11 @@ fn draw_shaded_header(
     }
     let room =
         area.width >= PICTURE_MAX_COLUMNS + 2 + TEXT_MIN_COLUMNS && area.height >= min_height;
-    let mut picture = picture.filter(|picture| room && picture.shows_pictures());
+    let (mut picture, glyph) = picture_or_glyph(picture.filter(|_| room), shade);
     let size = picture
         .as_mut()
         .and_then(|picture| picture.size(shade, PICTURE_MAX_COLUMNS, HEADER_ROWS));
-    let single_row = picture.is_none();
+    let single_row = picture.is_none() && glyph.is_none();
     let header_height = if single_row { 1 } else { HEADER_ROWS };
     let [header, rule_row, below] = Layout::vertical([
         Constraint::Length(header_height),
@@ -95,7 +98,14 @@ fn draw_shaded_header(
             place_stand_in_centered(picture, shade, stand_in);
             beside(header, columns + 2)
         }
-        (None, _) => header,
+        (None, _) => match glyph {
+            Some(glyph) => {
+                let row = header.y + (header.height.saturating_sub(1)) / 2;
+                draw_glyph(frame.buffer_mut(), (header.x + 1, row), glyph, shade);
+                beside(header, GLYPH_COLUMNS + 2)
+            }
+            None => header,
+        },
     };
     rule(frame.buffer_mut(), rule_row);
     Some(HeaderAreas {
@@ -103,6 +113,18 @@ fn draw_shaded_header(
         single_row,
         below,
     })
+}
+
+/// The picture of a terminal with pictures, or else the glyph in its place.
+fn picture_or_glyph(
+    picture: Option<&mut dyn Pictures>,
+    shade: Shade,
+) -> (Option<&mut dyn Pictures>, Option<Glyph>) {
+    match picture {
+        Some(picture) if picture.shows_pictures() => (Some(picture), None),
+        Some(picture) => (None, picture.glyph(shade)),
+        None => (None, None),
+    }
 }
 
 /// The rest of `header` after the first `used` columns, for the text.

@@ -3,6 +3,7 @@
 mod buffer;
 mod click;
 mod clock;
+mod glyph;
 mod help;
 mod layout;
 mod omnibox;
@@ -14,7 +15,7 @@ mod widgets;
 use ratatui::layout::Rect;
 
 use super::buffer::{drawn, row};
-use super::{CellSize, Pictures, Shade};
+use super::{CellSize, Glyph, Pictures, Shade};
 
 /// A picture engine that keeps a log of its calls. It has a picture of `size` cells, or none.
 #[derive(Default)]
@@ -27,6 +28,8 @@ struct FakePictures {
     /// columns wide.
     font: Option<CellSize>,
     no_pictures: bool,
+    /// The glyph in the place of the picture without pictures.
+    glyph: Option<Glyph>,
 }
 
 impl Pictures for FakePictures {
@@ -60,5 +63,9 @@ impl Pictures for FakePictures {
 
     fn shows_pictures(&self) -> bool {
         !self.no_pictures
+    }
+
+    fn glyph(&mut self, _shade: Shade) -> Option<Glyph> {
+        self.glyph
     }
 }

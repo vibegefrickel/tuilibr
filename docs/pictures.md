@@ -28,6 +28,19 @@ src/pictures/
 The module imports no app type. It refers to itself through `super::`, `self::` or
 `crate::pictures::`, and to no other module of the crate.
 
+## The icons
+
+The icons are the top-level module `tuilibr::icons`, not a part of `pictures`. `docs/icons.md`
+holds their rules. The icons use the picture module in one direction only:
+
+- `icons::render` gives a `shape::copies::Bitmap` at the exact pixel size of the box. With a
+  ground, it takes the inset and the corners of a chat picture: `copies::chat_inset`,
+  `copies::inset_in` (both `pub(crate)`) and `corners::round_corners`.
+- `icons::IconPicture` puts each rendered copy into the `PictureStore` of the app. The store is
+  the cache. A new box size is a new key.
+- `resvg` renders the SVG files. It builds with the feature `pictures`, without its default
+  features.
+
 ## The app name
 
 The module writes the app name into the thumbnail cache key, the temp files of sips and of the
@@ -352,6 +365,11 @@ key is lost, and the start takes no longer than in plain Ghostty.
    loops slower than plain Ghostty, but no loop can stop or leave a picture away. Seen on
    2026-11-20: MP4s, GIFs and TGS stickers loop in schnattr. Open: the tile grid with a scroll that
    stops the loops, herdr, a Live Photo, and phewr.
+8. **The OSC 4 answers**, in plain Ghostty, in Ghostty inside herdr and in Kitty. Run this in
+   zsh: `printf '\e]4;1;?\a'; read -rs -t 1 -d $'\a' a; print -r -- ${(q)a}`. The answer must
+   show `4;1;rgb:` and the red of the theme. No answer in herdr means that the icons take the
+   xterm default colours there: note it. After the glisr step, open a list with an icon in herdr.
+   The square must have the colour of the category heading.
 
 ## Decisions of the maintainer about the module
 

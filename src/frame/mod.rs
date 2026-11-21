@@ -38,7 +38,7 @@ pub use help::{
 pub use layout::{Layout, UnknownLayout};
 pub use lines::{box_color, dim_pane, divider, join_rule, pane_box, pane_inner};
 pub use omnibox::{OmniboxView, Tone, draw_omnibox, omnibox_rows};
-pub use pictures::{CellSize, Pictures, Shade};
+pub use pictures::{CellSize, GLYPH_COLUMNS, Glyph, Pictures, Shade};
 pub use question::{Choice, QuestionView, draw_question, question_answer};
 pub use scroll::scroll_to_show;
 pub use split::{split, split_boxed};

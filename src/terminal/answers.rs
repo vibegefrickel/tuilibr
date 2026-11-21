@@ -3,8 +3,10 @@
 //!
 //! A late Kitty answer `ESC _ G i=31;OK ESC \` arrives as Alt+`_`, `G`, `i`, ... and Alt+`\`. A
 //! late OSC 10 answer `ESC ] 10;rgb:... BEL` arrives as Alt+`]`, `1`, `0`, ... and Ctrl+`g` (or
-//! Alt+`\` for an ST end). The owed Kitty answers and the owed OSC 10 answer count apart: a Kitty
-//! answer pays for no OSC 10 answer. A terminal that answers DA1 but never OSC 10 keeps one owed
+//! Alt+`\` for an ST end). A late OSC 4 answer of the palette `ESC ] 4;n;rgb:... BEL` arrives as
+//! Alt+`]`, `4`, ... in the same way. The owed OSC answer covers the OSC 4 answers too, but only
+//! the OSC 10 answer pays for it. The owed Kitty answers and the owed OSC answer count apart: a
+//! Kitty answer pays for no OSC answer. A terminal that answers DA1 but never OSC 10 keeps one owed
 //! OSC 10 answer for the whole run. Then a real Alt+`]` and the printable keys after it go, until
 //! Alt+`\`, Ctrl+`g` or a key that fits no answer ends the swallow.
 
@@ -45,6 +47,9 @@ pub struct LateAnswerFilter {
     owed: LateAnswers,
     /// The opener of the answer in progress: `_` for Kitty, `]` for OSC.
     inside: Option<char>,
+    /// The first key after the opener of an OSC answer in progress: `1` for OSC 10, `4` for
+    /// OSC 4.
+    osc_head: Option<char>,
     /// After this time nothing is owed, unless an answer is in progress.
     owed_until: Instant,
 }
@@ -69,6 +74,7 @@ impl LateAnswerFilter {
             keys: AnswerKeys::default(),
             owed,
             inside: None,
+            osc_head: None,
             owed_until: start + OWED_FOR,
         }
     }
@@ -158,10 +164,14 @@ impl LateAnswerFilter {
                     && character.is_ascii()
                     && !character.is_ascii_control() =>
             {
+                if self.inside == Some(']') && self.osc_head.is_none() {
+                    self.osc_head = Some(character);
+                }
                 true
             }
             _ => {
                 self.inside = None;
+                self.osc_head = None;
                 false
             }
         }
@@ -176,10 +186,14 @@ impl LateAnswerFilter {
         }
     }
 
-    /// The last key of an answer: that answer is owed no more.
+    /// The last key of an answer: that answer is owed no more. An OSC 4 answer leaves the OSC
+    /// answer owed, because more OSC 4 answers and the OSC 10 answer can follow.
     fn end_answer(&mut self) -> bool {
+        let head = self.osc_head.take();
         if self.inside.take() == Some(']') {
-            self.owed.foreground = false;
+            if head != Some('4') {
+                self.owed.foreground = false;
+            }
         } else {
             self.owed.kitty = self.owed.kitty.saturating_sub(1);
         }

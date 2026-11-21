@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.100"
 # Not on crates.io: each app builds it from the git repository through a path or git dependency.
 publish = false
-description = "The shared terminal UI parts of schnattr, youtr, phewr, agendr, wettr and glisr: the screen frame, the text field, the terminal session, the time texts and the pictures"
+description = "The shared terminal UI parts of schnattr, youtr, phewr, agendr, wettr and glisr: the screen frame, the text field, the terminal session, the time texts, the pictures and the icons"
 license = "MIT"
 
 [lib]
@@ -189,6 +189,9 @@ lru = { version = "0.19", optional = true }
 # moxcms 0.8.
 moxcms = { version = "0.9.2", optional = true }
 rayon = { version = "1.12", optional = true }
+# The Phosphor icons of `icons`, rendered at the pixel size of the box. Paths only: no text, no
+# fonts, no raster images. The version is the version of phewr.
+resvg = { version = "0.50", default-features = false, optional = true }
 # `poll` on the tty for the answer of the Kitty probe. crossterm uses the same version.
 rustix = { version = "1", features = ["event"], optional = true }
 # The ffprobe JSON of the motion module: one small pure Rust crate pair, no feature of its own.
@@ -215,7 +218,7 @@ tempfile = "3.27"
 [features]
 default = ["pictures"]
 # The picture module with the pure Rust decoders of `image`, the resize, the shapes, the decode
-# pool with its caches, the Kitty layer and the motion module.
+# pool with its caches, the Kitty layer and the motion module, and the render of the icons.
 pictures = [
   "dep:base64",
   "dep:fast_image_resize",
@@ -224,6 +227,7 @@ pictures = [
   "dep:lru",
   "dep:moxcms",
   "dep:rayon",
+  "dep:resvg",
   "dep:rustix",
   "dep:serde",
   "dep:serde_json",

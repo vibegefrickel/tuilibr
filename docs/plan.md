@@ -2,8 +2,8 @@
 
 ## Handoff
 
-- Date: 2026-11-20
-- Commit: 8820b05
+- Date: 2026-11-21
+- Commit: 5bc8461
 - Done: one lint table in the crate and its five built apps; the duplication review in the five
   apps (the picture store, the loop player, batches A, B and C, the plumbing on std, the gap
   fixes); the XDG folders in every app.
@@ -16,12 +16,17 @@
   gives `None` without room, true ffprobe and cursor results, shared helpers, cluster moves
   without a full scan. agendr (`0d6e6ea`) and schnattr (`5bbee11`) moved their folder moves to
   `move_once`.
-- Open (agent): the shared icons (Phosphor), planned and decided in `docs/icons.md`: the crate
-  step first, then wettr, phewr, schnattr, youtr and glisr. Answer the crate requests of glisr.
-- Open (user): push tuilibr, schnattr, phewr and agendr; `just install` in each app.
+- Done (2026-11-21): the crate step of the Phosphor icons (`tuilibr::icons`, the OSC 4 palette,
+  `Pictures::glyph`).
+- Done (2026-11-21): the app steps of the icons: phewr `f61673a`, youtr `7df1c8b` and
+  `c0444a4`, schnattr `13c8ce0`, wettr `095619a`. Each app commit holds the `resvg` lockfile
+  lines, so the apps build only with the icon step of tuilibr.
+- Open (agent): glisr does its icon step in its own session (worker `icons`, approved).
+- Open (user): commit tuilibr (the icon crate step), then push tuilibr and every app;
+  `just install` in each app; test item 8 (OSC 4 in herdr, a list icon).
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
-- Health: `just check` green (723, 210 and 613 tests); `just lints-diff` clean; no worker and no
-  extra worktree in any repo.
+- Health: `just check` green (753, 223 and 643 tests); `just lints-diff` clean; no worker in
+  the four apps; the agent worktree `agent-a36c3296e25fee4ce` of the icon crate step is landed.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
@@ -93,6 +98,8 @@ The work that waits, by the decision of the maintainer (2026-11-19):
 - `dirs`, `files`, `log_file` and `programs`: the app plumbing on std.
 - `pictures`, behind the default feature `pictures`: the decoders, the Kitty layer and the loops
   of `motion`. `docs/pictures.md` holds its rules.
+- `icons`: the Phosphor icons (`docs/icons.md`). The table and the glyphs build without a
+  feature. The render and `IconPicture` need `pictures`.
 
 agendr builds the crate with `default-features = false`. The other four apps build the picture
 module.

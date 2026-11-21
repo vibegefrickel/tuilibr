@@ -7,9 +7,11 @@ wettr and glisr share:
   list entry, the header and the status bar. It also holds the dialog box, the clock, the text
   helpers, the question row, the omnibox and the layout toggle. The frame also has the double
   click, the scroll that keeps a line in view and the text of a drawn buffer for tests.
+- `icons`: the shared Phosphor icons in three weights, with a Nerd Font glyph for each icon. The
+  feature `pictures` adds the render at the pixel size of a box and the adapter of the frame.
 - `text_field`: the text input with its key map and the external editor.
 - `terminal`: the session of the terminal and its loan to a child process, the synchronized
-  update, the reader thread and the start queries.
+  update, the reader thread, the start queries and the RGB of the palette.
 - `time`: the texts of time on jiff.
 - `cells`: the saturating number conversions.
 - `pictures`: the picture module. It holds the decode routes, the resize, the shapes, the decode
@@ -51,7 +53,7 @@ turns on the ones that it needs:
 
 | Feature | What it adds | Build requirement |
 |---|---|---|
-| `pictures` (default) | The picture module: the pure Rust decoders of `image`, the resize, the shapes, the decode pool, the Kitty layer | none |
+| `pictures` (default) | The picture module: the pure Rust decoders of `image`, the resize, the shapes, the decode pool, the Kitty layer. The render of the icons through `resvg` | none |
 | `turbo` | libjpeg-turbo, the JPEG decoder with DCT scaling | `brew install pkgconf jpeg-turbo` |
 | `heic` | libheif 1.19 or later, for HEIC, HEIF and AVIF | `brew install libheif` |
 | `jxl` | JPEG XL in pure Rust (jxl-oxide) | none |
@@ -63,11 +65,14 @@ turns on the ones that it needs:
 libheif. turbojpeg-sys finds libjpeg-turbo through pkgconf and never builds it from source. The
 app sets its name at start with `tuilibr::pictures::names::set_app_name(env!("CARGO_PKG_NAME"))`,
 so its thumbnail cache keys, its temp files and its thread names carry the app name. The rules of
-the Kitty layer are in `docs/pictures.md`.
+the Kitty layer are in `docs/pictures.md`. The rules of the icons are in `docs/icons.md`.
 
 ## License
 
 MIT, see `LICENSE`.
+
+The files in `assets/icons/` are Phosphor Icons, MIT, see `assets/icons/LICENSE`. They are copies
+of the folder `assets/` of `github.com/phosphor-icons/core` at the commit `2b75f3a` (2026-01-06).
 
 ## The text field
 
@@ -89,7 +94,8 @@ terminal to a child process. `restore` or the drop of the session gives the term
 session owns no `Terminal` of ratatui: the app builds its own, also on its own backend.
 `install_panic_hook` gives the terminal back before a panic message prints, on the installing
 thread only. If the feature `pictures` is on, `terminal::start::query` asks for the cell size, the
-foreground colour, the Kitty protocol and the transfer medium in one write.
+16 palette colours, the foreground colour, the Kitty protocol and the transfer medium in one
+write. `terminal::Palette` gives the RGB of a cell colour in the theme of the terminal.
 `terminal::answers::LateAnswerFilter` drops the answers that come late as key presses.
 
 ## The accent

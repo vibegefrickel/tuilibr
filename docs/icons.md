@@ -2,8 +2,8 @@
 
 - Date: 2026-11-21
 - Request: the maintainer, relayed by the glisr session, 2026-11-21.
-- State: a plan, decided by the maintainer on 2026-11-21. No code exists. The tuilibr session
-  (`tuilibr-82`) owns the crate steps.
+- State: step 1 (the crate) is in the main tree since 2026-11-21. The app steps follow. The
+  tuilibr session (`tuilibr-82`) owns the crate steps.
 - Scope: one shared icon set (Phosphor Icons) for schnattr, phewr, wettr, youtr and glisr. agendr
   gets nothing yet.
 
@@ -690,6 +690,21 @@ Nothing. agendr builds without `pictures`. It can use `Icon::glyph()` later.
 6. **OSC 4.** The crate step adds the OSC 4 query, with the xterm defaults as the fallback. The
    test run of the maintainer gets one item: a list icon in herdr. If herdr does not answer, a
    later step asks herdr upstream.
+
+## Deviations of step 1 from the plan (2026-11-21)
+
+1. **33 icons, 99 files.** Section 10 adds the 5 network logos to the 28 icons.
+2. **The logo glyphs.** Nerd Fonts 3.5.1 has no `md-telegram`. The logos take the Font Awesome
+   glyphs of schnattr (`Network::icon`): whatsapp U+F232, telegram U+F2C6, slack U+F198, apple
+   U+F179. `chat-circle` takes `md-chat` U+F0B79.
+3. **No interface break.** `LateAnswers` and `StartAnswers` keep their fields. An owed OSC 4 answer
+   goes into `LateAnswers.foreground`, and only the OSC 10 answer pays for it. The palette comes
+   through the new `query_with_palette`. `query_with` keeps its signature and gives the xterm
+   defaults. The OSC 4 query goes out before OSC 10, and the start read never waits for it. If a
+   slot does not answer in time, the owed answer stays for `OWED_FOR` (5 s).
+4. **The foreground fallback.** Without an OSC 10 answer, the foreground is the RGB of slot 7.
+5. **The header glyph.** The glyph box is in column 1, the column of the picture box, on row 2 of
+   4. The text starts in column 4. The wettr header moves when wettr takes `IconPicture`.
 
 ## Facts without a proof
 

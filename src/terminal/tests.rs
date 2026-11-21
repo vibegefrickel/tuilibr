@@ -506,6 +506,26 @@ mod late_answers {
     }
 
     #[test]
+    fn late_osc_4_answers_go_and_leave_the_osc_10_answer_owed() {
+        let now = Instant::now();
+        let mut filter = owing(0, true);
+        let palette = "\x1b]4;0;rgb:0000/0000/0000\x07\x1b]4;1;rgb:cdcd/0000/0000\x1b\\";
+        assert!(passed(&mut filter, answer_keys(palette), now).is_empty());
+        assert!(
+            filter.owed().foreground,
+            "an OSC 4 answer does not pay for the OSC answer"
+        );
+        assert!(passed(&mut filter, answer_keys(OSC_BEL), now).is_empty());
+        assert_eq!(filter.owed(), LateAnswers::default());
+        let four = plain(KeyCode::Char('4'));
+        assert_eq!(
+            filter.read(four.clone(), now).events,
+            vec![four],
+            "the OSC 10 answer came"
+        );
+    }
+
+    #[test]
     fn the_filter_swallows_only_the_owed_kind() {
         let now = Instant::now();
         let mut filter = owing(1, false);
@@ -565,7 +585,8 @@ mod start {
         Transfer,
         query::{LateAnswers, StartAnswers},
     };
-    use crate::terminal::start::{Start, StartOptions, query_with};
+    use crate::terminal::Palette;
+    use crate::terminal::start::{Start, StartOptions, query_with, query_with_palette};
 
     const PLAIN_PROBE: &[u8] = b"\x1b_Ga=q,i=30,s=1,v=1,f=32;AAAAAA==\x1b\\";
 
@@ -677,6 +698,38 @@ mod start {
         });
         assert!(kitty.shows_pictures() && kitty.cell_from_terminal);
         assert!(!Start::without_kitty().shows_pictures());
+        assert_eq!(kitty.palette, Palette::default());
+    }
+
+    #[test]
+    fn the_palette_answers_reach_the_start() {
+        let options = StartOptions {
+            transfer_override: Some("direct"),
+            loops: Some(Loops::Ticks),
+            ssh: false,
+        };
+        let mut slots = [None; 16];
+        slots[1] = Some([200, 40, 40]);
+        let start = query_with_palette(options, |_, _| {
+            (
+                StartAnswers {
+                    cell_px: Some((10, 20)),
+                    probe: None,
+                    late_answers: LateAnswers::default(),
+                    foreground: Some([250, 250, 250]),
+                },
+                slots,
+            )
+        });
+        assert_eq!(start.palette, Palette::new(slots, Some([250, 250, 250])));
+        assert_eq!(start.palette.rgb(ratatui::style::Color::Red), [200, 40, 40]);
+        let without = query_with(options, |_, _| StartAnswers {
+            cell_px: None,
+            probe: None,
+            late_answers: LateAnswers::default(),
+            foreground: None,
+        });
+        assert_eq!(without.palette, Palette::default(), "the xterm defaults");
     }
 }
 

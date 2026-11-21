@@ -34,8 +34,9 @@ Plain cargo works too. Homebrew's rustup is keg-only, so run
 - **The frame imports `ratatui`, `crossterm`, `unicode-width`, `unicode-segmentation` and `std`. The
   time module adds `jiff`.** The picture module sits behind the default feature `pictures` with
   `image`, `fast_image_resize`, `moxcms`, `kamadak-exif`, `base64`, `rayon`, `lru`, `rustix`,
-  `serde` and `serde_json`. Its decoders sit behind the features `turbo`, `heic`, `jxl` and `sips`,
-  and the TGS stickers behind `lottie`. An app that uses the frame only sets
+  `serde`, `serde_json` and `resvg`. `resvg` renders the icons of `icons`, without its default
+  features. Its decoders sit behind the features `turbo`, `heic`, `jxl` and `sips`, and the TGS
+  stickers behind `lottie`. The table of `icons` imports `ratatui` and `std` only. An app that uses the frame only sets
   `default-features = false`. A feature gates a native library, a git source or a measured build
   cost, nothing else. `test-support` is the one exception: it builds the test helpers for the
   tests of an app.
@@ -73,9 +74,11 @@ src/cells.rs      the saturating conversions of usize, u16 and f64
 src/frame/        the screen frame: split, lines, style, entry, header, bar, help, question,
                   omnibox, layout, text, text_input, clock, click, scroll, buffer (the text of a
                   drawn buffer for tests), pictures (the Pictures trait), tests/
+src/icons/        the Phosphor icons: the table with the glyphs, the looks, the render, the
+                  adapter of the frame (IconPicture), tests/
 src/text_field/   the text input with a character cursor, the readline key map, the wrap, the editor
 src/terminal/     the session of the terminal and its loan, the panic hook, the synchronized
-                  update, the reader thread, the start queries, the late answers
+                  update, the reader thread, the start queries, the late answers, the palette
 src/dirs/         the XDG folders of an app (config, cache, state, data), the one-time move
 src/files/        the atomic write and the sweep of the stale temp files
 src/log_file/     the log file with a cap, safe for several processes
@@ -84,7 +87,10 @@ src/time/         the relative age, the bar date and time, the media length, the
 src/pictures/     the picture module: decode, resize, shape, jobs, kitty, motion, names,
                   test_support
 tests/fixtures/   the fixtures of the picture module tests, static files
+assets/icons/     the SVG files of the icons in regular/, fill/ and duotone/, upstream copies, and
+                  the Phosphor LICENSE
 docs/pictures.md  the rules of the picture module and of the Kitty layer
+docs/icons.md     the rules of the icons: the delivery, the weights, the tint, the glyph fallback
 docs/plan.md      the plan: the handoff, the open work, the decisions, the rules
 ```
 

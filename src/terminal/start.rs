@@ -1,18 +1,19 @@
 //! What the terminal answers at the start, in one write and one read.
 //!
 //! The queries are the pixel size of a cell (`CSI 16 t`, because the window size includes the
-//! padding of Ghostty), the foreground colour (OSC 10), the plain Kitty query, the probes of the
-//! transfer medium and of the loops, and DA1.
+//! padding of Ghostty), the 16 palette colours (OSC 4), the foreground colour (OSC 10), the plain
+//! Kitty query, the probes of the transfer medium and of the loops, and DA1.
 //!
 //! The read takes every byte of the tty, so it runs in raw mode before the reader of the keys
 //! starts. It ends when every owed answer came or at DA1, and after DA1 it waits at most the grace
 //! of `query` for a missing answer (Ghostty 1.4 sends DA1 first). The answers that did not come in
 //! time come late as key presses, and `answers::LateAnswerFilter` drops them there.
 
+use super::Palette;
 use crate::frame::CellSize;
 use crate::pictures::kitty::{
     KittyBackend, Loops, protocol,
-    query::{self, LateAnswers, StartAnswers},
+    query::{self, LateAnswers, PaletteAnswers, StartAnswers},
 };
 
 /// The id of the plain query. The terminal repeats it in its answer. The probes of the transfer
@@ -52,6 +53,9 @@ pub struct Start {
     pub backend: KittyBackend,
     /// The foreground colour of the terminal (OSC 10), for icons in the colour of the text.
     pub foreground: Option<[u8; 3]>,
+    /// The RGB of the 16 palette slots (OSC 4) and of the foreground, so a picture can take the
+    /// colour of a cell. A slot without an answer takes its xterm default.
+    pub palette: Palette,
     /// The answers that did not come in time and can still come as key presses.
     pub owed: LateAnswers,
 }
@@ -72,6 +76,7 @@ impl Start {
             kitty: true,
             backend: KittyBackend::default(),
             foreground: None,
+            palette: Palette::default(),
             owed: LateAnswers::default(),
         }
     }
@@ -89,6 +94,7 @@ impl Start {
             kitty: false,
             backend: KittyBackend::default(),
             foreground: None,
+            palette: Palette::default(),
             owed: LateAnswers::default(),
         }
     }
@@ -97,16 +103,28 @@ impl Start {
 /// Asks the tty, before the reader of the keys starts. It logs nothing: the app logs
 /// `protocol::describe(start.backend.transfer())` and the cell as it wants.
 pub fn query(options: StartOptions<'_>) -> Start {
-    query_with(options, query::query_cell_size_and_probe)
+    query_with_palette(options, query::query_cell_size_palette_and_probe)
 }
 
 /// `query` with the tty read as a closure, so a test never touches the tty. `query_start` gets
 /// the probe sequence and the count of the Kitty answers to wait for, and returns the answers.
+///
+/// The palette takes the xterm defaults.
 pub fn query_with(
     options: StartOptions<'_>,
     query_start: impl FnOnce(&[u8], usize) -> StartAnswers,
 ) -> Start {
-    let mut answers: Option<StartAnswers> = None;
+    query_with_palette(options, |sequence, count| {
+        (query_start(sequence, count), [None; 16])
+    })
+}
+
+/// `query_with` with a closure that also returns the palette colours of the OSC 4 answers.
+pub fn query_with_palette(
+    options: StartOptions<'_>,
+    query_start: impl FnOnce(&[u8], usize) -> (StartAnswers, PaletteAnswers),
+) -> Start {
+    let mut answers: Option<(StartAnswers, PaletteAnswers)> = None;
     let mut query_start = Some(query_start);
     let backend = protocol::detect_backend(
         options.transfer_override,
@@ -116,21 +134,24 @@ pub fn query_with(
             let mut full = PLAIN_PROBE.to_vec();
             full.extend_from_slice(sequence);
             let start = query_start.take().map(|query| query(&full, count + 1))?;
-            let probe = start.probe.clone();
+            let probe = start.0.probe.clone();
             answers = Some(start);
             probe
         },
     );
     // A fixed transfer sends no probe of the medium, so the plain query goes out alone.
-    let answers = match (answers, query_start) {
+    let (answers, palette) = match (answers, query_start) {
         (Some(answers), _) => answers,
         (None, Some(query)) => query(PLAIN_PROBE, 1),
-        (None, None) => StartAnswers {
-            cell_px: None,
-            probe: None,
-            late_answers: LateAnswers::default(),
-            foreground: None,
-        },
+        (None, None) => (
+            StartAnswers {
+                cell_px: None,
+                probe: None,
+                late_answers: LateAnswers::default(),
+                foreground: None,
+            },
+            [None; 16],
+        ),
     };
     let kitty = answers
         .probe
@@ -146,6 +167,7 @@ pub fn query_with(
         kitty,
         backend,
         foreground: answers.foreground,
+        palette: Palette::new(palette, answers.foreground),
         owed: answers.late_answers,
     }
 }

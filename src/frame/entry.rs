@@ -12,7 +12,7 @@ use ratatui::{
 use crate::cells::clamp_to_u16;
 
 use super::{
-    pictures::{CellSize, Pictures, Shade, place_centered},
+    pictures::{CellSize, GLYPH_COLUMNS, Pictures, Shade, draw_glyph, place_centered},
     style::{pill, secondary, selection, unfocused_selection},
     text::spread,
 };
@@ -48,9 +48,25 @@ pub struct EntryView {
 
 /// Draws `entry` in `area`, which is `ENTRY_ROWS` high: the square picture box at the left, the
 /// name with the pill, and the second row.
+///
+/// Without pictures, a glyph of `Pictures::glyph` sits in a box of `GLYPH_COLUMNS` at the left,
+/// on the first row. Without a glyph, the text takes the full width.
 pub fn draw_entry(frame: &mut Frame<'_>, picture: &mut dyn Pictures, entry: EntryView, area: Rect) {
-    let columns = if picture.shows_pictures() {
+    let shade = if entry.focused {
+        Shade::Bright
+    } else {
+        Shade::Dimmed
+    };
+    let shows_pictures = picture.shows_pictures();
+    let glyph = if shows_pictures {
+        None
+    } else {
+        picture.glyph(shade)
+    };
+    let columns = if shows_pictures {
         square_columns(picture.cell_size(), ENTRY_ROWS).min(area.width)
+    } else if glyph.is_some() {
+        GLYPH_COLUMNS.min(area.width)
     } else {
         0
     };
@@ -73,13 +89,11 @@ pub fn draw_entry(frame: &mut Frame<'_>, picture: &mut dyn Pictures, entry: Entr
     let width = usize::from(text.width);
     let title = title(&entry, width);
     frame.render_widget(Paragraph::new("").style(style), text);
-    let shade = if entry.focused {
-        Shade::Bright
-    } else {
-        Shade::Dimmed
-    };
-    if columns > 0 {
-        place_centered(picture, shade, picture_area);
+    if columns > 0 && area.height > 0 {
+        match glyph {
+            Some(glyph) => draw_glyph(frame.buffer_mut(), (area.x, area.y), glyph, shade),
+            None => place_centered(picture, shade, picture_area),
+        }
     }
     frame.render_widget(
         Paragraph::new(title).style(style),

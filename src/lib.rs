@@ -11,11 +11,13 @@
 //! - `pictures`, behind the default feature `pictures`: the decode routes, the resize, the shapes,
 //!   the decode pool with its caches, the Kitty layer and the animated previews of `motion`. The
 //!   feature `lottie` adds the TGS stickers.
+//! - `icons`: the shared Phosphor icons in three weights with a Nerd Font glyph for each. The
+//!   feature `pictures` adds the render at the pixel size of a box and the adapter of the frame.
 //! - `text_field`: the multi-line text input with a grapheme cursor, the readline key map, the
 //!   wrap and the external editor.
 //! - `terminal`: the session of the terminal (raw mode, the alternate screen, the modes, the panic
 //!   hook, the loan to a child process), the synchronized update of a frame, the reader thread of
-//!   the events, the start queries and the filter of the late answers.
+//!   the events, the start queries, the filter of the late answers and the RGB of the palette.
 //! - `cells`: the saturating conversions between a text measure in `usize`, a cell count in `u16`
 //!   and a measured `f64`.
 //! - `time`: the texts of time on jiff: the relative age, the date and the time of the bar, the
@@ -35,6 +37,7 @@ pub mod dirs;
 #[cfg(unix)]
 pub mod files;
 pub mod frame;
+pub mod icons;
 #[cfg(unix)]
 pub mod log_file;
 #[cfg(unix)]

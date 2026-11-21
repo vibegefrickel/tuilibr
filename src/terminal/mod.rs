@@ -3,6 +3,7 @@
 //! The session holds raw mode, the alternate screen, the modes and their restore, and the loan
 //! to a child process. The synchronized update holds a frame together. The reader thread reads
 //! the events. `start` holds the start queries and `answers` the filter of the late answers.
+//! `Palette` gives the RGB of a colour of the terminal theme.
 
 use std::io::{self, Write};
 use std::panic::PanicHookInfo;
@@ -23,11 +24,13 @@ use ratatui::{Terminal, backend::Backend};
 
 #[cfg(feature = "pictures")]
 pub mod answers;
+mod palette;
 mod reader;
 #[cfg(feature = "pictures")]
 pub mod start;
 mod sync;
 
+pub use palette::{Palette, XTERM_SLOTS};
 #[cfg(feature = "pictures")]
 pub use reader::spawn_filtered_reader;
 pub use reader::{ReaderPause, spawn_pausable_reader, spawn_reader};

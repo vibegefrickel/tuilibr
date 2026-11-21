@@ -1,7 +1,23 @@
 //! The picture of one place, as the frame sees it: a size and a placement. The implementation
-//! puts the picture into the placements of the picture engine of the app.
+//! puts the picture into the placements of the picture engine of the app. Without pictures, a
+//! glyph can take the place of the picture.
 
-use ratatui::layout::Rect;
+use ratatui::{buffer::Buffer, layout::Rect, style::Color};
+
+use super::style::dim_color;
+
+/// The columns of the box of a glyph. `unicode-width` gives 1 column for a glyph of the Private
+/// Use Area, but many terminals draw a Nerd Font glyph wider, so the second column stays empty.
+pub const GLYPH_COLUMNS: u16 = 2;
+
+/// The glyph in the place of a picture, for a terminal without pictures.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Glyph {
+    /// The character, for example a Nerd Font glyph.
+    pub symbol: char,
+    /// The colour of the character in a pane with the focus.
+    pub color: Color,
+}
 
 /// The pixel size of one terminal cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,6 +62,27 @@ pub trait Pictures {
     /// have no picture box, and the text takes the width.
     fn shows_pictures(&self) -> bool {
         true
+    }
+    /// The glyph in the place of the picture while `shows_pictures` is `false`. `None` keeps the
+    /// text at the full width, as without a picture.
+    fn glyph(&mut self, _shade: Shade) -> Option<Glyph> {
+        None
+    }
+}
+
+/// Writes `glyph` at `x`, `y` of `buffer` and clears the cell after it, the second column of the
+/// glyph box. In `Shade::Dimmed`, the glyph takes `dim_color()`.
+pub(super) fn draw_glyph(buffer: &mut Buffer, (x, y): (u16, u16), glyph: Glyph, shade: Shade) {
+    let color = if shade == Shade::Dimmed {
+        dim_color()
+    } else {
+        glyph.color
+    };
+    if let Some(cell) = buffer.cell_mut((x, y)) {
+        cell.set_char(glyph.symbol).set_fg(color);
+    }
+    if let Some(cell) = x.checked_add(1).and_then(|next| buffer.cell_mut((next, y))) {
+        cell.set_char(' ');
     }
 }
 
