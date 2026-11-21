@@ -16,7 +16,8 @@
   gives `None` without room, true ffprobe and cursor results, shared helpers, cluster moves
   without a full scan. agendr (`0d6e6ea`) and schnattr (`5bbee11`) moved their folder moves to
   `move_once`.
-- Open (agent): glisr starts on the crate at milestone 0; answer its crate requests.
+- Open (agent): the shared icons (Phosphor), planned and decided in `docs/icons.md`: the crate
+  step first, then wettr, phewr, schnattr, youtr and glisr. Answer the crate requests of glisr.
 - Open (user): push tuilibr, schnattr, phewr and agendr; `just install` in each app.
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
 - Health: `just check` green (723, 210 and 613 tests); `just lints-diff` clean; no worker and no
