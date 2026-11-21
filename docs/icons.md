@@ -282,7 +282,9 @@ All tests use plain asserts. The frame tests use `TestBackend`.
 
 ## Facts without a proof
 
-- The OSC 4 answers of Ghostty, Kitty and herdr. Item 8 of the test run in `docs/pictures.md`
-  tests them.
+The OSC 4 answers and the icon colours in herdr have a proof since 2026-11-21 (item 8 of the test
+run in `docs/pictures.md`). Plain Ghostty ends its answer with BEL, and Ghostty inside herdr ends
+it with ST. Both give the same RGB. Kitty is out of scope.
+
 - The look of the icons in a real terminal. The decision on the weights came from contact sheets
   at 64 px on black, not from Kitty placements.

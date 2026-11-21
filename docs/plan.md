@@ -3,15 +3,16 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: 951ebf3
+- Commit: 162a548
 - Done: the zen key (`frame::Panes`, `frame::is_list_key`, decision 6) and the three icon review
   optimizations, in `bcab8a4`.
 - Done: `951ebf3` adds `text_field::editor::edit_field` (Ctrl-G for one `TextField`, with
-  `FieldEdit` and `Edited`) and `PictureStore::cleared`. schnattr and glisr use them, uncommitted.
+  `FieldEdit` and `Edited`) and `PictureStore::cleared`. schnattr (`bfbeb3a`) and glisr
+  (`c8a95e8`) use them.
+- Done: item 8 of the test run passes in Ghostty and in herdr: the OSC 4 answers and the icon
+  colours in glisr. Kitty is out of scope.
 - Open (agent): none.
-- Open (user): commit the moves to `edit_field` in schnattr and glisr. Commit the doc edits in
-  tuilibr (README, plan). Push tuilibr (`951ebf3` is not pushed) and the apps. Test item 8 (OSC 4
-  in herdr).
+- Open (user): commit the doc edits of item 8 in tuilibr. Push tuilibr and the apps.
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
 - Health: `just check` green in the crate (767, 235 and 657 tests) and in all six apps: schnattr
   1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 443. No worker and no extra worktree.

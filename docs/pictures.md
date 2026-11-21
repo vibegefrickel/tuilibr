@@ -365,11 +365,14 @@ key is lost, and the start takes no longer than in plain Ghostty.
    loops slower than plain Ghostty, but no loop can stop or leave a picture away. Seen on
    2026-11-20: MP4s, GIFs and TGS stickers loop in schnattr. Open: the tile grid with a scroll that
    stops the loops, herdr, a Live Photo, and phewr.
-8. **The OSC 4 answers**, in plain Ghostty, in Ghostty inside herdr and in Kitty. Run this in
-   zsh: `printf '\e]4;1;?\a'; read -rs -t 1 -d $'\a' a; print -r -- ${(q)a}`. The answer must
-   show `4;1;rgb:` and the red of the theme. No answer in herdr means that the icons take the
-   xterm default colours there: note it. After the glisr step, open a list with an icon in herdr.
-   The square must have the colour of the category heading.
+8. **The OSC 4 answers**, in plain Ghostty and in Ghostty inside herdr. Kitty is out of scope.
+   Run this in zsh: `old=$(stty -g); stty -echo -icanon min 0 time 10; printf '\e]4;1;?\a';
+   a=$(dd bs=256 count=1 2>/dev/null); stty $old; print -r -- ${(q)a}`. A `read -t` does not
+   work: its time limit stops at the first byte, and herdr ends the answer with ST, not BEL. The
+   answer must show `4;1;rgb:` and the red of the theme. Seen on 2026-11-21: both give
+   `rgb:d1d1/7676/6e6e`, plain Ghostty with BEL and herdr with ST. Then open a list with an icon
+   in glisr in herdr. The square must have the colour of the category heading. Seen on
+   2026-11-21: the item passes.
 
 ## Decisions of the maintainer about the module
 
