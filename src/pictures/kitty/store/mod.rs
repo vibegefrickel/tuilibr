@@ -307,6 +307,12 @@ impl<K: Clone + Hash + Eq> PictureStore<K> {
         self.screen.focus_gained();
     }
 
+    /// The app cleared the screen, for example after the editor of Ctrl-G. The next flush sends
+    /// and places every picture again.
+    pub fn cleared(&mut self) {
+        self.screen.cleared();
+    }
+
     /// The byte cap of one flush left pictures of the frame for a later flush, so the app must
     /// draw again soon.
     pub fn has_waiting(&self) -> bool {

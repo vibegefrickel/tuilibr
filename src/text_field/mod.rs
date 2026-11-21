@@ -18,8 +18,8 @@
 //!
 //! The key map of readline is `keys::edit_for_key`, and `apply` runs an `Edit`. Enter, Esc and
 //! Tab stay with the app: it decides whether Enter sends or breaks the line. Ctrl-G is
-//! `Edit::OpenEditor`: the app suspends its terminal session, runs `editor::edit_text` and puts
-//! the result back with `set_text`.
+//! `Edit::OpenEditor`: the app calls `editor::edit_field`, which lends the terminal to
+//! `editor::edit_text` and puts the result back with `set_text`.
 
 use unicode_segmentation::{GraphemeCursor, UnicodeSegmentation as _};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};

@@ -1,8 +1,14 @@
 //! The editor with a fake `sh` script in place of a real editor, so a test never opens one.
 
-use std::{collections::HashMap, ffi::OsString, fs, os::unix::fs::PermissionsExt, path::Path};
+use std::{collections::HashMap, ffi::OsString, fs, io, os::unix::fs::PermissionsExt, path::Path};
 
-use super::{EditorError, edit_text_with, editor_command, finish_text, insert_mode_arguments};
+use ratatui::{Terminal, backend::TestBackend};
+
+use super::{
+    EditorError, FieldEdit, edit_field, edit_text_with, editor_command, finish_text,
+    insert_mode_arguments,
+};
+use crate::{terminal::LendError, text_field::TextField};
 
 /// A fake editor: `sh` runs `script` with the file path as `$1`. `sh` is no new executable, so
 /// the first start does not wait for the file check of macOS.
@@ -141,5 +147,127 @@ fn a_vim_opens_at_the_end_in_insert_mode_and_another_editor_gets_only_the_file()
     }
     for other in ["code", "nano", "sh", "/usr/bin/emacs"] {
         assert!(insert_mode_arguments(other).is_empty(), "{other}");
+    }
+}
+
+/// A terminal that draws nowhere, for `edit_field`.
+fn test_terminal() -> Terminal<TestBackend> {
+    Terminal::new(TestBackend::new(20, 4)).unwrap()
+}
+
+#[test]
+fn edit_field_puts_the_edited_text_into_the_field() {
+    let mut field = TextField::from("old");
+    let edit = edit_field(
+        &mut test_terminal(),
+        |_, run| Ok(run()),
+        |text, _| Ok(format!("{text} and new")),
+        &mut field,
+        true,
+    );
+    assert_eq!(
+        edit,
+        FieldEdit {
+            changed: true,
+            error: None
+        }
+    );
+    assert_eq!(field.text(), "old and new");
+    assert_eq!(field.cursor(), 11);
+}
+
+#[test]
+fn edit_field_keeps_the_field_when_the_editor_fails() {
+    let mut field = TextField::from("old");
+    let edit = edit_field(
+        &mut test_terminal(),
+        |_, run| Ok(run()),
+        |_, _| Err(EditorError::NoEditor),
+        &mut field,
+        true,
+    );
+    let error = "editor failed: no editor found: set $VISUAL or $EDITOR, or install nvim";
+    assert_eq!(
+        edit,
+        FieldEdit {
+            changed: false,
+            error: Some(error.to_owned())
+        }
+    );
+    assert_eq!(field.text(), "old");
+}
+
+#[test]
+fn edit_field_starts_no_editor_when_the_release_fails() {
+    let mut field = TextField::from("old");
+    let mut started = false;
+    let edit = edit_field(
+        &mut test_terminal(),
+        |_, _| {
+            Err(LendError {
+                error: io::Error::other("no release"),
+                value: None,
+            })
+        },
+        |_, _| {
+            started = true;
+            Ok("new".to_owned())
+        },
+        &mut field,
+        true,
+    );
+    assert!(!started);
+    assert_eq!(
+        edit,
+        FieldEdit {
+            changed: false,
+            error: Some("editor failed: no release".to_owned())
+        }
+    );
+    assert_eq!(field.text(), "old");
+}
+
+#[test]
+fn edit_field_keeps_the_edited_text_when_the_take_back_fails() {
+    let mut field = TextField::from("old");
+    let edit = edit_field(
+        &mut test_terminal(),
+        |_, run| {
+            Err(LendError {
+                error: io::Error::other("no take-back"),
+                value: Some(run()),
+            })
+        },
+        |_, _| Ok("new".to_owned()),
+        &mut field,
+        true,
+    );
+    assert_eq!(
+        edit,
+        FieldEdit {
+            changed: true,
+            error: Some("editor failed: no take-back".to_owned())
+        }
+    );
+    assert_eq!(field.text(), "new");
+}
+
+#[test]
+fn edit_field_gives_the_editor_the_text_and_multi_line_unchanged() {
+    for multi_line in [true, false] {
+        let mut field = TextField::from("Grüße\naus Köln");
+        let mut seen = None;
+        let edit = edit_field(
+            &mut test_terminal(),
+            |_, run| Ok(run()),
+            |text, lines| {
+                seen = Some((text.to_owned(), lines));
+                Ok(text.to_owned())
+            },
+            &mut field,
+            multi_line,
+        );
+        assert!(edit.changed);
+        assert_eq!(seen, Some(("Grüße\naus Köln".to_owned(), multi_line)));
     }
 }

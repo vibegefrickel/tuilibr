@@ -8,6 +8,10 @@
 //! `terminal::Session::resume`. The text goes through a temporary file with mode 0600, because a
 //! note or a draft can hold private data. Each path out of `edit_text` erases that file.
 //!
+//! `edit_field` does these steps for one `TextField`: it gives `edit_text` to
+//! `terminal::Session::lend_keeping`, puts the result into the field and makes the error text for
+//! the status row.
+//!
 //! The caller must make sure of two more things while the editor runs:
 //!
 //! - No read of the crossterm event stream is pending. Its poll thread reads the terminal and
@@ -29,7 +33,10 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 
-use crate::programs::find_on_path;
+use ratatui::{Terminal, backend::Backend};
+
+use super::TextField;
+use crate::{programs::find_on_path, terminal::LendError};
 
 /// The editor when `$VISUAL` and `$EDITOR` are empty.
 const FALLBACK_EDITOR: &str = "nvim";
@@ -68,6 +75,53 @@ impl std::error::Error for EditorError {
             Self::NoEditor | Self::Failed(_) => None,
         }
     }
+}
+
+/// The result of the editor for one field, as `edit_text` returns it.
+pub type Edited = Result<String, EditorError>;
+
+/// What Ctrl-G did to a text field, so that the app can redraw and fill its status row.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct FieldEdit {
+    /// `true` when the field got the text of the editor.
+    pub changed: bool,
+    /// The text for the status row of the app, when the editor or the lend failed.
+    pub error: Option<String>,
+}
+
+/// Lends the terminal to `edit` with the text of `field`, and puts the result into `field`.
+///
+/// `lend` is `Session::lend_keeping` in the run and a plain call in the tests. `edit` is
+/// `edit_text` in the run and a fake in the tests. If the take-back of the terminal fails, the
+/// field still gets the edited text. If the editor and the take-back both fail, the error of the
+/// take-back goes to the status row.
+pub fn edit_field<B: Backend>(
+    terminal: &mut Terminal<B>,
+    lend: impl FnOnce(&mut Terminal<B>, &mut dyn FnMut() -> Edited) -> Result<Edited, LendError<Edited>>,
+    mut edit: impl FnMut(&str, bool) -> Edited,
+    field: &mut TextField,
+    multi_line: bool,
+) -> FieldEdit {
+    let text = field.text().to_owned();
+    // A failed take-back of the terminal keeps the edited text in its error.
+    let (edited, lent) = match lend(terminal, &mut || edit(&text, multi_line)) {
+        Ok(edited) => (Some(edited), None),
+        Err(LendError { error, value }) => (value, Some(error)),
+    };
+    let mut result = FieldEdit::default();
+    match edited {
+        Some(Ok(text)) => {
+            field.set_text(text);
+            result.changed = true;
+        }
+        Some(Err(error)) => result.error = Some(format!("editor failed: {error}")),
+        // The terminal did not let go, so the editor did not start.
+        None => {}
+    }
+    if let Some(error) = lent {
+        result.error = Some(format!("editor failed: {error}"));
+    }
+    result
 }
 
 /// Opens `text` in the editor of the user and returns the edited text. If `multi_line` is

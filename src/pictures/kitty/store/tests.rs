@@ -101,6 +101,22 @@ fn the_frame_places_the_pictures_top_to_bottom() {
 }
 
 #[test]
+fn a_cleared_screen_sends_and_places_the_picture_again() {
+    let mut store = PictureStore::new(DIRECT, false);
+    store.insert("a".to_owned(), bitmap(1));
+    store.place("a", Rect::new(0, 0, 2, 1));
+    assert!(flushed(&mut store).contains("a=T"), "the first frame");
+    store.place("a", Rect::new(0, 0, 2, 1));
+    assert!(!flushed(&mut store).contains("a=T"), "the picture shows");
+    store.cleared();
+    store.place("a", Rect::new(0, 0, 2, 1));
+    assert!(
+        flushed(&mut store).contains("a=T"),
+        "the editor drew over it"
+    );
+}
+
+#[test]
 fn a_hidden_pair_keeps_only_the_form_that_showed_last() {
     let partner = |key: &String| key.strip_suffix("-dim").map(str::to_owned);
     let mut store = PictureStore::new(DIRECT, false);
