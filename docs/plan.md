@@ -3,30 +3,20 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: 5bc8461
-- Done: one lint table in the crate and its five built apps; the duplication review in the five
-  apps (the picture store, the loop player, batches A, B and C, the plumbing on std, the gap
-  fixes); the XDG folders in every app.
-- Done: `dirs::move_once` (the shared folder move core); the late-answer filter forgets the owed
-  answers after `OWED_FOR` (5 s); phewr uses both.
-- Done: the docs hold no finished history (`docs/plan.md` 1226 to 140 lines); the comments of all
-  86 changed files follow STE and name no app.
-- Done: glisr is the sixth app (`apps`, `[app.glisr]`, the docs); `glisr-6f` has the crate rules.
-- Done: the code notes of the cleanup: an id index in `PictureStore::flush`, `LoopIds::allocate`
-  gives `None` without room, true ffprobe and cursor results, shared helpers, cluster moves
-  without a full scan. agendr (`0d6e6ea`) and schnattr (`5bbee11`) moved their folder moves to
-  `move_once`.
-- Done (2026-11-21): the crate step of the Phosphor icons (`tuilibr::icons`, the OSC 4 palette,
-  `Pictures::glyph`).
-- Done (2026-11-21): the app steps of the icons: phewr `f61673a`, youtr `7df1c8b` and
-  `c0444a4`, schnattr `13c8ce0`, wettr `095619a`. Each app commit holds the `resvg` lockfile
-  lines, so the apps build only with the icon step of tuilibr.
-- Open (agent): glisr does its icon step in its own session (worker `icons`, approved).
-- Open (user): commit tuilibr (the icon crate step), then push tuilibr and every app;
-  `just install` in each app; test item 8 (OSC 4 in herdr, a list icon).
+- Commit: a0c0062
+- Done: one lint table in the crate and its six apps; the duplication review (the picture store,
+  the loop player, batches A, B and C, the plumbing on std); the XDG folders in every app.
+- Done: `dirs::move_once` in phewr, agendr and schnattr; the late-answer filter forgets the owed
+  answers after `OWED_FOR` (5 s); the code notes (an id index in `PictureStore::flush` and more).
+- Done: the docs hold no finished history; the comments follow STE and name no app.
+- Done: the Phosphor icons. The crate step is `a0c0062` (`tuilibr::icons`, the OSC 4 palette,
+  `Pictures::glyph`). The app steps: phewr `f61673a`, youtr `7df1c8b` and `c0444a4`, schnattr
+  `13c8ce0`, wettr `095619a`, glisr `0a1d71f`. `just install` passes in all six apps.
+- Open (agent): rewrite `docs/icons.md` as the rules page of the icons (its own last step). Drop
+  the plan history and the three references to "the open questions", which have no section.
+- Open (user): push tuilibr and the six apps; test item 8 (OSC 4 in herdr, a list icon).
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
-- Health: `just check` green (753, 223 and 643 tests); `just lints-diff` clean; no worker in
-  the four apps; the agent worktree `agent-a36c3296e25fee4ce` of the icon crate step is landed.
+- Health: see the end of the consolidate report of 2026-11-21.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This

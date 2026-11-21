@@ -2,8 +2,8 @@
 
 - Date: 2026-11-21
 - Request: the maintainer, relayed by the glisr session, 2026-11-21.
-- State: step 1 (the crate) is in the main tree since 2026-11-21. The app steps follow. The
-  tuilibr session (`tuilibr-82`) owns the crate steps.
+- State: all steps landed on 2026-11-21. The crate step is `a0c0062`. The app steps are phewr
+  `f61673a`, youtr `7df1c8b`, schnattr `13c8ce0`, wettr `095619a` and glisr `0a1d71f`.
 - Scope: one shared icon set (Phosphor Icons) for schnattr, phewr, wettr, youtr and glisr. agendr
   gets nothing yet.
 
