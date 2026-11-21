@@ -5,8 +5,9 @@ wettr and glisr share:
 
 - `frame`: the screen frame. It holds the split into two panes, the lines, the boxes, the two-row
   list entry, the header and the status bar. It also holds the dialog box, the clock, the text
-  helpers, the question row, the omnibox and the layout toggle. The frame also has the double
-  click, the scroll that keeps a line in view and the text of a drawn buffer for tests.
+  helpers, the question row, the omnibox, the layout toggle and the `Ctrl-B` key that hides the
+  left pane. The frame also has the double click, the scroll that keeps a line in view and the
+  text of a drawn buffer for tests.
 - `icons`: the shared Phosphor icons in three weights, with a Nerd Font glyph for each icon. The
   feature `pictures` adds the render at the pixel size of a box and the adapter of the frame.
 - `text_field`: the text input with its key map and the external editor.

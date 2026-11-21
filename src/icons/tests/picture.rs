@@ -51,6 +51,7 @@ fn the_adapter_renders_once_per_key() {
         look: Look::badge(Color::Indexed(4)),
         size: (32, 32),
         dimmed: false,
+        palette: Palette::default(),
     };
     assert_eq!(store.get(&key).map(Bitmap::dimensions), Some((32, 32)));
 
@@ -78,6 +79,30 @@ fn the_adapter_renders_once_per_key() {
             })
             .is_some(),
         "the dark form has its own key"
+    );
+}
+
+#[test]
+fn a_new_palette_is_a_new_key() {
+    let mut store = PictureStore::new(DIRECT, false);
+    assert_eq!(frame(&mut store, CELL, Shade::Bright), Some((4, 2)));
+    assert_eq!(transmits(&mut store), 1);
+    let mut slots = [None; 16];
+    slots[4] = Some([10, 20, 200]);
+    let theme = Palette::new(slots, None);
+    let mut picture = IconPicture::new(
+        &mut store,
+        CELL,
+        theme,
+        Icon::Backpack,
+        Look::badge(Color::Indexed(4)),
+    );
+    assert_eq!(picture.size(Shade::Bright, 12, 2), Some((4, 2)));
+    assert!(picture.place(Shade::Bright, ratatui::layout::Rect::new(0, 0, 4, 2)));
+    assert_eq!(
+        transmits(&mut store),
+        1,
+        "the copy of the old palette is not the copy of the new one"
     );
 }
 

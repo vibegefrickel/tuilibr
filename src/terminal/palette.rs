@@ -30,7 +30,7 @@ pub const XTERM_SLOTS: [[u8; 3]; 16] = [
 const CUBE_LEVELS: [u8; 6] = [0, 95, 135, 175, 215, 255];
 
 /// The 16 slots and the foreground of the terminal theme in RGB.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Palette {
     slots: [[u8; 3]; 16],
     foreground: [u8; 3],

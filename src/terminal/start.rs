@@ -39,6 +39,7 @@ pub struct StartOptions<'a> {
 
 /// The answers of the terminal at the start.
 #[derive(Debug, Clone, Copy)]
+#[non_exhaustive]
 pub struct Start {
     /// The pixel size of one cell, so a picture box can be square. From the terminal, or from
     /// the window size when the terminal did not answer.

@@ -35,7 +35,7 @@ pub use help::{
     COLUMN_GAP, DIALOG_FRAME_COLUMNS, DIALOG_FRAME_ROWS, HelpView, Section, column_rows,
     dialog_box, dialog_rect, draw_help, first_misfit, help_width, section_lines,
 };
-pub use layout::{Layout, UnknownLayout};
+pub use layout::{Layout, Panes, UnknownLayout, is_list_key};
 pub use lines::{box_color, dim_pane, divider, join_rule, pane_box, pane_inner};
 pub use omnibox::{OmniboxView, Tone, draw_omnibox, omnibox_rows};
 pub use pictures::{CellSize, GLYPH_COLUMNS, Glyph, Pictures, Shade};

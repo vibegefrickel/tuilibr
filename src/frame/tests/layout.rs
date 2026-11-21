@@ -152,3 +152,102 @@ fn the_layout_is_maximal_by_default_toggles_and_reads_its_name() {
     );
     assert_eq!(Layout::Minimal.to_string(), "minimal");
 }
+
+#[test]
+fn ctrl_b_hides_the_left_pane_in_minimal_and_gives_the_frame_back() {
+    use super::super::{Layout, Panes};
+    let mut panes = Panes::new(Layout::Maximal, true);
+    panes.toggle_list();
+    assert!(!panes.list_shown());
+    assert_eq!(panes.layout(), Layout::Minimal);
+    panes.toggle_list();
+    assert!(panes.list_shown());
+    assert_eq!(panes.layout(), Layout::Maximal);
+
+    let mut minimal = Panes::new(Layout::Minimal, true);
+    minimal.toggle_list();
+    minimal.toggle_list();
+    assert_eq!(minimal, Panes::new(Layout::Minimal, true));
+}
+
+#[test]
+fn b_without_the_left_pane_frames_the_right_pane_and_ctrl_b_still_gives_the_frame_back() {
+    use super::super::{Layout, Panes};
+    let mut panes = Panes::new(Layout::Maximal, true);
+    panes.toggle_list();
+    panes.toggle_layout();
+    assert_eq!(panes.layout(), Layout::Maximal);
+    assert!(!panes.list_shown(), "B shows no left pane");
+    panes.toggle_layout();
+    panes.toggle_layout();
+    panes.toggle_list();
+    assert_eq!(panes, Panes::new(Layout::Maximal, true));
+
+    let mut shown = Panes::new(Layout::Maximal, true);
+    shown.toggle_layout();
+    assert_eq!(shown.layout(), Layout::Minimal);
+    assert!(shown.list_shown());
+}
+
+#[test]
+fn a_key_to_the_left_pane_shows_it_with_the_frame_from_before() {
+    use super::super::{Layout, Panes};
+    let mut panes = Panes::new(Layout::Maximal, true);
+    panes.toggle_list();
+    panes.show_list();
+    assert_eq!(panes, Panes::new(Layout::Maximal, true));
+    panes.show_list();
+    assert_eq!(
+        panes,
+        Panes::new(Layout::Maximal, true),
+        "a shown pane stays"
+    );
+}
+
+#[test]
+fn a_left_pane_that_starts_hidden_shows_with_ctrl_b_in_its_frame() {
+    use super::super::{Layout, Panes};
+    let mut panes = Panes::new(Layout::Maximal, false);
+    panes.toggle_list();
+    assert!(panes.list_shown());
+    assert_eq!(panes.layout(), Layout::Maximal);
+    panes.toggle_list();
+    assert!(!panes.list_shown());
+    assert_eq!(panes.layout(), Layout::Minimal);
+}
+
+#[test]
+fn a_hidden_left_pane_gives_the_whole_area_on_narrow_and_wide_screens() {
+    use super::super::{Layout, Panes};
+    let mut panes = Panes::new(Layout::Maximal, true);
+    panes.toggle_list();
+    for area in [Rect::new(0, 0, 100, 30), Rect::new(0, 0, 59, 30)] {
+        assert_eq!(
+            super::super::split(area, panes.list_shown()),
+            (Rect::default(), Split::Hidden, area)
+        );
+        assert_eq!(
+            split_boxed(area, panes.list_shown()),
+            (Rect::default(), area)
+        );
+    }
+}
+
+#[test]
+fn the_list_key_is_ctrl_b_only() {
+    use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+    use super::super::is_list_key;
+    let key = |code, modifiers| KeyEvent::new(code, modifiers);
+    assert!(is_list_key(&key(KeyCode::Char('b'), KeyModifiers::CONTROL)));
+    assert!(!is_list_key(&key(KeyCode::Char('b'), KeyModifiers::NONE)));
+    assert!(!is_list_key(&key(KeyCode::Char('B'), KeyModifiers::SHIFT)));
+    assert!(!is_list_key(&key(
+        KeyCode::Char('b'),
+        KeyModifiers::CONTROL | KeyModifiers::ALT
+    )));
+    assert!(!is_list_key(&key(
+        KeyCode::Char('f'),
+        KeyModifiers::CONTROL
+    )));
+}

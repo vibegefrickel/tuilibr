@@ -164,14 +164,14 @@ fn the_dimmed_key_halves_the_alpha() {
         look: Look::plain(Weight::Fill, Color::Rgb(255, 0, 0)),
         size: (64, 64),
         dimmed: false,
+        palette: Palette::default(),
     };
-    let palette = Palette::default();
-    let bright = key.render(&palette).expect("bright").to_rgba8();
+    let bright = key.render().expect("bright").to_rgba8();
     let dark = IconKey {
         dimmed: true,
         ..key
     }
-    .render(&palette)
+    .render()
     .expect("dimmed")
     .to_rgba8();
     assert_eq!(bright.get_pixel(32, 32).0[3], 255);

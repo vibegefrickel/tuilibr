@@ -36,8 +36,9 @@ pub struct StartAnswers {
 pub struct LateAnswers {
     /// The owed Kitty answers. After a device attributes answer, no Kitty answer is owed.
     pub kitty: usize,
-    /// An OSC answer is owed: the OSC 10 answer, or an OSC 4 answer of the palette. It stays
-    /// owed after DA1. Only the OSC 10 answer pays for it, else `OWED_FOR` of the filter ends it.
+    /// An OSC answer is owed: the OSC 10 answer did not come. The OSC 4 answers of the palette
+    /// can come late before it. It stays owed after DA1. Only the OSC 10 answer pays for it, else
+    /// `OWED_FOR` of the filter ends it.
     pub foreground: bool,
 }
 
@@ -90,13 +91,11 @@ pub fn query_cell_size_palette_and_probe(
     start_and_palette(&answer, answers)
 }
 
-/// The start answers and the palette of the bytes `answer`. A palette answer that did not come
-/// can come late, as an OSC answer, so it counts as owed.
+/// The start answers and the palette of the bytes `answer`. A missing palette answer adds no owed
+/// OSC answer: the terminal answers OSC 4 before OSC 10, so a palette answer can come late only
+/// with a missing OSC 10 answer, and that answer is owed already.
 fn start_and_palette(answer: &[u8], answers: usize) -> (StartAnswers, PaletteAnswers) {
-    let palette = parse_palette(answer);
-    let mut start = start_answers(answer, answers);
-    start.late_answers.foreground |= palette.iter().any(Option::is_none);
-    (start, palette)
+    (start_answers(answer, answers), parse_palette(answer))
 }
 
 /// Read the start answers until `deadline`. A separate function, so that a test can drive the
@@ -452,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_palette_answer_is_owed_as_an_osc_answer() {
+    fn a_missing_palette_answer_is_owed_only_without_the_osc_10_answer() {
         let cell = b"\x1b[6;43;18t".as_slice();
         let attributes = b"\x1b[?62;22;52c".as_slice();
         let palette = palette_answers();
@@ -470,11 +469,20 @@ mod tests {
         assert!(colors.iter().all(Option::is_none));
         assert_eq!(
             answers.late_answers,
+            LateAnswers::default(),
+            "after the OSC 10 answer, no palette answer comes"
+        );
+
+        let neither = [cell, attributes].concat();
+        let (answers, colors) = start_and_palette(&neither, 0);
+        assert!(colors.iter().all(Option::is_none));
+        assert_eq!(
+            answers.late_answers,
             LateAnswers {
                 kitty: 0,
                 foreground: true
             },
-            "the palette answers can still come"
+            "the palette answers and the OSC 10 answer can still come"
         );
     }
 

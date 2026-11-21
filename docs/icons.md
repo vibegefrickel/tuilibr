@@ -37,7 +37,7 @@ pub const ICON_SHARE: f32 = 0.62;                            // the icon side on
 // tuilibr::icons, feature `pictures`
 pub const fn svg(icon: Icon, weight: Weight) -> &'static str;
 pub fn render(icon: Icon, look: Look, palette: &Palette, size: (u32, u32)) -> Option<Bitmap>;
-pub struct IconKey { pub icon: Icon, pub look: Look, pub size: (u32, u32), pub dimmed: bool }
+pub struct IconKey { pub icon: Icon, pub look: Look, pub size: (u32, u32), pub dimmed: bool, pub palette: Palette }
 pub struct IconPicture<'a, K> { /* the store, the cell, the palette, the icon, the look */ }
 
 // tuilibr::terminal
@@ -225,7 +225,8 @@ A size of 0 gives `None`. A render takes 25 µs to 170 µs for `fill` and `regul
 ## The cache and the frame
 
 The `PictureStore` of the app is the cache. A new size after a resize or a zoom is a new
-`IconKey`, and the LRU of the store removes the old sizes. The crate adds no second cache.
+`IconKey`, and the LRU of the store removes the old sizes. A new palette after a theme switch is a
+new key too. The crate adds no second cache.
 
 An app uses an icon in one of three ways:
 

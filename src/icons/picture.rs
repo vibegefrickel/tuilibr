@@ -11,8 +11,10 @@ use crate::pictures::kitty::store::PictureStore;
 use crate::pictures::shape::copies::{Bitmap, dimmed};
 use crate::terminal::Palette;
 
-/// One rendered copy of an icon: the key of the copy in the `PictureStore` of an app. A new box
-/// size after a resize or a zoom is a new key, and the LRU of the store drops the old one.
+/// One rendered copy of an icon: the key of the copy in the `PictureStore` of an app.
+///
+/// A new box size after a resize or a zoom is a new key, and the LRU of the store drops the old
+/// one. A new palette after a theme switch is a new key too.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct IconKey {
     /// The icon.
@@ -23,12 +25,14 @@ pub struct IconKey {
     pub size: (u32, u32),
     /// The dark form of a pane without the focus, with the alpha of `copies::dimmed`.
     pub dimmed: bool,
+    /// The palette that gives the RGB of the colours of the look.
+    pub palette: Palette,
 }
 
 impl IconKey {
-    /// The copy of this key, the colours through `palette`. `None` for a side of 0.
-    pub fn render(&self, palette: &Palette) -> Option<Bitmap> {
-        let bitmap = render(self.icon, self.look, palette, self.size)?;
+    /// The copy of this key, the colours through its palette. `None` for a side of 0.
+    pub fn render(&self) -> Option<Bitmap> {
+        let bitmap = render(self.icon, self.look, &self.palette, self.size)?;
         Some(if self.dimmed { dimmed(&bitmap) } else { bitmap })
     }
 }
@@ -112,10 +116,11 @@ impl<K: From<IconKey> + Hash + Eq + Clone> Pictures for IconPicture<'_, K> {
                 u32::from(rows) * u32::from(self.cell.height.max(1)),
             ),
             dimmed: shade == Shade::Dimmed,
+            palette: self.palette,
         };
         let key = K::from(icon_key);
         if self.store.get(&key).is_none() {
-            let bitmap = icon_key.render(&self.palette)?;
+            let bitmap = icon_key.render()?;
             self.store.insert(key.clone(), bitmap);
         }
         self.ready = Some(key);

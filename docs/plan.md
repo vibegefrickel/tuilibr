@@ -3,26 +3,21 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: ec1553a
-- Done: one lint table in the crate and its six apps; the duplication review (the picture store,
-  the loop player, batches A, B and C, the plumbing on std); the XDG folders in every app.
-- Done: `dirs::move_once` in phewr, agendr and schnattr; the late-answer filter forgets the owed
-  answers after `OWED_FOR` (5 s); the code notes (an id index in `PictureStore::flush` and more).
-- Done: the docs hold no finished history; the comments follow STE and name no app.
-- Done: the Phosphor icons. The crate step is `a0c0062` (`tuilibr::icons`, the OSC 4 palette,
-  `Pictures::glyph`). The app steps: phewr `f61673a`, youtr `7df1c8b` and `c0444a4`, schnattr
-  `13c8ce0`, wettr `095619a`, glisr `0a1d71f`. `just install` passes in all six apps.
-- Done: `docs/icons.md` is the rules page of the icons (716 to 283 lines, no plan history).
-- Done (uncommitted): the icons `Package`, `GitDiff`, `CoatHanger` and `ListChecks` for glisr
-  (37 icons). glisr switches its closet and lists entries to the last two. The phewr
-  test `phosphor_icons_render_in_color` renders every icon and runs in `apps-check` only.
-- Open (agent): the zen key, see `## Open: the zen key`. The maintainer approved the plan on
-  2026-11-21. The work starts on request. The three optimizations of the review wait in `## Later`.
-- Open (user): push tuilibr and the six apps; test item 8 (OSC 4 in herdr, a list icon).
-- Later: the test run of the maintainer and the test matrix, see `## Later`.
-- Health: `just check` green (754, 224 and 644 tests); `just lints-diff` clean; no worker and no
-  extra worktree. The review of `a0c0062` found no issue. Its 2 suggestions are fixed (the glyph
-  stays in its box, a `Reset` ground gives the ink). Its notes are in `## Later`.
+- Commit: 837c211
+- Done: one lint table in the crate and its six apps. The duplication review (the picture store,
+  the loop player, batches A, B and C, the plumbing on std). The XDG folders in every app.
+- Done: the Phosphor icons. `837c211` adds `Package`, `GitDiff`, `CoatHanger` and `ListChecks`
+  (37 icons). glisr shows the last two on its Closet and Lists entries.
+- Done (uncommitted): the zen key. `frame::Panes` and `frame::is_list_key` in the crate.
+  `Ctrl-B` in schnattr, youtr, wettr and glisr, and as a second `Tab` in phewr (decision 6).
+- Done (uncommitted): the three optimizations of the icon review. `IconKey` holds the palette,
+  OSC 4 adds no owed answer, `Start` is `#[non_exhaustive]`.
+- Open (agent): none.
+- Open (user): commit tuilibr first, then schnattr, youtr, phewr, wettr and glisr. glisr also holds
+  the uncommitted work of its own session. Push all repositories. Test item 8 (OSC 4 in herdr).
+- Later: the test run of the maintainer and the test matrix, see the section "Later".
+- Health: `just check` green in the crate (761, 230 and 651 tests) and in all six apps: schnattr
+  1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 429. No worker and no extra worktree.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
@@ -30,58 +25,6 @@ file is the master of the plan. Each app session reads it before it changes a sh
 
 The tuilibr session (`tuilibr-82`) owns the crate code and the picture module. The schnattr session
 orchestrates the work across the apps.
-
-## Open: the zen key
-
-`Ctrl-B` hides the left pane and sets `Minimal` in every app with two panes. The name is "zen
-mode", because phewr already has a `Fullscreen` view. The maintainer chose the key and the
-behavior on 2026-11-21.
-
-The behavior:
-
-1. `Ctrl-B` stores the layout, hides the left pane, sets `Minimal` and gives the focus to the
-   right pane.
-2. A second `Ctrl-B` shows the left pane and restores the stored layout.
-3. In zen mode, `B` switches the box of the one visible pane. When zen mode ends, the stored layout
-   comes back.
-4. A key that moves the focus to the left pane (`h`, `Esc`, `Tab`) ends zen mode.
-5. The state lasts one run, the same as `B`. There is no config key.
-6. Below `NARROW_BELOW`, `Ctrl-B` hides the list above the main pane.
-7. `Ctrl-B` works in normal mode and in an inline text field, because the readline map gives it no
-   edit. A modal dialog ignores it.
-
-The facts of the survey (2026-11-21):
-
-- `frame::split` and `frame::split_boxed` take the flag `list_shown`. They hide the left pane.
-- schnattr hides its list with `Ctrl-B` (`toggle_list`) and keeps the layout. phewr hides its info
-  pane with `Tab`, and the pane starts hidden. youtr, wettr and glisr always pass `true`.
-- agendr has no left pane and no `B`. agendr gets no zen key.
-- phewr binds `Ctrl-B` to page up in the gallery. `PgUp` keeps that job.
-- The help of schnattr, youtr and phewr is full. The key goes into an existing row there.
-
-Step 1, the crate. It adds an interface and breaks nothing, so it lands in one step:
-
-- `frame::Panes` holds the layout, `list_shown` and the stored layout. It has `new`, `layout`,
-  `list_shown`, `zen`, `toggle_layout`, `toggle_list` and `show_list`.
-- `frame::is_list_key` returns `true` for `Ctrl-B`, so every app reads the same key.
-- One shared help row for `B` and `Ctrl-B`. Its text is public interface.
-- Tests with `TestBackend`: the round trip, the restore after `B` in zen mode, the narrow split.
-- Update the doc comment of `Layout`, decision 6 and `## What exists`.
-
-Step 2, the apps. Each app session or worker changes its own code:
-
-| App | The flag of the pane | Other work | Help |
-|---|---|---|---|
-| schnattr | `show_list` becomes `Panes` (`ui/mod.rs:84,88,108`) | `toggle_list` sets the layout | change the row "tab ctrl+b" |
-| youtr | pass the flag at `draw/mod.rs:67` | `dim_pane`, the mouse layout, the focus | merge into the `B` row |
-| phewr | `info_visible` becomes `Panes` (`ui/mod.rs:95`) | `Ctrl-B` = `Tab` + layout, remove `Ctrl-B` page up | merge into the `Tab` row |
-| wettr | `draw/mod.rs:126,134` | `dim_pane`, the focus, `h` and `Esc` | add a row |
-| glisr | `draw/mod.rs:203,211` | `dim_pane`, `Tab` ends zen mode | add a row |
-
-- The key tables in the docs: schnattr `README.md:368`, youtr `README.md:68`, phewr
-  `README.md:143,169`. wettr and glisr have no key table.
-- Each app adds one test: `Ctrl-B` hides the pane and sets `Minimal`, a second `Ctrl-B` restores
-  both. The size test of the help stays green.
 
 ## Later
 
@@ -92,12 +35,6 @@ The work that waits, by the decision of the maintainer (2026-11-19):
   terminal.
 - **The test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm, Terminal.app, SSH).
   The matrix is in `docs/pictures.md`, "The test matrix".
-- **Three optimizations of the icon review** (2026-11-21, the maintainer moved them to later):
-  - `IconKey` holds no palette. If an app reads the palette again (a theme switch), it must clear
-    the store. The fix is a palette hash in the key, or a store clear on a palette change.
-  - A missing OSC 4 answer makes the foreground answer owed, even after the OSC 10 answer. The
-    late-answer filter then swallows a real Alt+`]` for 5 s. The fix: owe OSC 4 only without OSC 10.
-  - `Start` is not `#[non_exhaustive]`. Add the attribute at the next break of the interface.
 
 ## Decisions of the maintainer
 
@@ -119,6 +56,15 @@ The work that waits, by the decision of the maintainer (2026-11-19):
    app. `frame::Layout` has `Maximal` as the default, and the key `B` switches it for one run.
    agendr has no `layout` key and uses the maximal split only. In phewr, the layout applies to the
    info screen only: the grid, the fullscreen view and the slideshow have no box.
+   - `Ctrl-B` (`frame::is_list_key`) hides the left pane and sets `Minimal` (`frame::Panes`). The
+     right pane takes the focus. The next `Ctrl-B` shows the left pane in the layout from before.
+   - While the left pane is hidden, `B` switches the box of the right pane. The next `Ctrl-B` still
+     gives back the layout from before.
+   - A key that moves the focus to the left pane (`h`, `Esc`, `Tab`, `/`, a click) shows it again.
+   - The state lasts one run. It has no config key. agendr has no `Ctrl-B`.
+   - `Ctrl-B` works in normal mode. In schnattr it also works in the composer.
+   - phewr draws no box without the info pane. So `Ctrl-B` there is a second `Tab`, and phewr
+     keeps its own fields. `PgUp` and `Ctrl-F` page the grid.
 7. **The bar and the dialogs.** The bar shows five parts from left to right: the mode block, the
    left group, the middle text, the right groups and the icons. The time is the last right group.
    The mode names are upper case words (`NORMAL`, `INSERT`), one letter below `NARROW_BELOW`. A
@@ -143,8 +89,8 @@ The work that waits, by the decision of the maintainer (2026-11-19):
 
 `src/lib.rs` lists the modules. `README.md` describes them.
 
-- `frame`: the screen frame, the bar, the dialog box, the help, the question row, the omnibox and
-  the layout toggle.
+- `frame`: the screen frame, the bar, the dialog box, the help, the question row, the omnibox, the
+  layout toggle and the hidden left pane (`Panes`).
 - `text_field`: the text input, the readline key map, the wrap and the editor.
 - `terminal`: the session, the panic hook, the synchronized update, the reader thread, the start
   queries and the late answers.
