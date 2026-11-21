@@ -13,7 +13,11 @@
   `Pictures::glyph`). The app steps: phewr `f61673a`, youtr `7df1c8b` and `c0444a4`, schnattr
   `13c8ce0`, wettr `095619a`, glisr `0a1d71f`. `just install` passes in all six apps.
 - Done: `docs/icons.md` is the rules page of the icons (716 to 283 lines, no plan history).
-- Open (agent): none. The three optimizations of the review wait in `## Later`.
+- Done (uncommitted): the icons `Package`, `GitDiff`, `CoatHanger` and `ListChecks` for glisr
+  (37 icons). glisr switches its closet and lists entries to the last two. The phewr
+  test `phosphor_icons_render_in_color` renders every icon and runs in `apps-check` only.
+- Open (agent): the zen key, see `## Open: the zen key`. The maintainer approved the plan on
+  2026-11-21. The work starts on request. The three optimizations of the review wait in `## Later`.
 - Open (user): push tuilibr and the six apps; test item 8 (OSC 4 in herdr, a list icon).
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
 - Health: `just check` green (754, 224 and 644 tests); `just lints-diff` clean; no worker and no
@@ -26,6 +30,58 @@ file is the master of the plan. Each app session reads it before it changes a sh
 
 The tuilibr session (`tuilibr-82`) owns the crate code and the picture module. The schnattr session
 orchestrates the work across the apps.
+
+## Open: the zen key
+
+`Ctrl-B` hides the left pane and sets `Minimal` in every app with two panes. The name is "zen
+mode", because phewr already has a `Fullscreen` view. The maintainer chose the key and the
+behavior on 2026-11-21.
+
+The behavior:
+
+1. `Ctrl-B` stores the layout, hides the left pane, sets `Minimal` and gives the focus to the
+   right pane.
+2. A second `Ctrl-B` shows the left pane and restores the stored layout.
+3. In zen mode, `B` switches the box of the one visible pane. When zen mode ends, the stored layout
+   comes back.
+4. A key that moves the focus to the left pane (`h`, `Esc`, `Tab`) ends zen mode.
+5. The state lasts one run, the same as `B`. There is no config key.
+6. Below `NARROW_BELOW`, `Ctrl-B` hides the list above the main pane.
+7. `Ctrl-B` works in normal mode and in an inline text field, because the readline map gives it no
+   edit. A modal dialog ignores it.
+
+The facts of the survey (2026-11-21):
+
+- `frame::split` and `frame::split_boxed` take the flag `list_shown`. They hide the left pane.
+- schnattr hides its list with `Ctrl-B` (`toggle_list`) and keeps the layout. phewr hides its info
+  pane with `Tab`, and the pane starts hidden. youtr, wettr and glisr always pass `true`.
+- agendr has no left pane and no `B`. agendr gets no zen key.
+- phewr binds `Ctrl-B` to page up in the gallery. `PgUp` keeps that job.
+- The help of schnattr, youtr and phewr is full. The key goes into an existing row there.
+
+Step 1, the crate. It adds an interface and breaks nothing, so it lands in one step:
+
+- `frame::Panes` holds the layout, `list_shown` and the stored layout. It has `new`, `layout`,
+  `list_shown`, `zen`, `toggle_layout`, `toggle_list` and `show_list`.
+- `frame::is_list_key` returns `true` for `Ctrl-B`, so every app reads the same key.
+- One shared help row for `B` and `Ctrl-B`. Its text is public interface.
+- Tests with `TestBackend`: the round trip, the restore after `B` in zen mode, the narrow split.
+- Update the doc comment of `Layout`, decision 6 and `## What exists`.
+
+Step 2, the apps. Each app session or worker changes its own code:
+
+| App | The flag of the pane | Other work | Help |
+|---|---|---|---|
+| schnattr | `show_list` becomes `Panes` (`ui/mod.rs:84,88,108`) | `toggle_list` sets the layout | change the row "tab ctrl+b" |
+| youtr | pass the flag at `draw/mod.rs:67` | `dim_pane`, the mouse layout, the focus | merge into the `B` row |
+| phewr | `info_visible` becomes `Panes` (`ui/mod.rs:95`) | `Ctrl-B` = `Tab` + layout, remove `Ctrl-B` page up | merge into the `Tab` row |
+| wettr | `draw/mod.rs:126,134` | `dim_pane`, the focus, `h` and `Esc` | add a row |
+| glisr | `draw/mod.rs:203,211` | `dim_pane`, `Tab` ends zen mode | add a row |
+
+- The key tables in the docs: schnattr `README.md:368`, youtr `README.md:68`, phewr
+  `README.md:143,169`. wettr and glisr have no key table.
+- Each app adds one test: `Ctrl-B` hides the pane and sets `Minimal`, a second `Ctrl-B` restores
+  both. The size test of the help stays green.
 
 ## Later
 

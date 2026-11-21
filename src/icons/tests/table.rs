@@ -8,7 +8,7 @@ use super::super::{Icon, Look, Weight};
 
 /// The Nerd Font code point of each icon, from the table of `docs/icons.md` and the network
 /// glyphs of schnattr.
-const CODE_POINTS: [(Icon, u32); 33] = [
+const CODE_POINTS: [(Icon, u32); 37] = [
     (Icon::FlowerTulip, 0xF09F1),
     (Icon::Sun, 0xF0599),
     (Icon::Leaf, 0xF032A),
@@ -20,6 +20,10 @@ const CODE_POINTS: [(Icon, u32); 33] = [
     (Icon::TShirt, 0xF0A7B),
     (Icon::Bicycle, 0xF109C),
     (Icon::PersonSimpleHike, 0xF0D7F),
+    (Icon::Package, 0xF03D7),
+    (Icon::GitDiff, 0xF018A),
+    (Icon::CoatHanger, 0xF02C8),
+    (Icon::ListChecks, 0xF0756),
     (Icon::User, 0xF0004),
     (Icon::Users, 0xF000E),
     (Icon::Video, 0xF040B),

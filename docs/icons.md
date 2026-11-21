@@ -1,6 +1,6 @@
 # The icons
 
-`tuilibr::icons` is the shared icon set of the apps: 33 Phosphor Icons in three weights, and a Nerd
+`tuilibr::icons` is the shared icon set of the apps: 37 Phosphor Icons in three weights, and a Nerd
 Font glyph for each icon. schnattr, phewr, wettr, youtr and glisr show them. agendr builds without
 `pictures` and shows none. This file holds the rules of the icons.
 
@@ -75,6 +75,10 @@ without the Kitty graphics protocol. The `md-` glyphs come from `glyphnames.json
 | `TShirt` | `t-shirt` | glisr, clothing | fill | `md-tshirt_crew` | U+F0A7B |
 | `Bicycle` | `bicycle` | glisr, bike | fill | `md-bicycle` | U+F109C |
 | `PersonSimpleHike` | `person-simple-hike` | glisr, hike | fill | `md-hiking` | U+F0D7F |
+| `Package` | `package` | none yet, a box for glisr | fill | `md-package_variant_closed` | U+F03D7 |
+| `GitDiff` | `git-diff` | none yet, a compare view for glisr | fill | `md-compare` | U+F018A |
+| `CoatHanger` | `coat-hanger` | glisr, the closet | fill | `md-hanger` | U+F02C8 |
+| `ListChecks` | `list-checks` | glisr, the lists table | fill | `md-format_list_checks` | U+F0756 |
 | `User` | `user` | schnattr, direct chat, and youtr, channel | fill | `md-account` | U+F0004 |
 | `Users` | `users` | schnattr, group chat | fill | `md-account_multiple` | U+F000E |
 | `Video` | `video` | youtr, pinned entry | fill | `md-play_box_outline` | U+F040B |

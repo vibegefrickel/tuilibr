@@ -100,6 +100,10 @@ icons! {
     TShirt => "t-shirt", '\u{F0A7B}';
     Bicycle => "bicycle", '\u{F109C}';
     PersonSimpleHike => "person-simple-hike", '\u{F0D7F}';
+    Package => "package", '\u{F03D7}';
+    GitDiff => "git-diff", '\u{F018A}';
+    CoatHanger => "coat-hanger", '\u{F02C8}';
+    ListChecks => "list-checks", '\u{F0756}';
     User => "user", '\u{F0004}';
     Users => "users", '\u{F000E}';
     Video => "video", '\u{F040B}';
