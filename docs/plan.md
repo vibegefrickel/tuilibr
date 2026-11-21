@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: a0c0062
+- Commit: ec1553a
 - Done: one lint table in the crate and its six apps; the duplication review (the picture store,
   the loop player, batches A, B and C, the plumbing on std); the XDG folders in every app.
 - Done: `dirs::move_once` in phewr, agendr and schnattr; the late-answer filter forgets the owed
@@ -12,11 +12,13 @@
 - Done: the Phosphor icons. The crate step is `a0c0062` (`tuilibr::icons`, the OSC 4 palette,
   `Pictures::glyph`). The app steps: phewr `f61673a`, youtr `7df1c8b` and `c0444a4`, schnattr
   `13c8ce0`, wettr `095619a`, glisr `0a1d71f`. `just install` passes in all six apps.
-- Open (agent): rewrite `docs/icons.md` as the rules page of the icons (its own last step). Drop
-  the plan history and the three references to "the open questions", which have no section.
+- Done: `docs/icons.md` is the rules page of the icons (716 to 283 lines, no plan history).
+- Open (agent): none. The three optimizations of the review wait in `## Later`.
 - Open (user): push tuilibr and the six apps; test item 8 (OSC 4 in herdr, a list icon).
 - Later: the test run of the maintainer and the test matrix, see `## Later`.
-- Health: see the end of the consolidate report of 2026-11-21.
+- Health: `just check` green (754, 224 and 644 tests); `just lints-diff` clean; no worker and no
+  extra worktree. The review of `a0c0062` found no issue. Its 2 suggestions are fixed (the glyph
+  stays in its box, a `Reset` ground gives the ink). Its notes are in `## Later`.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
@@ -34,6 +36,12 @@ The work that waits, by the decision of the maintainer (2026-11-19):
   terminal.
 - **The test matrix of the picture module** (Ghostty, herdr, Kitty, WezTerm, Terminal.app, SSH).
   The matrix is in `docs/pictures.md`, "The test matrix".
+- **Three optimizations of the icon review** (2026-11-21, the maintainer moved them to later):
+  - `IconKey` holds no palette. If an app reads the palette again (a theme switch), it must clear
+    the store. The fix is a palette hash in the key, or a store clear on a palette change.
+  - A missing OSC 4 answer makes the foreground answer owed, even after the OSC 10 answer. The
+    late-answer filter then swallows a real Alt+`]` for 5 s. The fix: owe OSC 4 only without OSC 10.
+  - `Start` is not `#[non_exhaustive]`. Add the attribute at the next break of the interface.
 
 ## Decisions of the maintainer
 

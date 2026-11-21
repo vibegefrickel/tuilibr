@@ -121,3 +121,14 @@ fn a_glyph_never_shows_with_pictures() {
     );
     assert_eq!(pictures.placed.len(), 1, "the picture shows");
 }
+
+#[test]
+fn a_glyph_in_a_narrow_entry_writes_no_cell_outside_the_entry() {
+    let mut pictures = without_pictures(Some(SUN));
+    let buffer = drawn(4, 2, |frame| {
+        frame.buffer_mut()[(1, 0)].set_char('x');
+        draw_entry(frame, &mut pictures, entry(true), Rect::new(0, 0, 1, 2));
+    });
+    assert_eq!(symbol(&buffer, 0, 0), "\u{F0599}");
+    assert_eq!(symbol(&buffer, 1, 0), "x", "the cell after the entry stays");
+}

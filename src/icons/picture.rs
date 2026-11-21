@@ -3,7 +3,7 @@
 
 use std::hash::Hash;
 
-use ratatui::layout::Rect;
+use ratatui::{layout::Rect, style::Color};
 
 use super::{Icon, Look, render};
 use crate::frame::{CellSize, Glyph, Pictures, Shade, square_columns};
@@ -61,7 +61,11 @@ impl<'a, K: From<IconKey> + Hash + Eq + Clone> IconPicture<'a, K> {
         icon: Icon,
         look: Look,
     ) -> Self {
-        let color = look.ground.unwrap_or(look.ink);
+        // The render draws no badge for a `Color::Reset` ground, so the glyph takes the ink too.
+        let color = look
+            .ground
+            .filter(|ground| *ground != Color::Reset)
+            .unwrap_or(look.ink);
         Self {
             store,
             cell,

@@ -91,7 +91,10 @@ pub fn draw_entry(frame: &mut Frame<'_>, picture: &mut dyn Pictures, entry: Entr
     frame.render_widget(Paragraph::new("").style(style), text);
     if columns > 0 && area.height > 0 {
         match glyph {
-            Some(glyph) => draw_glyph(frame.buffer_mut(), (area.x, area.y), glyph, shade),
+            Some(glyph) => {
+                let glyph_box = Rect::new(area.x, area.y, columns, 1);
+                draw_glyph(frame.buffer_mut(), glyph_box, glyph, shade);
+            }
             None => place_centered(picture, shade, picture_area),
         }
     }

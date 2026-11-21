@@ -70,18 +70,24 @@ pub trait Pictures {
     }
 }
 
-/// Writes `glyph` at `x`, `y` of `buffer` and clears the cell after it, the second column of the
-/// glyph box. In `Shade::Dimmed`, the glyph takes `dim_color()`.
-pub(super) fn draw_glyph(buffer: &mut Buffer, (x, y): (u16, u16), glyph: Glyph, shade: Shade) {
+/// Writes `glyph` into the first cell of `glyph_box` and clears the second cell. It writes no
+/// cell outside the box. In `Shade::Dimmed`, the glyph takes `dim_color()`.
+pub(super) fn draw_glyph(buffer: &mut Buffer, glyph_box: Rect, glyph: Glyph, shade: Shade) {
+    if glyph_box.width == 0 || glyph_box.height == 0 {
+        return;
+    }
     let color = if shade == Shade::Dimmed {
         dim_color()
     } else {
         glyph.color
     };
+    let (x, y) = (glyph_box.x, glyph_box.y);
     if let Some(cell) = buffer.cell_mut((x, y)) {
         cell.set_char(glyph.symbol).set_fg(color);
     }
-    if let Some(cell) = x.checked_add(1).and_then(|next| buffer.cell_mut((next, y))) {
+    if glyph_box.width > 1
+        && let Some(cell) = buffer.cell_mut((x.saturating_add(1), y))
+    {
         cell.set_char(' ');
     }
 }

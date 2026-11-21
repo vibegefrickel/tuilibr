@@ -101,7 +101,9 @@ fn draw_shaded_header(
         (None, _) => match glyph {
             Some(glyph) => {
                 let row = header.y + (header.height.saturating_sub(1)) / 2;
-                draw_glyph(frame.buffer_mut(), (header.x + 1, row), glyph, shade);
+                let columns = GLYPH_COLUMNS.min(header.width.saturating_sub(1));
+                let glyph_box = Rect::new(header.x + 1, row, columns, 1);
+                draw_glyph(frame.buffer_mut(), glyph_box, glyph, shade);
                 beside(header, GLYPH_COLUMNS + 2)
             }
             None => header,

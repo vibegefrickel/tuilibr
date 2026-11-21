@@ -115,6 +115,16 @@ fn the_adapter_has_no_stand_in_and_gives_the_glyph() {
         Some(Color::Gray),
         "without a ground, the glyph takes the ink"
     );
+    let reset = Look {
+        ground: Some(Color::Reset),
+        ..Look::plain(super::super::Weight::Fill, Color::Red)
+    };
+    let mut reset = IconPicture::new(&mut store, CELL, Palette::default(), Icon::Moon, reset);
+    assert_eq!(
+        reset.glyph(Shade::Bright).map(|glyph| glyph.color),
+        Some(Color::Red),
+        "a reset ground draws no badge, so the glyph takes the ink"
+    );
     let mut none = IconPicture::new(
         &mut store,
         CELL,
