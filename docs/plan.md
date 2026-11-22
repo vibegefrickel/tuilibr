@@ -3,7 +3,7 @@
 ## Handoff
 
 - Date: 2026-11-21
-- Commit: 162a548
+- Commit: 2b712cb
 - Done: the zen key (`frame::Panes`, `frame::is_list_key`, decision 6) and the three icon review
   optimizations, in `bcab8a4`.
 - Done: `951ebf3` adds `text_field::editor::edit_field` (Ctrl-G for one `TextField`, with
@@ -12,7 +12,7 @@
 - Done: item 8 of the test run passes in Ghostty and in herdr: the OSC 4 answers and the icon
   colours in glisr. Kitty is out of scope.
 - Open (agent): none.
-- Open (user): commit the doc edits of item 8 in tuilibr. Push tuilibr and the apps.
+- Open (user): none. All seven repositories are committed and pushed.
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
 - Health: `just check` green in the crate (767, 235 and 657 tests) and in all six apps: schnattr
   1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 443. No worker and no extra worktree.
