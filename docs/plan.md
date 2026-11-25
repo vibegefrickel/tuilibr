@@ -3,22 +3,23 @@
 ## Handoff
 
 - Date: 2026-11-25
-- Commit: 6b225c3
-- Done: `6b225c3` updates 14 crates in `Cargo.lock`, `system-deps` 8 to 9 included. `just check`
-  stays green.
-- Done: the zen key (`frame::Panes`, `frame::is_list_key`, decision 6) and the three icon review
-  optimizations, in `bcab8a4`.
-- Done: `951ebf3` adds `text_field::editor::edit_field` (Ctrl-G for one `TextField`, with
-  `FieldEdit` and `Edited`) and `PictureStore::cleared`. schnattr (`bfbeb3a`) and glisr
-  (`c8a95e8`) use them.
-- Done: item 8 of the test run passes in Ghostty and in herdr: the OSC 4 answers and the icon
-  colours in glisr. Kitty is out of scope.
-- Open (agent): none.
-- Open (user): none. All seven repositories are committed and pushed.
+- Commit: e981ef3
+- Done: `6b225c3` updates 14 crates in `Cargo.lock`, `system-deps` 8 to 9 included.
+- Done: all repos move to `github.com/vibegefrickel`. The URL edits in the six repos are
+  uncommitted. The glisr `origin` points to its GitHub repo, which is still empty.
+- Done: the maintainer deleted wettr, its files and its Claude folder. glisr holds its Weather
+  tab. `apps` in `justfile` and `lints-allow.toml` no longer name wettr (uncommitted).
+- Open (agent):
+  1. Remove wettr from the app lists in `Cargo.toml`, `README.md`, `AGENTS.md`, `src/lib.rs`,
+     `docs/icons.md` and this file. The weather rows of `docs/icons.md` then name glisr.
+- Open (user): commit the edits in each repo. Push glisr to GitHub. Remove wettr from
+  `~/Dotfiles/scripts/install.sh:87, 90` and `scripts/Brewfile:50`. The same `install.sh`
+  still clones from Codeberg (lines 10, 88, 93).
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
-- Health: `just check` green in the crate on 2026-11-25 (657 tests in the last run). On
-  2026-11-21 it was green in all six apps: schnattr
-  1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 443. No worker and no extra worktree.
+- Done: `cargo update` in all six repos (patch and minor only, uncommitted lock files).
+- Health: 2026-11-25, after the update: `just check` green in the crate (767 tests).
+  `just apps-check` without wettr: schnattr 1451, youtr 291, phewr 713, agendr 1329 green. glisr
+  fails on its uncommitted H1 work (unused `geo` and `gpx`). Its HEAD passes 862 tests.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
 phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
@@ -44,8 +45,8 @@ The work that waits, by the decision of the maintainer (2026-11-19):
 2. **MIT.** The crate is MIT. schnattr is AGPL-3.0-only and can use an MIT crate.
 3. **The path dependency.** Each app names `tuilibr = { path = "../tuilibr" }`. There is no git
    dependency and no build for other people (2026-11-20). The repository
-   `ssh://git@codeberg.org/webgefrickel/tuilibr.git` is private and is a backup only. The recipe
-   for a git dependency with a `rev` is in this file at `7428163`.
+   `git@github.com:vibegefrickel/tuilibr.git` is public (2026-11-25). The recipe for a git
+   dependency with a `rev` is in this file at `7428163`.
 4. **One accent: white.** Everything active takes `frame::accent()`, the bright white of the
    palette (slot 15). The text on it is the black of the palette (slot 0). There is no knob.
    The pane without the focus takes `Color::DarkGray` (slot 8). The help headings stay
@@ -140,4 +141,4 @@ the public texts and the tests.
 
 ## Steps for the maintainer
 
-1. After each commit, push `main` to `origin` (codeberg, the private backup).
+1. After each commit, push `main` to `origin` (GitHub, `vibegefrickel`).
