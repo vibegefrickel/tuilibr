@@ -2,8 +2,10 @@
 
 ## Handoff
 
-- Date: 2026-11-21
-- Commit: 2b712cb
+- Date: 2026-11-25
+- Commit: 6b225c3
+- Done: `6b225c3` updates 14 crates in `Cargo.lock`, `system-deps` 8 to 9 included. `just check`
+  stays green.
 - Done: the zen key (`frame::Panes`, `frame::is_list_key`, decision 6) and the three icon review
   optimizations, in `bcab8a4`.
 - Done: `951ebf3` adds `text_field::editor::edit_field` (Ctrl-G for one `TextField`, with
@@ -14,7 +16,8 @@
 - Open (agent): none.
 - Open (user): none. All seven repositories are committed and pushed.
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
-- Health: `just check` green in the crate (767, 235 and 657 tests) and in all six apps: schnattr
+- Health: `just check` green in the crate on 2026-11-25 (657 tests in the last run). On
+  2026-11-21 it was green in all six apps: schnattr
   1446, youtr 291, phewr 713, agendr 1329, wettr 430, glisr 443. No worker and no extra worktree.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
