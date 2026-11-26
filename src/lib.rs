@@ -1,5 +1,5 @@
-//! The shared terminal UI parts and the shared app plumbing of schnattr, youtr, phewr, agendr,
-//! wettr and glisr.
+//! The shared terminal UI parts and the shared app plumbing of schnattr, youtr, phewr, agendr
+//! and glisr.
 //!
 //! The crate knows no app type. An app fills plain view structs and places its pictures through
 //! the `frame::Pictures` trait.

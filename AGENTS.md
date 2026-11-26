@@ -5,7 +5,7 @@ first. Then read the `## Handoff` section of `docs/plan.md`.
 
 ## What this is
 
-tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr, wettr
+tuilibr is the library crate with the terminal UI parts that schnattr, youtr, phewr, agendr
 and glisr share. Each app uses it as a path dependency on `../tuilibr`. The crate also holds the
 shared app plumbing outside the UI: the XDG folders, the atomic write, the capped log and the
 external programs. The crate knows no app type and no app data. An app fills plain view structs, and

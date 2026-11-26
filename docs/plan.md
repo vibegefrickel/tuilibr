@@ -2,27 +2,27 @@
 
 ## Handoff
 
-- Date: 2026-11-25
-- Commit: e981ef3
-- Done: `6b225c3` updates 14 crates in `Cargo.lock`, `system-deps` 8 to 9 included.
-- Done: all repos move to `github.com/vibegefrickel`. The URL edits in the six repos are
-  uncommitted. The glisr `origin` points to its GitHub repo, which is still empty.
+- Date: 2026-11-26
+- Commit: ad2dccb
+- Done: all repos move to `github.com/vibegefrickel`, with the URLs in `Cargo.toml`, the READMEs,
+  the schnattr `LICENSE` and this file.
 - Done: the maintainer deleted wettr, its files and its Claude folder. glisr holds its Weather
-  tab. `apps` in `justfile` and `lints-allow.toml` no longer name wettr (uncommitted).
-- Open (agent):
-  1. Remove wettr from the app lists in `Cargo.toml`, `README.md`, `AGENTS.md`, `src/lib.rs`,
-     `docs/icons.md` and this file. The weather rows of `docs/icons.md` then name glisr.
-- Open (user): commit the edits in each repo. Push glisr to GitHub. Remove wettr from
-  `~/Dotfiles/scripts/install.sh:87, 90` and `scripts/Brewfile:50`. The same `install.sh`
-  still clones from Codeberg (lines 10, 88, 93).
+  tab. `apps` in `justfile` and `lints-allow.toml` no longer name wettr.
+- Done: `cargo update` in all six repos, patch and minor only. No direct dependency has a new
+  major. schnattr keeps `plist = "=1.10.0"`, `jiff_grammers` 0.2 and presage `4b81740` on purpose.
+- Done: no file names wettr as an app any more. The weather rows of `docs/icons.md` name glisr,
+  and the `dirs` tests take glisr as the sample app.
+- Open (agent): none.
+- Open (user): push agendr `8c9a733`. Push glisr: its GitHub repo is still empty. The Dotfiles
+  session fixes `install.sh` and `Brewfile` (wettr, Codeberg). It asks you if the dotfiles repo
+  moves too, and before `brew upgrade` (22 updates).
 - Later: the test run of the maintainer and the test matrix, see the section "Later".
-- Done: `cargo update` in all six repos (patch and minor only, uncommitted lock files).
-- Health: 2026-11-25, after the update: `just check` green in the crate (767 tests).
-  `just apps-check` without wettr: schnattr 1451, youtr 291, phewr 713, agendr 1329 green. glisr
-  fails on its uncommitted H1 work (unused `geo` and `gpx`). Its HEAD passes 862 tests.
+- Health: 2026-11-26: `just check` green (767, 235 and 657 tests). On 2026-11-25, after the
+  update, the apps were green: schnattr 1451, youtr 291, phewr 713, agendr 1329. glisr failed on
+  its uncommitted H1 work (unused `geo` and `gpx`), and its HEAD passed 862 tests. No worker.
 
 tuilibr is one library crate with the terminal UI parts and the app plumbing that schnattr, youtr,
-phewr, agendr, wettr and glisr share. It replaces the copied modules and their sync recipes. This
+phewr, agendr and glisr share. It replaces the copied modules and their sync recipes. This
 file is the master of the plan. Each app session reads it before it changes a shared part.
 
 The tuilibr session (`tuilibr-82`) owns the crate code and the picture module. The schnattr session

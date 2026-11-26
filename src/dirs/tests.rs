@@ -48,7 +48,7 @@ fn an_absolute_xdg_value_wins_and_an_empty_or_relative_one_counts_as_unset() {
     assert_eq!(base.cache, Path::new("/home/me/.cache"));
     assert_eq!(base.state, Path::new("/home/me/.local/state"));
     assert_eq!(base.data, Path::new("/data"));
-    assert_eq!(base.app("wettr").config, Path::new("/etc/me/wettr"));
+    assert_eq!(base.app("glisr").config, Path::new("/etc/me/glisr"));
 }
 
 #[test]
@@ -56,29 +56,29 @@ fn the_root_variable_puts_the_folders_below_one_root() {
     let vars = lookup(&[
         ("HOME", "/home/me"),
         ("XDG_CONFIG_HOME", "/etc/me"),
-        ("WETTR_HOME", "/tmp/profile"),
+        ("GLISR_HOME", "/tmp/profile"),
     ]);
-    let dirs = AppDirs::from_vars("wettr", Some("WETTR_HOME"), &vars).unwrap();
+    let dirs = AppDirs::from_vars("glisr", Some("GLISR_HOME"), &vars).unwrap();
     assert_eq!(
         dirs,
         AppDirs::below(Path::new("/tmp/profile"), "/home/me".into())
     );
     assert_eq!(dirs.state, Path::new("/tmp/profile/state"));
-    let without = AppDirs::from_vars("wettr", None, &vars).unwrap();
+    let without = AppDirs::from_vars("glisr", None, &vars).unwrap();
     assert_eq!(
         without.config,
-        Path::new("/etc/me/wettr"),
+        Path::new("/etc/me/glisr"),
         "no root variable"
     );
     let empty = AppDirs::from_vars(
-        "wettr",
-        Some("WETTR_HOME"),
-        lookup(&[("HOME", "/home/me"), ("WETTR_HOME", "")]),
+        "glisr",
+        Some("GLISR_HOME"),
+        lookup(&[("HOME", "/home/me"), ("GLISR_HOME", "")]),
     )
     .unwrap();
     assert_eq!(
         empty.config,
-        Path::new("/home/me/.config/wettr"),
+        Path::new("/home/me/.config/glisr"),
         "an empty root"
     );
 }

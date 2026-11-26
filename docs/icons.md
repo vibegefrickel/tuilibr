@@ -1,7 +1,7 @@
 # The icons
 
 `tuilibr::icons` is the shared icon set of the apps: 37 Phosphor Icons in three weights, and a Nerd
-Font glyph for each icon. schnattr, phewr, wettr, youtr and glisr show them. agendr builds without
+Font glyph for each icon. schnattr, phewr, youtr and glisr show them. agendr builds without
 `pictures` and shows none. This file holds the rules of the icons.
 
 ## The module
@@ -65,7 +65,7 @@ without the Kitty graphics protocol. The `md-` glyphs come from `glyphnames.json
 | `Icon` | Phosphor name | Use | Weight | Nerd Font glyph | Code point |
 |---|---|---|---|---|---|
 | `FlowerTulip` | `flower-tulip` | glisr, list for spring | fill | `md-flower_tulip` | U+F09F1 |
-| `Sun` | `sun` | glisr, list for summer, and wettr, clear day | fill, duotone | `md-weather_sunny` | U+F0599 |
+| `Sun` | `sun` | glisr, list for summer, and the glisr weather, clear day | fill, duotone | `md-weather_sunny` | U+F0599 |
 | `Leaf` | `leaf` | glisr, list for autumn | fill | `md-leaf` | U+F032A |
 | `Snowflake` | `snowflake` | glisr, list for winter | fill | `md-snowflake` | U+F0717 |
 | `Backpack` | `backpack` | glisr, generic gear list | fill | `md-bag_personal` | U+F0E10 |
@@ -86,15 +86,15 @@ without the Kitty graphics protocol. The `md-` glyphs come from `glyphnames.json
 | `ArrowElbowLeftUp` | `arrow-elbow-left-up` | phewr, the `..` entry | regular | `md-arrow_up_left` | U+F17BD |
 | `Image` | `image` | phewr, image without a thumbnail | regular | `md-image` | U+F02E9 |
 | `Play` | `play` | phewr, video without a thumbnail | regular | `md-play` | U+F040A |
-| `Moon` | `moon` | wettr, clear night | duotone | `md-weather_night` | U+F0594 |
-| `Cloud` | `cloud` | wettr, overcast | duotone | `md-weather_cloudy` | U+F0590 |
-| `CloudSun` | `cloud-sun` | wettr, partly cloudy day | duotone | `md-weather_partly_cloudy` | U+F0595 |
-| `CloudMoon` | `cloud-moon` | wettr, partly cloudy night | duotone | `md-weather_night_partly_cloudy` | U+F0F31 |
-| `CloudRain` | `cloud-rain` | wettr, drizzle, rain, showers | duotone | `md-weather_rainy` | U+F0597 |
-| `CloudSnow` | `cloud-snow` | wettr, snow, sleet | duotone | `md-weather_snowy` | U+F0598 |
-| `CloudFog` | `cloud-fog` | wettr, fog | duotone | `md-weather_fog` | U+F0591 |
-| `CloudLightning` | `cloud-lightning` | wettr, thunderstorm, hail | duotone | `md-weather_lightning` | U+F0593 |
-| `Wind` | `wind` | none yet, a wind row for wettr | duotone | `md-weather_windy` | U+F059D |
+| `Moon` | `moon` | glisr weather, clear night | duotone | `md-weather_night` | U+F0594 |
+| `Cloud` | `cloud` | glisr weather, overcast | duotone | `md-weather_cloudy` | U+F0590 |
+| `CloudSun` | `cloud-sun` | glisr weather, partly cloudy day | duotone | `md-weather_partly_cloudy` | U+F0595 |
+| `CloudMoon` | `cloud-moon` | glisr weather, partly cloudy night | duotone | `md-weather_night_partly_cloudy` | U+F0F31 |
+| `CloudRain` | `cloud-rain` | glisr weather, drizzle, rain, showers | duotone | `md-weather_rainy` | U+F0597 |
+| `CloudSnow` | `cloud-snow` | glisr weather, snow, sleet | duotone | `md-weather_snowy` | U+F0598 |
+| `CloudFog` | `cloud-fog` | glisr weather, fog | duotone | `md-weather_fog` | U+F0591 |
+| `CloudLightning` | `cloud-lightning` | glisr weather, thunderstorm, hail | duotone | `md-weather_lightning` | U+F0593 |
+| `Wind` | `wind` | none yet, a wind row for the glisr weather | duotone | `md-weather_windy` | U+F059D |
 | `Question` | `question` | every app, an unknown kind | fill | `md-help_circle_outline` | U+F0625 |
 | `WhatsappLogo` | `whatsapp-logo` | none yet, a network picture for schnattr | fill | `fa-whatsapp` | U+F232 |
 | `TelegramLogo` | `telegram-logo` | none yet, a network picture for schnattr | fill | `fa-telegram` | U+F2C6 |
@@ -137,7 +137,7 @@ To add an icon:
 |---|---|---|---|---|---|
 | List entry and header | 2 or 4 rows, square | `fill` | the tint, rounded square | palette black (slot 0) | `ICON_SHARE` of the square |
 | phewr grid cell without a thumbnail | 30 % of the cell height | `regular` | none | the foreground, alpha 0.45 | the full box |
-| wettr weather | 2 or 4 rows, square | `duotone` | none | the tint of the condition | the full box |
+| glisr weather | 2 or 4 rows, square | `duotone` | none | the tint of the condition | the full box |
 
 - **`fill` on a ground.** At 64 px, `fill` keeps the full area of the shape. The line of `regular`
   becomes 2.5 px thin. The 20 % back layer of `duotone` has almost no contrast on a coloured
@@ -200,8 +200,8 @@ draw a Nerd Font glyph wider.
 
 The app chooses the glyph. `IconPicture` returns `Icon::glyph()` in the ground colour of the look.
 If the look has no ground or a `Reset` ground, the glyph takes the ink colour.
-`IconPicture::with_glyph` replaces the glyph or turns it off. wettr gives its own Weather Icons
-glyphs. schnattr gives a glyph only with its config key `icons = "nerd"`.
+`IconPicture::with_glyph` replaces the glyph or turns it off. The glisr weather gives its own
+Weather Icons glyphs. schnattr gives a glyph only with its config key `icons = "nerd"`.
 
 phewr keeps its octant icons for its grid cells of 6 rows and more. An entry box of 2 rows gives
 8 x 8 octant dots, and the shapes do not read at that size. So the octant code stays in phewr.
@@ -232,7 +232,7 @@ An app uses an icon in one of three ways:
 
 - **The icon is the picture.** The app gives an `IconPicture` to `draw_entry` or `draw_header`.
   `IconPicture` makes the box square and places the key. If the store does not hold the key,
-  it renders the icon into the store first. It has no stand-in. wettr and glisr do this.
+  it renders the icon into the store first. It has no stand-in. glisr does this.
 - **The icon is the stand-in.** The app keeps its own adapter. In `stand_in_size`, it calls
   `render` and puts the bitmap into its store under its stand-in key. schnattr and youtr do this.
 - **The icon is a part of a picture.** phewr calls `render` for its grid cells and applies its own
